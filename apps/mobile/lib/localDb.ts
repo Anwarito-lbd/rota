@@ -1,60 +1,22 @@
 /**
- * Local SQLite catalog (expo-sqlite) — works offline; API syncs when available.
+ * Web local catalog — in-memory (no ExpoSQLite on web).
  */
-import * as SQLite from 'expo-sqlite';
 import { SEED_LISTINGS, SEED_USERS, type Listing, type User } from '@rota/shared';
 
-let db: SQLite.SQLiteDatabase | null = null;
+const listings = new Map<string, Listing>();
+const users = new Map<string, User>();
+const bookings = new Map<string, unknown>();
 let ready = false;
 
 export async function getDb() {
-  if (!db) db = await SQLite.openDatabaseAsync('rota.db');
-  return db;
+  return null;
 }
 
 export async function initLocalDb() {
   if (ready) return;
-  const database = await getDb();
-  await database.execAsync(`
-    PRAGMA journal_mode = WAL;
-    CREATE TABLE IF NOT EXISTS listings (
-      id TEXT PRIMARY KEY,
-      payload TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      payload TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS bookings (
-      id TEXT PRIMARY KEY,
-      payload TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS meta (
-      key TEXT PRIMARY KEY,
-      value TEXT NOT NULL
-    );
-  `);
-
-  const seeded = await database.getFirstAsync<{ value: string }>(
-    `SELECT value FROM meta WHERE key = 'seeded'`,
-  );
-  if (!seeded) {
-    const now = new Date().toISOString();
-    for (const u of SEED_USERS) {
-      await database.runAsync(`INSERT OR REPLACE INTO users (id, payload) VALUES (?, ?)`, [
-        u.id,
-        JSON.stringify(u),
-      ]);
-    }
-    for (const l of SEED_LISTINGS) {
-      const full: Listing = { ...l, createdAt: now };
-      await database.runAsync(`INSERT OR REPLACE INTO listings (id, payload) VALUES (?, ?)`, [
-        l.id,
-        JSON.stringify(full),
-      ]);
-    }
-    await database.runAsync(`INSERT INTO meta (key, value) VALUES ('seeded', '1')`);
-  }
+  const now = new Date().toISOString();
+  for (const u of SEED_USERS) users.set(u.id, u);
+  for (const l of SEED_LISTINGS) listings.set(l.id, { ...l, createdAt: now });
   ready = true;
 }
 
@@ -64,9 +26,7 @@ export async function localListings(filters?: {
   occasion?: string;
 }): Promise<Listing[]> {
   await initLocalDb();
-  const database = await getDb();
-  const rows = await database.getAllAsync<{ payload: string }>(`SELECT payload FROM listings`);
-  let list = rows.map((r) => JSON.parse(r.payload) as Listing);
+  let list = [...listings.values()];
   const q = filters?.q?.toLowerCase().trim();
   if (q) {
     list = list.filter(
@@ -83,60 +43,34 @@ export async function localListings(filters?: {
 
 export async function localListing(id: string): Promise<Listing | null> {
   await initLocalDb();
-  const database = await getDb();
-  const row = await database.getFirstAsync<{ payload: string }>(
-    `SELECT payload FROM listings WHERE id = ?`,
-    [id],
-  );
-  return row ? (JSON.parse(row.payload) as Listing) : null;
+  return listings.get(id) ?? null;
 }
 
 export async function localUser(id: string): Promise<User | null> {
   await initLocalDb();
-  const database = await getDb();
-  const row = await database.getFirstAsync<{ payload: string }>(
-    `SELECT payload FROM users WHERE id = ?`,
-    [id],
-  );
-  return row ? (JSON.parse(row.payload) as User) : null;
+  return users.get(id) ?? null;
 }
 
 export async function localUserByHandle(handle: string): Promise<User | null> {
   await initLocalDb();
-  const database = await getDb();
-  const rows = await database.getAllAsync<{ payload: string }>(`SELECT payload FROM users`);
   const h = handle.replace(/^@/, '');
-  for (const r of rows) {
-    const u = JSON.parse(r.payload) as User;
-    if (u.handle === h) return u;
-  }
-  return null;
+  return [...users.values()].find((u) => u.handle === h) ?? null;
 }
 
 export async function saveLocalListing(listing: Listing) {
   await initLocalDb();
-  const database = await getDb();
-  await database.runAsync(`INSERT OR REPLACE INTO listings (id, payload) VALUES (?, ?)`, [
-    listing.id,
-    JSON.stringify(listing),
-  ]);
+  listings.set(listing.id, listing);
 }
 
 export async function saveLocalBooking(booking: unknown) {
   await initLocalDb();
-  const database = await getDb();
   const b = booking as { id: string };
-  await database.runAsync(`INSERT OR REPLACE INTO bookings (id, payload) VALUES (?, ?)`, [
-    b.id,
-    JSON.stringify(booking),
-  ]);
+  bookings.set(b.id, booking);
 }
 
 export async function localBookings(): Promise<any[]> {
   await initLocalDb();
-  const database = await getDb();
-  const rows = await database.getAllAsync<{ payload: string }>(`SELECT payload FROM bookings`);
-  return rows.map((r) => JSON.parse(r.payload));
+  return [...bookings.values()];
 }
 
 export async function listingsByOwner(ownerId: string): Promise<Listing[]> {
