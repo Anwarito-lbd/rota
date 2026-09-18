@@ -1,4 +1,5 @@
 import type { Listing, User } from '@rota/shared';
+import { quoteCheckout } from '@rota/shared';
 import { API_URL } from './config';
 import {
   initLocalDb,
@@ -215,13 +216,18 @@ export const api = {
       const user = (await sessionStore.getUser()) as User;
       const listing = await localListing(input.listingId);
       if (!listing) throw new Error('Pièce introuvable');
-      const start = new Date(input.startDate);
-      const end = new Date(input.endDate);
-      const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1);
-      const freeShip = String(listing.badge || '').toLowerCase().includes('livraison offerte');
-      const shipping = input.delivery === 'ship' && !freeShip ? 9 : 0;
-      const cleaning = listing.cleaningByLender ? listing.cleaningFee : 0;
-      const totalCents = Math.round((listing.pricePerDay * days + cleaning + shipping + 8) * 100);
+      const quote = quoteCheckout({
+        pricePerDay: listing.pricePerDay,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        delivery: input.delivery,
+        badge: listing.badge,
+        cleaningByLender: listing.cleaningByLender,
+        cleaningFee: listing.cleaningFee,
+        retail: listing.retail,
+      });
+      const totalCents = Math.round(quote.totalDueNow * 100);
+      const depositCents = Math.round(quote.deposit * 100);
       const booking = {
         id: `local_b_${Date.now()}`,
         listingId: listing.id,
@@ -232,7 +238,7 @@ export const api = {
         delivery: input.delivery,
         status: 'confirmed',
         totalCents,
-        depositCents: 15000,
+        depositCents,
         createdAt: new Date().toISOString(),
         listingTitle: listing.title,
         listingMedia: listing.media,
@@ -244,8 +250,9 @@ export const api = {
           mode: 'stripe_test_stub',
           clientSecret: `pi_test_${booking.id}_secret`,
           amountCents: totalCents,
-          depositCents: 15000,
+          depositCents,
           currency: 'eur',
+          quote,
         },
       };
     }

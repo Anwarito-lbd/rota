@@ -201,7 +201,7 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
   fees: {
     slug: 'fees',
     title: 'Frais & caution',
-    subtitle: 'Règles produit verrouillées (paliers A–D) — commission encore brouillon',
+    subtitle: 'Règles produit verrouillées (paliers A–D) — frais service 10 % locataire (bêta)',
     source: 'docs/legal/04-fees-cancellation-damage.md',
     sections: [
       {
@@ -213,14 +213,16 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
         callout: { tone: 'warn', text: LEGAL_BANNER },
       },
       {
-        heading: 'Commission Rota',
+        heading: 'Frais de service (bêta Closets fondateurs)',
         body: [
-          'Commission sur le loyer : pourcentage non finalisé.',
-          'Le modèle exact (part locataire / prêteur) reste à figer côté produit.',
+          'Frais de service côté locataire : 10 % du loyer (Founding Closet / bêta).',
+          'Pas de commission prêteur affichée en MVP : le prix / jour = loyer que le prêteur gagne (sous réserve Stripe / escrow).',
+          'Affichage avant paiement : loyer + frais de service + livraison + nettoyage (si applicable) + caution en hold.',
+          'Assurance : non incluse.',
         ],
         callout: {
           tone: 'draft',
-          text: 'Commission % — brouillon — à confirmer. Aucun pourcentage final n’est affiché volontairement.',
+          text: '10 % frais de service locataire (bêta Closets fondateurs) — règles brouillon soumises à revue avocat ; pas des conditions juridiques finales.',
         },
       },
       {

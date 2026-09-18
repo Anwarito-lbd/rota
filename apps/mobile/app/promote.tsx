@@ -20,6 +20,10 @@ export default function Promote() {
     <Screen>
       <Title>Promouvoir</Title>
       <Sub>{data.message}</Sub>
+      <Text style={styles.ownerNote}>
+        Prix / jour = loyer que vous gagnez (pas de commission prêteur en MVP). Caution côté
+        locataire ; payout après retour OK, pas au handover.
+      </Text>
       {user?.foundingCloset || data.foundingCloset ? (
         <Badge text="★ Closet fondateur" tone="clay" />
       ) : (
@@ -45,6 +49,7 @@ export default function Promote() {
 }
 
 const styles = StyleSheet.create({
+  ownerNote: { color: colors.ink3, fontSize: 12, lineHeight: 17, marginTop: 10 },
   k: { color: colors.ink3, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' },
   code: { color: colors.ink, fontSize: 28, fontWeight: '700', marginTop: 8 },
   v: { color: colors.ink2, marginTop: 8 },

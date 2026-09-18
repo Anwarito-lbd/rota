@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
 import { Field, Label, PrimaryButton, Sub, Title } from '../components/ui';
 import { colors } from '../constants/theme';
 import { api } from '../lib/api';
@@ -52,6 +52,10 @@ export default function ListPiece() {
       <Field value={brand} onChangeText={setBrand} placeholder="Rasario" />
       <Label>Prix / jour (€)</Label>
       <Field keyboardType="numeric" value={price} onChangeText={setPrice} />
+      <Text style={styles.hint}>
+        Le prix / jour = le loyer que vous gagnez (MVP : pas de commission prêteur). Caution à la
+        charge du locataire ; payout après retour OK, pas au handover.
+      </Text>
       <Label>Taille</Label>
       <Field value={size} onChangeText={setSize} />
       <Label>Description</Label>
@@ -63,4 +67,5 @@ export default function ListPiece() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
+  hint: { color: colors.ink3, fontSize: 12, lineHeight: 17, marginTop: 8, marginBottom: 4 },
 });
