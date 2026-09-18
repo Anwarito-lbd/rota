@@ -1,20 +1,39 @@
+import { Video, ResizeMode } from 'expo-av';
 import { Link } from 'expo-router';
-import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useRef } from 'react';
+import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Listing } from '@rota/shared';
 import { colors } from '../constants/theme';
 import { Badge, Price } from './ui';
 
+const fill = StyleSheet.absoluteFillObject;
+
 export function ListingCard({ listing, large }: { listing: Listing; large?: boolean }) {
   const video = listing.media.find((m) => m.kind === 'video');
   const image = listing.media.find((m) => m.kind === 'image');
+  const ref = useRef<Video>(null);
+  // expo-av Video style plumbing breaks on react-native-web (CSSStyleDeclaration [0])
+  const useNativeVideo = Platform.OS !== 'web' && !!video;
   const posterUri = video?.poster || image?.url;
 
   return (
     <Link href={`/listing/${listing.id}`} asChild>
-      <Pressable style={large ? [styles.card, styles.large] : styles.card}>
+      <Pressable style={[styles.card, large ? styles.large : undefined]}>
         <View style={styles.media}>
-          <Image source={{ uri: posterUri || image?.url }} style={styles.fill} />
+          {useNativeVideo ? (
+            <Video
+              ref={ref}
+              source={{ uri: video!.url }}
+              style={fill}
+              resizeMode={ResizeMode.COVER}
+              shouldPlay={false}
+              isMuted
+              usePoster
+              posterSource={posterUri ? { uri: posterUri } : undefined}
+            />
+          ) : (
+            <Image source={{ uri: posterUri || image?.url }} style={fill} />
+          )}
           {video ? (
             <View style={styles.playPill}>
               <Text style={styles.playText}>▶ Vidéo</Text>
@@ -54,8 +73,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   large: { minHeight: 420 },
-  media: { height: 280, backgroundColor: colors.surf2, position: 'relative' },
-  fill: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' },
+  media: { height: 280, backgroundColor: colors.surf2 },
   playPill: {
     position: 'absolute',
     bottom: 12,

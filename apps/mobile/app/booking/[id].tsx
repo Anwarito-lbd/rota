@@ -96,8 +96,8 @@ export default function BookingDates() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
+  row: { flexDirection: 'row', flexWrap: 'wrap' },
+  chip: { marginRight: 8, marginBottom: 8, 
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: 12,

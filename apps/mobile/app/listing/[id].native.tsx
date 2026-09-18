@@ -1,8 +1,10 @@
+import { Video, ResizeMode } from 'expo-av';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   Dimensions,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -39,10 +41,23 @@ export default function ListingDetail() {
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
           {listing.media.map((m, idx) => (
             <View key={idx} style={{ width: W, height: W * 1.15, backgroundColor: colors.surf2 }}>
-              <Image
-                  source={{ uri: m.kind === 'video' ? m.poster || m.url : m.url }}
-                  style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' }}
+              {m.kind === 'video' && Platform.OS !== 'web' ? (
+                <Video
+                  source={{ uri: m.url }}
+                  style={StyleSheet.absoluteFillObject}
+                  resizeMode={ResizeMode.COVER}
+                  useNativeControls
+                  shouldPlay={false}
+                  isMuted={false}
+                  posterSource={m.poster ? { uri: m.poster } : undefined}
+                  usePoster={!!m.poster}
                 />
+              ) : (
+                <Image
+                  source={{ uri: m.kind === 'video' ? m.poster || m.url : m.url }}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              )}
               {m.kind === 'video' ? (
                 <View style={styles.videoTag}>
                   <Text style={styles.videoTagText}>Vidéo {idx + 1}/{listing.media.length}</Text>

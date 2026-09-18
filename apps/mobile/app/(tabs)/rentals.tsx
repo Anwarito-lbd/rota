@@ -43,7 +43,7 @@ export default function Rentals() {
         <FlatList
           data={items}
           keyExtractor={(i) => i.id}
-          contentContainerStyle={{ padding: 16, gap: 12 }}
+          contentContainerStyle={{ padding: 16 }}
           ListEmptyComponent={
             <Text style={styles.empty}>
               {tab === 'renting'
@@ -77,15 +77,15 @@ export default function Rentals() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  tabs: { flexDirection: 'row', gap: 8, padding: 16 },
-  tab: { flex: 1, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.line, alignItems: 'center' },
+  tabs: { flexDirection: 'row', padding: 16 },
+  tab: { marginRight: 8,  flex: 1, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.line, alignItems: 'center' },
   tabOn: { backgroundColor: colors.surf2, borderColor: colors.clay },
   tabText: { color: colors.ink3, fontWeight: '700' },
   tabTextOn: { color: colors.ink },
   empty: { color: colors.ink3, textAlign: 'center', marginTop: 40 },
   card: {
     flexDirection: 'row',
-    gap: 12,
+    marginBottom: 12,
     backgroundColor: colors.surf,
     borderRadius: 14,
     borderWidth: 1,

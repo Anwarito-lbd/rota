@@ -61,8 +61,8 @@ export default function Discover() {
           data={listings}
           keyExtractor={(i) => i.id}
           numColumns={2}
-          columnWrapperStyle={{ gap: 10, paddingHorizontal: 16 }}
-          contentContainerStyle={{ gap: 10, paddingBottom: 40 }}
+          columnWrapperStyle={{ paddingHorizontal: 16, justifyContent: 'space-between' }}
+          contentContainerStyle={{ paddingBottom: 40 }}
           renderItem={({ item }) => (
             <View style={{ flex: 1 }}>
               <ListingCard listing={item} />
@@ -90,8 +90,8 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
+  chips: { flexDirection: 'row', flexWrap: 'wrap' },
+  chip: { marginRight: 8, marginBottom: 8, 
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: 999,

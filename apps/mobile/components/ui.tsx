@@ -102,7 +102,12 @@ export function Loading() {
 }
 
 export function Price({ value }: { value: number }) {
-  return <Text style={styles.price}>{value} € <Text style={styles.perDay}>/ jour</Text></Text>;
+  return (
+    <Text style={styles.price}>
+      {value} €
+      <Text style={styles.perDay}>{' '}/ jour</Text>
+    </Text>
+  );
 }
 
 const styles = StyleSheet.create({

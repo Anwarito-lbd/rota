@@ -60,8 +60,8 @@ export default function Feed() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  tabs: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, paddingTop: 8 },
-  tab: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: colors.line },
+  tabs: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 8 },
+  tab: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: colors.line, marginRight: 8 },
   tabOn: { backgroundColor: colors.surf2, borderColor: colors.clay },
   tabText: { color: colors.ink3, fontWeight: '600' },
   tabTextOn: { color: colors.ink },
