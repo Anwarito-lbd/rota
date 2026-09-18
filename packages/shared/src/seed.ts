@@ -2,9 +2,9 @@ import type { Listing, User } from './types';
 
 /** Public sample MP4s (Google / Pexels CDN) for demo video listings. */
 export const SAMPLE_VIDEOS = [
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+  'https://media.w3.org/2010/05/sintel/trailer_hd.mp4',
+  'https://www.w3schools.com/html/mov_bbb.mp4',
+  'https://download.samplelib.com/mp4/sample-5s.mp4',
 ] as const;
 
 /** Fashion photography — Unsplash HTTPS (stable image IDs). */
@@ -300,7 +300,7 @@ export const SEED_LISTINGS: Omit<Listing, 'createdAt'>[] = [
     city: 'Paris',
     neighborhood: 'Paris 16e',
     media: [
-      { url: img('photo-1596783074918-c84cb065579e'), kind: 'image' },
+      { url: img('photo-1490481651871-ab68de25d43d'), kind: 'image' },
       { url: img('photo-1585487000160-6ebcfceb0d03'), kind: 'image' },
     ],
     badge: 'Créateur',
