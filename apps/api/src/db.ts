@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,7 +9,71 @@ fs.mkdirSync(dataDir, { recursive: true });
 
 const dbPath = process.env.ROTA_DB_PATH || path.join(dataDir, 'rota.sqlite');
 
-export const db = new Database(dbPath);
+/**
+ * Thin better-sqlite3-compatible wrapper over Node's built-in `node:sqlite`
+ * (DatabaseSync). Requires Node.js 22.5+ (stable/unflagged from 22.13+;
+ * Node 24 on Windows includes it — no Visual Studio / native compile).
+ */
+type SqlParams = unknown[];
+
+type StatementLike = {
+  get(...params: SqlParams): unknown;
+  all(...params: SqlParams): unknown[];
+  run(...params: SqlParams): { changes: number | bigint; lastInsertRowid: number | bigint };
+};
+
+type DbLike = {
+  exec(sql: string): void;
+  prepare(sql: string): StatementLike;
+  pragma(pragma: string): void;
+  transaction<T>(fn: () => T): () => T;
+};
+
+function wrapDatabase(raw: DatabaseSync): DbLike {
+  return {
+    exec(sql: string) {
+      raw.exec(sql);
+    },
+    prepare(sql: string): StatementLike {
+      const stmt = raw.prepare(sql);
+      return {
+        get(...params: SqlParams) {
+          return stmt.get(...(params as never[]));
+        },
+        all(...params: SqlParams) {
+          return stmt.all(...(params as never[])) as unknown[];
+        },
+        run(...params: SqlParams) {
+          return stmt.run(...(params as never[]));
+        },
+      };
+    },
+    pragma(pragma: string) {
+      // better-sqlite3: db.pragma('journal_mode = WAL')
+      raw.exec(`PRAGMA ${pragma}`);
+    },
+    transaction<T>(fn: () => T): () => T {
+      return () => {
+        raw.exec('BEGIN');
+        try {
+          const result = fn();
+          raw.exec('COMMIT');
+          return result;
+        } catch (err) {
+          try {
+            raw.exec('ROLLBACK');
+          } catch {
+            /* ignore rollback errors */
+          }
+          throw err;
+        }
+      };
+    },
+  };
+}
+
+const raw = new DatabaseSync(dbPath);
+export const db = wrapDatabase(raw);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 

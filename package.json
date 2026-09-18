@@ -15,6 +15,6 @@
     "build:shared": "npm run build --workspace=packages/shared"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   }
 }

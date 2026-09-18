@@ -14,6 +14,8 @@ docs/         App Store, roadmap, legal drafts (FR)
 
 ## Quick start
 
+Requires **Node.js 22.13+** (uses built-in `node:sqlite` — no native `better-sqlite3` / Visual Studio on Windows).
+
 ```bash
 npm install
 npm run seed
