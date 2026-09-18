@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import cors from 'cors';
 import express from 'express';
-import { FEES } from '@rota/shared';
+import { FEES, quoteCheckout } from '@rota/shared';
 import { db, migrate } from './db.js';
 
 migrate();
@@ -283,16 +283,18 @@ app.post('/bookings', (req, res) => {
   if (!listing) return res.status(404).json({ error: 'Pièce introuvable' });
   if (listing.owner_id === user.id) return res.status(400).json({ error: 'Vous ne pouvez pas louer votre propre pièce' });
 
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1);
-  const rental = listing.price_per_day * days;
-  const cleaning = listing.cleaning_by_lender ? listing.cleaning_fee : 0;
-  // Shipping paid by renter unless listing badge grants free shipping
-  const freeShip = String(listing.badge || '').toLowerCase().includes('livraison offerte');
-  const shipping = delivery === 'ship' && !freeShip ? FEES.shipping : 0;
-  const total = Math.round((rental + cleaning + shipping + FEES.cover) * 100);
-  const deposit = Math.round(FEES.deposit * 100); // €150 default (prototype FEES.deposit)
+  const quote = quoteCheckout({
+    pricePerDay: listing.price_per_day,
+    startDate,
+    endDate,
+    delivery: delivery === 'ship' ? 'ship' : 'meet',
+    badge: listing.badge,
+    cleaningByLender: !!listing.cleaning_by_lender,
+    cleaningFee: listing.cleaning_fee,
+    retail: listing.retail,
+  });
+  const total = Math.round(quote.totalDueNow * 100);
+  const deposit = Math.round(quote.deposit * 100);
 
   const id = `b_${randomBytes(6).toString('hex')}`;
   const createdAt = new Date().toISOString();
@@ -315,6 +317,7 @@ app.post('/bookings', (req, res) => {
       amountCents: total,
       depositCents: deposit,
       currency: 'eur',
+      quote,
       note: 'Checkout Stripe en mode test stub — brancher PaymentIntent réel avec STRIPE_SECRET_KEY',
     },
   });

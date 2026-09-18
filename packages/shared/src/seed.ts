@@ -421,14 +421,6 @@ export const SEED_LISTINGS: Omit<Listing, 'createdAt'>[] = [
   },
 ];
 
-export const FEES = {
-  shipping: 9,
-  cover: 8,
-  deposit: 150,
-  commission: 0.12,
-  latePerDay: 20,
-} as const;
-
 export const CATEGORIES = [
   'Robes',
   'Manteaux',
