@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Dimensions,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -40,10 +41,10 @@ export default function ListingDetail() {
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
           {listing.media.map((m, idx) => (
             <View key={idx} style={{ width: W, height: W * 1.15, backgroundColor: colors.surf2 }}>
-              {m.kind === 'video' ? (
+              {m.kind === 'video' && Platform.OS !== 'web' ? (
                 <Video
                   source={{ uri: m.url }}
-                  style={StyleSheet.absoluteFill}
+                  style={StyleSheet.absoluteFillObject}
                   resizeMode={ResizeMode.COVER}
                   useNativeControls
                   shouldPlay={false}
@@ -52,7 +53,10 @@ export default function ListingDetail() {
                   usePoster={!!m.poster}
                 />
               ) : (
-                <Image source={{ uri: m.url }} style={StyleSheet.absoluteFill} />
+                <Image
+                  source={{ uri: m.kind === 'video' ? m.poster || m.url : m.url }}
+                  style={StyleSheet.absoluteFillObject}
+                />
               )}
               {m.kind === 'video' ? (
                 <View style={styles.videoTag}>
