@@ -55,7 +55,7 @@ export default function Feed() {
           TikTok × Pinterest × Vinted — {videoCount} looks avec vidéo
         </Text>
         {listings.map((item) => (
-          <ListingCard key={item.id} listing={item} large />
+          <ListingCard key={item.id} listing={item} />
         ))}
       </ScrollView>
     </View>
