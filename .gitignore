@@ -16,3 +16,7 @@ ios/
 android/
 *.log
 .eas/
+
+apps/api/data/
+*.sqlite
+*.sqlite-*
