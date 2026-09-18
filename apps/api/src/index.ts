@@ -371,6 +371,6 @@ app.get('/referral', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Rota API listening on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Rota API listening on http://0.0.0.0:${PORT}`);
 });
