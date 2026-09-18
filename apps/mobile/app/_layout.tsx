@@ -37,6 +37,7 @@ export default function RootLayout() {
             <Stack.Screen name="list-piece" options={{ headerShown: true, title: 'Mettre en location', headerStyle: { backgroundColor: colors.bg }, headerTintColor: colors.ink }} />
             <Stack.Screen name="promote" options={{ headerShown: true, title: 'Promouvoir', headerStyle: { backgroundColor: colors.bg }, headerTintColor: colors.ink }} />
             <Stack.Screen name="u/[handle]" options={{ headerShown: true, title: 'Profil', headerStyle: { backgroundColor: colors.bg }, headerTintColor: colors.ink }} />
+            <Stack.Screen name="legal/[slug]" options={{ headerShown: true, title: 'Légal', headerStyle: { backgroundColor: colors.bg }, headerTintColor: colors.ink }} />
           </Stack>
         </Guard>
       </AuthProvider>

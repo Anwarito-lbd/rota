@@ -2,6 +2,11 @@
 
 Apple Simulator needs a Mac. On Windows, use **Expo Go** on a real iPhone.
 
+## Requirements
+
+- **Node.js 22.13+** (Node **24** recommended on Windows). The API uses built-in `node:sqlite` — no Visual Studio / `better-sqlite3` native build.
+- Same Wi‑Fi for laptop and phone (or Expo tunnel).
+
 ## 1. On the Windows laptop (same Wi‑Fi as the phone)
 
 ```powershell
@@ -9,6 +14,9 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 cd $HOME
 git clone https://github.com/Anwarito-lbd/rota.git
 cd rota
+# If you previously failed on better-sqlite3:
+#   Remove-Item -Recurse -Force node_modules, apps\api\node_modules -ErrorAction SilentlyContinue
+#   Remove-Item package-lock.json -ErrorAction SilentlyContinue
 npm.cmd install
 npm.cmd run seed
 ```
@@ -45,3 +53,4 @@ If the QR fails, use Expo Go → “Enter URL” with the `exp://` link printed 
 - If your laptop LAN IP changes, update `EXPO_PUBLIC_API_URL`
 - `--tunnel` needs an Expo account the first time (`npx expo login`)
 - Native video plays in Expo Go; web was only a fallback
+- In-app **Profil → Légal & frais** surfaces CGU / privacy / fees drafts (avocat review pending)
