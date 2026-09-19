@@ -13,6 +13,9 @@ import { StatusBar } from 'expo-status-bar';
 import type { ReactElement } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Booking } from './src/screens/Booking';
+import { Checkout } from './src/screens/Checkout';
+import { Detail } from './src/screens/Detail';
 import { Feed } from './src/screens/Feed';
 import { Onboarding } from './src/screens/Onboarding';
 import { StoreProvider, useStore } from './src/state/store';
@@ -39,6 +42,9 @@ function ComingSoon() {
 const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   onboard: Onboarding,
   feed: Feed,
+  detail: Detail,
+  booking: Booking,
+  checkout: Checkout,
 };
 
 function Shell() {
