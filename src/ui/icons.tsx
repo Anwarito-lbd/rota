@@ -1,0 +1,114 @@
+interface IconProps {
+  size?: number;
+  color?: string;
+  fill?: string;
+}
+
+export const AppleIcon = ({ size = 15, color = 'currentColor' }: IconProps) => (
+  <svg width={size} height={size * 1.2} viewBox="0 0 15 18" fill={color} aria-hidden>
+    <path d="M12.3 9.6c0-2 1.6-3 1.7-3.1-.9-1.4-2.4-1.5-2.9-1.6-1.3-.1-2.4.7-3 .7-.6 0-1.5-.7-2.5-.7-1.3 0-2.5.8-3.2 2C.9 9.4 1.9 13 3.2 15c.6 1 1.4 2.1 2.4 2 .9 0 1.3-.6 2.4-.6 1.1 0 1.4.6 2.4.6 1 0 1.7-1 2.4-2 .5-.8.7-1.2 1-2-2.4-.9-2.5-3.3-2.5-3.4zM9.9 3.4c.5-.6.9-1.5.8-2.4-.8 0-1.8.5-2.3 1.2-.5.6-.9 1.5-.8 2.3.9.1 1.8-.5 2.3-1.1z" />
+  </svg>
+);
+
+export const HeartIcon = ({ size = 29, fill = 'none', color = '#F6F1E9' }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth="1.6" aria-hidden>
+    <path d="M12 20.5s-7.5-4.7-7.5-9.8a4.3 4.3 0 0 1 7.5-2.8 4.3 4.3 0 0 1 7.5 2.8c0 5.1-7.5 9.8-7.5 9.8z" />
+  </svg>
+);
+
+export const BookmarkIcon = ({ size = 27, fill = 'none', color = '#F6F1E9' }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth="1.6" aria-hidden>
+    <path d="M6 3.5h12v17l-6-4.3-6 4.3z" />
+  </svg>
+);
+
+export const StarIcon = ({ size = 26, fill = '#F6F1E9', color = 'none' }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth="1.6" aria-hidden>
+    <path d="M12 3.5l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.8l6-.8z" />
+  </svg>
+);
+
+export const DotsIcon = ({ size = 22, color = '#F6F1E9' }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden>
+    <circle cx="12" cy="5" r="2" />
+    <circle cx="12" cy="12" r="2" />
+    <circle cx="12" cy="19" r="2" />
+  </svg>
+);
+
+export const SearchIcon = ({ size = 16, color = 'currentColor' }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" aria-hidden>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M16.5 16.5 21 21" />
+  </svg>
+);
+
+export const FilterIcon = ({ size = 18, color = 'currentColor' }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" aria-hidden>
+    <path d="M3 6h18M6 12h12M10 18h4" />
+  </svg>
+);
+
+export const BellIcon = ({ size = 18, color = 'currentColor' }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" aria-hidden>
+    <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z" />
+    <path d="M10.5 19a2 2 0 0 0 3 0" />
+  </svg>
+);
+
+export const BagIcon = ({ size = 30, color = 'currentColor' }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" aria-hidden>
+    <path d="M4 8h16l-1.2 12H5.2z" />
+    <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+  </svg>
+);
+
+export const PersonPlusIcon = ({ size = 32, color = 'rgba(246,241,233,0.5)' }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" aria-hidden>
+    <circle cx="9" cy="8" r="3.4" />
+    <path d="M3 20c0-3.3 2.7-5.2 6-5.2s6 1.9 6 5.2" />
+    <path d="M17.5 8.5h4M19.5 6.5v4" />
+  </svg>
+);
+
+export const ChevronDown = ({ size = 12, color = 'currentColor' }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.4" aria-hidden>
+    <path d="M6 9l6 6 6-6" />
+  </svg>
+);
+
+export const TabFeedIcon = ({ color }: { color: string }) => (
+  <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" aria-hidden>
+    <rect x="3" y="3" width="18" height="18" rx="4" />
+    <path d="M10 8.5l6 3.5-6 3.5z" fill={color} stroke="none" />
+  </svg>
+);
+
+export const TabDiscoverIcon = ({ color }: { color: string }) => (
+  <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" aria-hidden>
+    <rect x="3" y="3" width="7.5" height="11" rx="2.2" />
+    <rect x="13.5" y="3" width="7.5" height="7" rx="2.2" />
+    <rect x="3" y="17" width="7.5" height="4" rx="1.8" />
+    <rect x="13.5" y="13" width="7.5" height="8" rx="2.2" />
+  </svg>
+);
+
+export const TabAddIcon = ({ color }: { color: string }) => (
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" aria-hidden>
+    <rect x="2.5" y="4.5" width="19" height="15" rx="4" />
+    <path d="M12 9v6M9 12h6" />
+  </svg>
+);
+
+export const TabMessagesIcon = ({ color }: { color: string }) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" aria-hidden>
+    <path d="M21 11.5a7.5 7.5 0 0 1-10.9 6.7L4.5 20l1.4-4.1A7.5 7.5 0 1 1 21 11.5z" />
+  </svg>
+);
+
+export const TabClosetIcon = ({ color }: { color: string }) => (
+  <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" aria-hidden>
+    <path d="M12 7.5 4 12v8h16v-8z" />
+    <path d="M12 7.5V5.8a2 2 0 1 1 2-2" />
+  </svg>
+);

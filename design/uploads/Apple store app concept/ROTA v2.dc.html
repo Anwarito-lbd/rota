@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  :root, [data-theme="dark"] {
+    --bg:#121011; --surf:#1B1817; --surf2:#242020; --sink:#0C0A0B;
+    --ink:#F6F1E9; --ink2:#B9B0A6; --ink3:#968C81;
+    --line:rgba(246,241,233,0.13); --line2:rgba(246,241,233,0.26);
+    --clay:#E8865F; --onclay:#1B1009; --claySoft:rgba(232,134,95,0.16);
+    --plum:#D79BB4; --onplum:#22131C; --plumSoft:rgba(215,155,180,0.16);
+    --ts:1;
+  }
+  [data-theme="light"] {
+    --bg:#F7F3EC; --surf:#FFFDF8; --surf2:#EDE6DA; --sink:#FFFFFF;
+    --ink:#1A1714; --ink2:#584F47; --ink3:#6E6559;
+    --line:rgba(26,23,20,0.12); --line2:rgba(26,23,20,0.26);
+    --clay:#A64B2A; --onclay:#FFF7F2; --claySoft:rgba(166,75,42,0.1);
+    --plum:#7E3B58; --onplum:#FFF4F8; --plumSoft:rgba(126,59,88,0.1);
+  }
+  [data-text="lg"] { --ts:1.16; }
+  body { margin: 0; background: #121011; }
+  a { color: #E8865F; text-decoration: none; }
+  a:hover { color: #A64B2A; }
+  *::-webkit-scrollbar { width: 0; height: 0; }
+  * { scrollbar-width: none; }
+  @keyframes rotaIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes rotaUp { from { transform: translateY(100%); } to { transform: none; } }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-text="{{ textSize }}" style="min-height:100vh;display:flex;flex-wrap:wrap;align-items:flex-start;gap:56px;padding:56px 48px 80px;box-sizing:border-box;background:var(--bg);font-family:Archivo, system-ui, sans-serif;color:var(--ink)">
+
+  <div style="flex:1 1 320px;max-width:440px;min-width:280px">
+    <div style="font-family:'Instrument Serif',serif;font-size:84px;line-height:0.88;letter-spacing:-0.02em">ROTA</div>
+    <div style="margin-top:10px;font-size:14px;letter-spacing:0.22em;text-transform:uppercase;color:var(--clay)">Louer, porter, faire tourner</div>
+    <div style="margin-top:22px;font-size:17px;line-height:1.55;color:var(--ink2);text-wrap:pretty;max-width:40ch">Peer-to-peer outfit rental for France. Scroll real wardrobes in full-screen video, book a piece for your dates, hand it on to the next person. Every rental is insured, cleaned and rated both ways.</div>
+
+    <div style="margin-top:28px;display:flex;gap:8px">
+      <button onClick="{{ toggleTheme }}" style="cursor:pointer;font-family:Archivo,sans-serif;font-size:13px;font-weight:600;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:var(--surf);color:var(--ink)">{{ themeLabel }}</button>
+      <button onClick="{{ toggleText }}" style="cursor:pointer;font-family:Archivo,sans-serif;font-size:13px;font-weight:600;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:var(--surf);color:var(--ink)">{{ textLabel }}</button>
+    </div>
+
+    <div style="margin-top:28px;display:flex;flex-wrap:wrap;gap:8px">
+      <sc-for list="{{ chips }}" as="chip" hint-placeholder-count="22">
+        <button onClick="{{ chip.go }}" style="cursor:pointer;font-family:Archivo,sans-serif;font-size:13px;font-weight:600;min-height:36px;padding:8px 14px;border-radius:999px;border:1px solid {{ chip.border }};background:{{ chip.bg }};color:{{ chip.fg }}">{{ chip.label }}</button>
+      </sc-for>
+    </div>
+
+    <div style="margin-top:36px;padding-top:22px;border-top:1px solid var(--line);display:grid;gap:10px;max-width:38ch">
+      <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink3)">Built for App Review</div>
+      <div style="font-size:15px;line-height:1.55;color:var(--ink2)">Sign in with Apple plus guest browsing · community guidelines gate · report and block on every listing and profile · account deletion in Settings · purpose-primed permissions · fees and cancellation disclosed before payment · in-person handover safety · Dynamic Type, 44pt targets and light/dark support.</div>
+    </div>
+  </div>
+
+  <div style="flex:0 0 auto">
+    <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ frameDark }}" hint-size="402px,874px">
+
+      <div style="position:relative;height:100%;background:var(--bg);overflow:hidden;display:flex;flex-direction:column;font-family:Archivo, system-ui, sans-serif;color:var(--ink)">
+        <div style="position:relative;flex:1;overflow:hidden">
+
+          <!-- ONBOARDING · WELCOME -->
+          <sc-if value="{{ obWelcome }}" hint-placeholder-val="{{ true }}">
+            <div style="position:absolute;inset:0;background:var(--sink)">
+              <div style="position:absolute;inset:0">
+                <image-slot id="rota2-ob" shape="rect" placeholder="Drop a hero outfit photo"></image-slot>
+              </div>
+              <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(12,10,11,0.5) 0%, rgba(12,10,11,0.05) 30%, rgba(12,10,11,0.92) 74%, #0C0A0B 100%);pointer-events:none"></div>
+              <div style="position:absolute;left:0;right:0;bottom:0;padding:0 26px 40px">
+                <div style="display:inline-block;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;padding:7px 11px;border-radius:8px;background:#E8865F;color:#1B1009">Paris · peer-to-peer rental</div>
+                <div style="margin-top:16px;font-family:'Instrument Serif',serif;font-size:50px;line-height:1;color:#F6F1E9">Wear it once.<br><span style="font-style:italic;color:#E8865F">Pass it on.</span></div>
+                <div style="margin-top:14px;font-size:calc(15px * var(--ts));line-height:1.5;color:#D6CEC5;max-width:32ch">Borrow from wardrobes near you for a night or a week. List your own and it starts paying for itself.</div>
+                <div style="margin-top:24px;display:grid;gap:10px">
+                  <button onClick="{{ appleSignIn }}" style="cursor:pointer;font-family:Archivo,sans-serif;font-size:calc(17px * var(--ts));font-weight:600;min-height:54px;border:none;border-radius:16px;background:#F6F1E9;color:#14100E;display:flex;align-items:center;justify-content:center;gap:9px"><svg width="15" height="18" viewBox="0 0 15 18" fill="#14100E"><path d="M12.3 9.6c0-2 1.6-3 1.7-3.1-.9-1.4-2.4-1.5-2.9-1.6-1.3-.1-2.4.7-3 .7-.6 0-1.5-.7-2.5-.7-1.3 0-2.5.8-3.2 2C.9 9.4 1.9 13 3.2 15c.6 1 1.4 2.1 2.4 2 .9 0 1.3-.6 2.4-.6 1.1 0 1.4.6 2.4.6 1 0 1.7-1 2.4-2 .5-.8.7-1.2 1-2-2.4-.9-2.5-3.3-2.5-3.4zM9.9 3.4c.5-.6.9-1.5.8-2.4-.8 0-1.8.5-2.3 1.2-.5.6-.9 1.5-.8 2.3.9.1 1.8-.5 2.3-1.1z"/></svg>Continue with Apple</button>
+                  <button onClick="{{ guestBrowse }}" style="cursor:pointer;font-family:Archivo,sans-serif;font-size:calc(17px * var(--ts));font-weight:600;min-height:54px;border:1px solid rgba(246,241,233,0.3);border-radius:16px;background:rgba(246,241,233,0.08);color:#F6F1E9">Browse as a guest</button>
+                </div>
+                <div style="margin-top:14px;font-size:calc(12px * var(--ts));line-height:1.5;text-align:center;color:#BDB4AA">Rota is for ages 16+. Continuing means you accept our <span style="color:#E8865F;font-weight:600">Terms</span> and <span style="color:#E8865F;font-weight:600">Privacy Policy</span>. Guests can browse; renting needs an account.</div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ONBOARDING · COMMUNITY GUIDELINES GATE -->
+          <sc-if value="{{ obRules }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:60px 20px 130px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:var(--clay)">Step 1 of 2</div>
+              <div style="margin-top:8px;font-family:'Instrument Serif',serif;font-size:38px;line-height:1.02">How we treat each other</div>
+              <div style="margin-top:10px;font-size:calc(15px * var(--ts));line-height:1.55;color:var(--ink2);max-width:34ch">Rota only works because people send clothes back the way they arrived. Four rules, and we enforce them.</div>
+              <div style="margin-top:20px;display:grid;gap:10px">
+                <sc-for list="{{ rules }}" as="r" hint-placeholder-count="4">
+                  <div style="padding:15px;border-radius:16px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="font-size:calc(15px * var(--ts));font-weight:700">{{ r.title }}</div>
+                    <div style="margin-top:5px;font-size:calc(14px * var(--ts));line-height:1.5;color:var(--ink2)">{{ r.body }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div onClick="{{ toggleAgree }}" style="cursor:pointer;margin-top:16px;display:flex;gap:12px;align-items:flex-start;padding:15px;border-radius:16px;background:var(--surf2);min-height:44px">
+                <div style="width:24px;height:24px;flex:0 0 24px;border-radius:7px;border:2px solid {{ agreeRing }};background:{{ agreeFill }};display:flex;align-items:center;justify-content:center;color:var(--onclay);font-size:14px;font-weight:700">{{ agreeMark }}</div>
+                <div style="font-size:calc(14px * var(--ts));line-height:1.5;color:var(--ink)">I agree to the community guidelines and understand that harassment, counterfeit listings or off-app payment get accounts removed.</div>
+              </div>
+              <div style="margin-top:12px;font-size:calc(13px * var(--ts));line-height:1.5;color:var(--ink3)">You can report any listing, message or profile from the ••• menu. Reports are reviewed within 24 hours.</div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 20px 26px;background:linear-gradient(180deg, rgba(18,16,17,0) 0%, var(--bg) 45%)">
+              <button onClick="{{ obNext }}" style="cursor:pointer;width:100%;min-height:54px;font-family:Archivo,sans-serif;font-size:calc(17px * var(--ts));font-weight:700;border:none;border-radius:16px;background:{{ agreeBtnBg }};color:{{ agreeBtnFg }}">Agree and continue</button>
+            </div>
+          </sc-if>
+
+          <!-- ONBOARDING · PERMISSION PRIMING -->
+          <sc-if value="{{ obPerms }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:60px 20px 130px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:var(--clay)">Step 2 of 2</div>
+              <div style="margin-top:8px;font-family:'Instrument Serif',serif;font-size:38px;line-height:1.02">What we ask for, and why</div>
+              <div style="margin-top:10px;font-size:calc(15px * var(--ts));line-height:1.55;color:var(--ink2);max-width:34ch">Nothing is required to browse. Turn things on when you need them — iOS will ask again at that moment.</div>
+              <div style="margin-top:20px;display:grid;gap:10px">
+                <sc-for list="{{ perms }}" as="p" hint-placeholder-count="4">
+                  <div style="display:flex;gap:13px;align-items:center;padding:15px;border-radius:16px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:calc(15px * var(--ts));font-weight:700">{{ p.title }}</div>
+                      <div style="margin-top:4px;font-size:calc(13px * var(--ts));line-height:1.45;color:var(--ink2)">{{ p.body }}</div>
+                    </div>
+                    <button onClick="{{ p.toggle }}" style="cursor:pointer;flex:0 0 auto;min-height:44px;padding:0 16px;font-family:Archivo,sans-serif;font-size:calc(14px * var(--ts));font-weight:700;border-radius:12px;border:1px solid {{ p.border }};background:{{ p.bg }};color:{{ p.fg }}">{{ p.label }}</button>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 20px 26px;background:linear-gradient(180deg, rgba(18,16,17,0) 0%, var(--bg) 45%)">
+              <button onClick="{{ goFeed }}" style="cursor:pointer;width:100%;min-height:54px;font-family:Archivo,sans-serif;font-size:calc(17px * var(--ts));font-weight:700;border:none;border-radius:16px;background:var(--clay);color:var(--onclay)">Start browsing</button>
+            </div>
+          </sc-if>
+
+          <!-- FEED -->
+          <sc-if value="{{ isFeed }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;scroll-snap-type:y mandatory;background:var(--sink)">
+              <sc-for list="{{ feed }}" as="item" hint-placeholder-count="3">
+                <div style="position:relative;height:790px;scroll-snap-align:start;overflow:hidden">
+                  <div style="position:absolute;inset:0">
+                    <image-slot id="{{ item.slot }}" shape="rect" placeholder="Drop outfit video still"></image-slot>
+                  </div>
+                  <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(12,10,11,0.62) 0%, rgba(12,10,11,0) 26%, rgba(12,10,11,0) 44%, rgba(12,10,11,0.92) 92%);pointer-events:none"></div>
+
+                  <div style="position:absolute;top:56px;left:0;right:0;display:flex;justify-content:center;gap:20px;pointer-events:none">
+                    <div style="font-size:calc(15px * var(--ts));font-weight:600;color:rgba(246,241,233,0.62)">Près de moi</div>
+                    <div style="font-size:calc(15px * var(--ts));font-weight:700;color:#F6F1E9;padding-bottom:5px;border-bottom:2px solid #E8865F">Pour vous</div>
+                    <div style="font-size:calc(15px * var(--ts));font-weight:600;color:rgba(246,241,233,0.62)">Suivis</div>
+                  </div>
+
+                  <div style="position:absolute;right:10px;bottom:210px;display:flex;flex-direction:column;align-items:center;gap:14px">
+                    <div onClick="{{ item.openProfile }}" style="cursor:pointer;width:52px;height:52px;border-radius:999px;padding:2px;box-sizing:border-box;background:#E8865F">
+                      <div style="width:100%;height:100%;border-radius:999px;overflow:hidden;border:2px solid #0C0A0B;box-sizing:border-box">
+                        <image-slot id="{{ item.avatarSlot }}" shape="circle" placeholder="Lender"></image-slot>
+                      </div>
+                    </div>
+                    <div onClick="{{ item.like }}" style="cursor:pointer;min-width:44px;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">
+                      <svg width="29" height="29" viewBox="0 0 24 24" fill="{{ item.likeFill }}" stroke="{{ item.likeStroke }}" stroke-width="1.6"><path d="M12 20.5s-7.5-4.7-7.5-9.8a4.3 4.3 0 0 1 7.5-2.8 4.3 4.3 0 0 1 7.5 2.8c0 5.1-7.5 9.8-7.5 9.8z"/></svg>
+                      <div style="font-size:calc(12px * var(--ts));font-weight:600;color:#F6F1E9">{{ item.likes }}</div>
+                    </div>
+                    <div onClick="{{ item.openDetail }}" style="cursor:pointer;min-width:44px;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F6F1E9" stroke-width="1.6"><path d="M21 12a8.5 8.5 0 0 1-12.3 7.6L4 21l1.4-4.3A8.5 8.5 0 1 1 21 12z"/></svg>
+                      <div style="font-size:calc(12px * var(--ts));font-weight:600;color:#F6F1E9">{{ item.comments }}</div>
+                    </div>
+                    <div onClick="{{ item.wish }}" style="cursor:pointer;min-width:44px;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">
+                      <svg width="27" height="27" viewBox="0 0 24 24" fill="{{ item.wishFill }}" stroke="{{ item.wishStroke }}" stroke-width="1.6"><path d="M6 3.5h12v17l-6-4.3-6 4.3z"/></svg>
+                      <div style="font-size:calc(12px * var(--ts));font-weight:600;color:#F6F1E9">Save</div>
+                    </div>
+                    <div onClick="{{ openReport }}" style="cursor:pointer;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="#F6F1E9"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                    </div>
+                  </div>
+
+                  <div style="position:absolute;left:0;right:0;bottom:0;padding:0 16px 24px">
+                    <div style="display:flex;flex-wrap:wrap;gap:7px">
+                      <div style="font-size:calc(11px * var(--ts));font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:5px 9px;border-radius:7px;background:#E8865F;color:#1B1009">{{ item.occasion }}</div>
+                      <div style="font-size:calc(11px * var(--ts));font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:5px 9px;border-radius:7px;border:1px solid rgba(246,241,233,0.55);color:#F6F1E9">{{ item.badge }}</div>
+                    </div>
+                    <div onClick="{{ item.openProfile }}" style="cursor:pointer;margin-top:12px;font-size:calc(15px * var(--ts));font-weight:600;color:#F6F1E9">@{{ item.handle }} <span style="color:rgba(246,241,233,0.68);font-weight:400">· {{ item.wornCount }}</span></div>
+                    <div style="margin-top:5px;font-family:'Instrument Serif',serif;font-size:33px;line-height:1.05;color:#F6F1E9">{{ item.title }}</div>
+                    <div style="margin-top:5px;font-size:calc(14px * var(--ts));color:rgba(246,241,233,0.75)">{{ item.brand }} · taille {{ item.size }} · {{ item.city }}</div>
+                    <div style="margin-top:14px;display:flex;align-items:center;gap:10px">
+                      <button onClick="{{ item.openDetail }}" style="cursor:pointer;flex:1;min-width:0;font-family:Archivo,sans-serif;font-size:calc(16px * var(--ts));font-weight:700;min-height:52px;border:none;border-radius:14px;background:#E8865F;color:#1B1009">Louer · {{ item.priceLabel }} / nuit</button>
+                      <button onClick="{{ item.openDetail }}" style="cursor:pointer;width:52px;height:52px;flex:0 0 52px;border-radius:14px;border:1px solid rgba(246,241,233,0.34);background:rgba(246,241,233,0.12);color:#F6F1E9;font-size:19px">›</button>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ showOffline }}">
+              <div style="position:absolute;top:96px;left:16px;right:16px;display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:14px;background:rgba(12,10,11,0.9);border:1px solid rgba(246,241,233,0.2)">
+                <div style="width:8px;height:8px;border-radius:99px;background:#D79BB4;flex:0 0 8px"></div>
+                <div style="flex:1;font-size:calc(13px * var(--ts));line-height:1.4;color:#F6F1E9">No connection. Showing your last loaded looks.</div>
+                <button onClick="{{ goFeed }}" style="cursor:pointer;min-height:36px;padding:0 12px;font-family:Archivo,sans-serif;font-size:calc(13px * var(--ts));font-weight:700;border-radius:10px;border:none;background:#F6F1E9;color:#14100E">Retry</button>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <!-- DISCOVER -->
+          <sc-if value="{{ isDiscover }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:56px 12px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:10px;padding:0 4px">
+                <div onClick="{{ goSearch }}" style="cursor:pointer;flex:1;min-width:0;display:flex;align-items:center;gap:9px;min-height:44px;padding:0 15px;border-radius:999px;background:var(--surf2);color:var(--ink3);font-size:calc(14px * var(--ts))">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Chercher des dressings à Paris</span>
+                </div>
+                <button onClick="{{ goBoards }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;display:flex;align-items:center;justify-content:center">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink)"><path d="M6 3.5h12v17l-6-4.3-6 4.3z"/></svg>
+                </button>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:7px;overflow-x:auto;padding:0 4px 4px">
+                <sc-for list="{{ ideas }}" as="i" hint-placeholder-count="6">
+                  <button onClick="{{ i.pick }}" style="cursor:pointer;flex:0 0 auto;font-family:Archivo,sans-serif;font-size:calc(13px * var(--ts));font-weight:600;min-height:38px;padding:0 14px;border-radius:999px;border:1px solid {{ i.border }};background:{{ i.bg }};color:{{ i.fg }}">{{ i.label }}</button>
+                </sc-for>
+              </div>
+              <div style="margin-top:8px;padding:0 4px;font-size:calc(13px * var(--ts));color:var(--ink3)">Idées pour <span style="color:var(--ink);font-weight:600">{{ ideaActive }}</span> · disponibles près de vous</div>
+              <div style="margin-top:12px;column-count:2;column-gap:10px">
+                <sc-for list="{{ pins }}" as="p" hint-placeholder-count="8">
+                  <div style="break-inside:avoid;margin-bottom:10px">
+                    <div onClick="{{ p.open }}" style="cursor:pointer;position:relative;border-radius:16px;overflow:hidden;background:var(--surf2);height:{{ p.h }}">
+                      <image-slot id="{{ p.slot }}" shape="rounded" radius="16" placeholder="Outfit"></image-slot>
+                      <div onClick="{{ p.save }}" style="position:absolute;top:8px;right:8px;cursor:pointer;min-height:32px;padding:0 12px;border-radius:999px;background:{{ p.saveBg }};color:{{ p.saveFg }};font-size:calc(12px * var(--ts));font-weight:700;display:flex;align-items:center">{{ p.saveLabel }}</div>
+                      <div style="position:absolute;bottom:8px;left:8px;font-size:calc(11px * var(--ts));font-weight:700;padding:5px 8px;border-radius:7px;background:rgba(12,10,11,0.86);color:#F6F1E9;pointer-events:none">{{ p.priceLabel }} / nuit</div>
+                    </div>
+                    <div style="margin-top:7px;display:flex;align-items:center;gap:7px;min-width:0">
+                      <div style="width:20px;height:20px;flex:0 0 20px;border-radius:999px;overflow:hidden"><image-slot id="{{ p.avSlot }}" shape="circle" placeholder="Av"></image-slot></div>
+                      <div style="font-size:calc(12px * var(--ts));color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.handle }} · {{ p.size }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- SEARCH / CATALOGUE -->
+          <sc-if value="{{ isSearch }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:60px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="font-family:'Instrument Serif',serif;font-size:38px;line-height:1">Trouver une pièce</div>
+              <div style="margin-top:14px;display:flex;gap:10px">
+                <div style="flex:1;display:flex;align-items:center;gap:9px;min-height:46px;padding:0 14px;border-radius:14px;background:var(--surf2);color:var(--ink3);font-size:calc(15px * var(--ts))">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>
+                  robe à sequins, taille S
+                </div>
+                <button onClick="{{ openFilters }}" style="cursor:pointer;width:46px;height:46px;border-radius:14px;border:none;background:var(--clay);display:flex;align-items:center;justify-content:center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--onclay)"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                </button>
+              </div>
+              <div style="margin-top:16px;display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">
+                <sc-for list="{{ occasions }}" as="o" hint-placeholder-count="6">
+                  <button onClick="{{ o.pick }}" style="cursor:pointer;flex:0 0 auto;font-family:Archivo,sans-serif;font-size:calc(13px * var(--ts));font-weight:600;min-height:38px;padding:0 14px;border-radius:999px;border:1px solid {{ o.border }};background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button>
+                </sc-for>
+              </div>
+              <div style="margin-top:18px;display:flex;gap:14px;overflow-x:auto;padding-bottom:4px">
+                <sc-for list="{{ categories }}" as="c" hint-placeholder-count="7">
+                  <div onClick="{{ c.pick }}" style="cursor:pointer;flex:0 0 auto;width:62px;text-align:center">
+                    <div style="width:62px;height:62px;border-radius:999px;overflow:hidden;background:var(--surf2);border:2px solid {{ c.ring }};box-sizing:border-box">
+                      <image-slot id="{{ c.slot }}" shape="circle" placeholder=""></image-slot>
+                    </div>
+                    <div style="margin-top:6px;font-size:calc(11px * var(--ts));font-weight:600;color:{{ c.fg }};line-height:1.2">{{ c.label }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--line)">
+                <div style="font-size:calc(13px * var(--ts));color:var(--ink3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ resultCount }} pièces · {{ city }}</div>
+                <div onClick="{{ cycleSort }}" style="cursor:pointer;flex:0 0 auto;display:flex;align-items:center;gap:6px;min-height:44px;font-size:calc(13px * var(--ts));font-weight:700;color:var(--clay)">
+                  {{ sortLabel }}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+              </div>
+              <div style="margin-top:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+                <sc-for list="{{ results }}" as="r" hint-placeholder-count="6">
+                  <div style="min-width:0">
+                    <div onClick="{{ r.open }}" style="cursor:pointer;display:flex;align-items:center;gap:6px;min-width:0">
+                      <div style="width:22px;height:22px;flex:0 0 22px;border-radius:999px;overflow:hidden"><image-slot id="{{ r.avSlot }}" shape="circle" placeholder="Av"></image-slot></div>
+                      <div style="font-size:calc(12px * var(--ts));color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.handle }}</div>
+                    </div>
+                    <div onClick="{{ r.open }}" style="cursor:pointer;margin-top:7px;position:relative;height:192px;border-radius:12px;overflow:hidden;background:var(--surf2)">
+                      <image-slot id="{{ r.slot }}" shape="rounded" radius="12" placeholder="Outfit"></image-slot>
+                      <div onClick="{{ r.fav }}" style="position:absolute;top:6px;right:6px;cursor:pointer;min-height:32px;padding:0 10px;border-radius:999px;background:rgba(12,10,11,0.82);display:flex;align-items:center;gap:5px">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="{{ r.favFill }}" stroke="{{ r.favStroke }}" stroke-width="2"><path d="M12 20.5s-7.5-4.7-7.5-9.8a4.3 4.3 0 0 1 7.5-2.8 4.3 4.3 0 0 1 7.5 2.8c0 5.1-7.5 9.8-7.5 9.8z"/></svg>
+                        <span style="font-size:calc(11px * var(--ts));font-weight:700;color:#F6F1E9">{{ r.favCount }}</span>
+                      </div>
+                      <div style="position:absolute;bottom:7px;left:7px;font-size:calc(10px * var(--ts));font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 7px;border-radius:5px;background:rgba(12,10,11,0.86);color:#F6F1E9;pointer-events:none">{{ r.status }}</div>
+                    </div>
+                    <div onClick="{{ r.open }}" style="cursor:pointer;margin-top:8px">
+                      <div style="font-size:calc(14px * var(--ts));font-weight:700;line-height:1.15">{{ r.priceLabel }} <span style="font-size:calc(12px * var(--ts));font-weight:400;color:var(--ink3)">/ nuit</span></div>
+                      <div style="margin-top:3px;font-size:calc(12px * var(--ts));color:var(--clay);font-weight:600">{{ r.weekLabel }} pour 3 nuits</div>
+                      <div style="margin-top:4px;font-size:calc(13px * var(--ts));line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</div>
+                      <div style="margin-top:2px;font-size:calc(12px * var(--ts));color:var(--ink3)">{{ r.brand }} · {{ r.size }} · {{ r.dist }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <sc-if value="{{ filtersOpen }}">
+              <div onClick="{{ closeFilters }}" style="position:absolute;inset:0;background:rgba(6,5,5,0.6)"></div>
+              <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surf);border-radius:24px 24px 0 0;border-top:1px solid var(--line);padding:18px 20px 30px;animation:rotaUp .2s ease">
+                <div style="width:44px;height:4px;border-radius:99px;background:var(--line2);margin:0 auto 16px"></div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between">
+                  <div style="font-family:'Instrument Serif',serif;font-size:30px">Filtres</div>
+                  <button onClick="{{ closeFilters }}" style="cursor:pointer;border:none;background:none;font-family:Archivo,sans-serif;font-size:calc(14px * var(--ts));font-weight:600;color:var(--plum);min-height:44px">Réinitialiser</button>
+                </div>
+                <div style="margin-top:14px;font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">Taille</div>
+                <div style="margin-top:10px;display:flex;gap:8px">
+                  <sc-for list="{{ sizes }}" as="s" hint-placeholder-count="4">
+                    <button onClick="{{ s.pick }}" style="cursor:pointer;flex:1;min-height:46px;font-family:Archivo,sans-serif;font-size:calc(15px * var(--ts));font-weight:600;border-radius:12px;border:1px solid {{ s.border }};background:{{ s.bg }};color:{{ s.fg }}">{{ s.label }}</button>
+                  </sc-for>
+                </div>
+                <div style="margin-top:18px;font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">Remise</div>
+                <div style="margin-top:10px;display:flex;gap:8px">
+                  <button onClick="{{ pickShip }}" style="cursor:pointer;flex:1;min-height:46px;font-family:Archivo,sans-serif;font-size:calc(15px * var(--ts));font-weight:600;border-radius:12px;border:1px solid {{ shipBorder }};background:{{ shipBg }};color:{{ shipFg }}">Livraison</button>
+                  <button onClick="{{ pickMeet }}" style="cursor:pointer;flex:1;min-height:46px;font-family:Archivo,sans-serif;font-size:calc(15px * var(--ts));font-weight:600;border-radius:12px;border:1px solid {{ meetBorder }};background:{{ meetBg }};color:{{ meetFg }}">Remise en main propre</button>
+                </div>
+                <div style="margin-top:18px;font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">Prix par nuit · {{ maxPriceLabel }} max</div>
+                <div style="margin-top:14px;height:4px;border-radius:99px;background:var(--surf2);position:relative">
+                  <div style="position:absolute;left:0;top:0;bottom:0;width:62%;border-radius:99px;background:var(--clay)"></div>
+                  <div style="position:absolute;left:62%;top:-9px;width:22px;height:22px;border-radius:99px;background:var(--ink);transform:translateX(-50%)"></div>
+                </div>
+                <button onClick="{{ closeFilters }}" style="cursor:pointer;margin-top:24px;width:100%;min-height:54px;font-family:Archivo,sans-serif;font-size:calc(17px * var(--ts));font-weight:700;border:none;border-radius:16px;background:var(--clay);color:var(--onclay)">Voir {{ resultCount }} pièces</button>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <!-- DETAIL -->
+          <sc-if value="{{ isDetail }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);animation:rotaIn .22s ease">
+              <div style="position:relative;height:430px;background:var(--surf2)">
+                <image-slot id="rota2-detail" shape="rect" placeholder="Drop the hero outfit photo"></image-slot>
+                <div style="position:absolute;top:54px;left:14px;right:14px;display:flex;justify-content:space-between;gap:8px;pointer-events:none">
+                  <button onClick="{{ goFeed }}" style="pointer-events:auto;cursor:pointer;width:44px;height:44px;border-radius:999px;border:none;background:rgba(12,10,11,0.66);color:#F6F1E9;font-size:18px">‹</button>
+                  <div style="display:flex;gap:8px;pointer-events:auto">
+                    <button onClick="{{ toggleWishActive }}" style="cursor:pointer;width:44px;height:44px;border-radius:999px;border:none;background:rgba(12,10,11,0.66);display:flex;align-items:center;justify-content:center">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="{{ activeWishFill }}" stroke="{{ activeWishStroke }}" stroke-width="1.8"><path d="M6 3.5h12v17l-6-4.3-6 4.3z"/></svg>
+                    </button>
+                    <button onClick="{{ openReport }}" style="cursor:pointer;width:44px;height:44px;border-radius:999px;border:none;background:rgba(12,10,11,0.66);display:flex;align-items:center;justify-content:center">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="#F6F1E9"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div style="padding:20px 18px 150px">
+                <div style="font-size:calc(11px * var(--ts));font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--clay)">{{ active.occasion }} · {{ active.badge }}</div>
+                <div style="margin-top:8px;font-family:'Instrument Serif',serif;font-size:36px;line-height:1.04">{{ active.title }}</div>
+                <div style="margin-top:6px;font-size:calc(15px * var(--ts));color:var(--ink2)">{{ active.brand }} · valeur neuve {{ active.retailLabel }}</div>
+
+                <div onClick="{{ goProfile }}" style="cursor:pointer;margin-top:18px;display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;background:var(--surf);border:1px solid var(--line)">
+                  <div style="width:48px;height:48px;flex:0 0 48px;border-radius:999px;padding:2px;box-sizing:border-box;background:var(--clay)">
+                    <div style="width:100%;height:100%;border-radius:999px;overflow:hidden"><image-slot id="rota2-lender" shape="circle" placeholder="Lender"></image-slot></div>
+                  </div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:calc(15px * var(--ts));font-weight:700">{{ active.name }} <span style="color:var(--clay)">✓</span></div>
+                    <div style="font-size:calc(13px * var(--ts));color:var(--ink2)">4,96 ★ · 68 locations · identité vérifiée</div>
+                  </div>
+                  <div style="font-size:19px;color:var(--ink3)">›</div>
+                </div>
+
+                <div onClick="{{ goProfile }}" style="cursor:pointer;margin-top:10px;padding:12px;border-radius:16px;background:var(--surf);border:1px solid var(--line)">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                    <div style="font-size:calc(14px * var(--ts));font-weight:700">Compléter depuis ce dressing</div>
+                    <div style="font-size:calc(12px * var(--ts));font-weight:700;color:var(--clay);flex:0 0 auto">−15%</div>
+                  </div>
+                  <div style="margin-top:9px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px">
+                    <div style="height:72px;border-radius:9px;overflow:hidden"><image-slot id="rota2-bundle-1" shape="rounded" radius="9" placeholder=""></image-slot></div>
+                    <div style="height:72px;border-radius:9px;overflow:hidden"><image-slot id="rota2-bundle-2" shape="rounded" radius="9" placeholder=""></image-slot></div>
+                    <div style="height:72px;border-radius:9px;overflow:hidden"><image-slot id="rota2-bundle-3" shape="rounded" radius="9" placeholder=""></image-slot></div>
+                    <div style="height:72px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--surf2);font-size:calc(13px * var(--ts));font-weight:700;color:var(--ink3)">+37</div>
+                  </div>
+                  <div style="margin-top:9px;font-size:calc(13px * var(--ts));line-height:1.45;color:var(--ink2)">Deux pièces ou plus sur les mêmes dates : une seule livraison.</div>
+                </div>
+
+                <div style="margin-top:24px;font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">Taille et tombé</div>
+                <div style="margin-top:10px;display:flex;gap:8px">
+                  <sc-for list="{{ sizes }}" as="s" hint-placeholder-count="4">
+                    <button onClick="{{ s.pick }}" style="cursor:pointer;flex:1;min-height:48px;font-family:Archivo,sans-serif;font-size:calc(15px * var(--ts));font-weight:600;border-radius:12px;border:1px solid {{ s.border }};background:{{ s.bg }};color:{{ s.fg }}">{{ s.label }}</button>
+                  </sc-for>
+                </div>
+                <div style="margin-top:14px;padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                  <div style="display:flex;justify-content:space-between;gap:8px;font-size:calc(13px * var(--ts));color:var(--ink2)"><span>Taille petit</span><span>Taille juste</span><span>Taille grand</span></div>
+                  <div style="margin-top:10px;height:4px;border-radius:99px;background:var(--surf2);position:relative">
+                    <div style="position:absolute;left:41%;top:-7px;width:18px;height:18px;border-radius:99px;background:var(--clay);transform:translateX(-50%)"></div>
+                  </div>
+                  <div style="margin-top:12px;font-size:calc(14px * var(--ts));line-height:1.5;color:var(--ink2)">Juliette mesure 1,70 m et porte du {{ active.size }}. Poitrine 86 cm · taille 68 cm · longueur 142 cm. Stretch minimal.</div>
+                </div>
+
+                <div style="margin-top:24px;font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">Portée par des locataires</div>
+                <div style="margin-top:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+                  <div style="height:120px;border-radius:12px;overflow:hidden"><image-slot id="rota2-fit-1" shape="rounded" radius="12" placeholder="Fit pic"></image-slot></div>
+                  <div style="height:120px;border-radius:12px;overflow:hidden"><image-slot id="rota2-fit-2" shape="rounded" radius="12" placeholder="Fit pic"></image-slot></div>
+                  <div style="height:120px;border-radius:12px;overflow:hidden"><image-slot id="rota2-fit-3" shape="rounded" radius="12" placeholder="Fit pic"></image-slot></div>
+                </div>
+
+                <div style="margin-top:24px;display:grid;gap:8px">
+                  <sc-for list="{{ trust }}" as="t" hint-placeholder-count="4">
+                    <div style="display:flex;gap:10px;align-items:flex-start;padding:13px 14px;border-radius:12px;background:var(--surf);border:1px solid var(--line)">
+                      <div style="width:8px;height:8px;flex:0 0 8px;margin-top:6px;border-radius:99px;background:var(--clay)"></div>
+                      <div style="min-width:0">
+                        <div style="font-size:calc(14px * var(--ts));font-weight:700">{{ t.title }}</div>
+                        <div style="margin-top:3px;font-size:calc(13px * var(--ts));line-height:1.45;color:var(--ink2)">{{ t.body }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <div onClick="{{ goFees }}" style="cursor:pointer;margin-top:12px;display:flex;align-items:center;gap:10px;padding:14px;border-radius:14px;background:var(--claySoft);border:1px solid var(--line)">
+                  <div style="flex:1;min-width:0;font-size:calc(13px * var(--ts));line-height:1.5;color:var(--ink)">Nettoyage {{ cleaningLabel }} · protection {{ coverLabel }} · livraison {{ shipFeeLabel }} · caution {{ depositLabel }}. Tout est affiché avant paiement.</div>
+                  <div style="flex:0 0 auto;font-size:calc(13px * var(--ts));font-weight:700;color:var(--clay)">Détails ›</div>
+                </div>
+
+                <div style="margin-top:24px;font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">Avis · 4,9</div>
+                <div style="margin-top:10px;padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line);font-size:calc(14px * var(--ts));line-height:1.55;color:var(--ink2)">« Arrivée repassée dans une housse. Portée à un mariage, repartie le lundi dans le sachet retour. Moins cher que le pressing de ma propre robe. » — Maya, 3 nuits</div>
+              </div>
+
+              <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 18px 26px;background:linear-gradient(180deg, rgba(18,16,17,0) 0%, var(--bg) 42%);display:flex;align-items:center;gap:10px">
+                <div style="flex:0 0 auto">
+                  <div style="font-family:'Instrument Serif',serif;font-size:26px;line-height:1">{{ active.priceLabel }}</div>
+                  <div style="font-size:calc(12px * var(--ts));color:var(--ink3)">par nuit</div>
+                </div>
+                <button onClick="{{ openOffer }}" style="cursor:pointer;flex:0 0 auto;min-height:54px;padding:0 16px;font-family:Archivo,sans-serif;font-size:calc(15px * var(--ts));font-weight:700;border:1px solid var(--line2);border-radius:16px;background:var(--surf);color:var(--ink)">Proposer</button>
+                <button onClick="{{ bookOrSignIn }}" style="cursor:pointer;flex:1;min-width:0;min-height:54px;font-family:Archivo,sans-serif;font-size:calc(16px * var(--ts));font-weight:700;border:none;border-radius:16px;background:var(--clay);color:var(--onclay)">{{ bookCta }}</button>
+              </div>
+            </div>
+            <sc-if value="{{ offerOpen }}">
+              <div onClick="{{ closeOffer }}" style="position:absolute;inset:0;background:rgba(6,5,5,0.6)"></div>
+              <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surf);border-radius:24px 24px 0 0;border-top:1px solid var(--line);padding:18px 20px 30px;animation:rotaUp .2s ease">
+                <div style="width:44px;height:4px;border-radius:99px;background:var(--line2);margin:0 auto 16px"></div>
+                <div style="font-family:'Instrument Serif',serif;font-size:30px;line-height:1">Faire une proposition</div>
+                <div style="margin-top:8px;font-size:calc(14px * var(--ts));line-height:1.5;color:var(--ink2);max-width:34ch">{{ active.name }} a 12 h pour accepter. Elle demande {{ active.priceLabel }} / nuit pour {{ nightsLabel }}.</div>
+                <div style="margin-top:18px;display:flex;gap:8px">
+                  <sc-for list="{{ offers }}" as="o" hint-placeholder-count="3">
+                    <button onClick="{{ o.pick }}" style="cursor:pointer;flex:1;min-width:0;padding:12px 6px;font-family:Archivo,sans-serif;border-radius:14px;border:1px solid {{ o.border }};background:{{ o.bg }};color:{{ o.fg }}">
+                      <div style="font-size:calc(17px * var(--ts));font-weight:700">{{ o.label }}</div>
+                      <div style="margin-top:3px;font-size:calc(11px * var(--ts))">{{ o.sub }}</div>
+                    </button>
+                  </sc-for>
+                </div>
+                <div style="margin-top:16px;padding:14px;border-radius:14px;background:var(--surf2);font-size:calc(13px * var(--ts));line-height:1.5;color:var(--ink2)">Les propositions sur 3 nuits ou plus sont acceptées dans environ {{ acceptRate }} des cas. Nettoyage et protection restent inclus.</div>
+                <button onClick="{{ sendOffer }}" style="cursor:pointer;margin-top:18px;width:100%;min-height:54px;font-family:Archivo,sans-serif;font-size:calc(17px * var(--ts));font-weight:700;border:none;border-radius:16px;background:var(--plum);color:var(--onplum)">Envoyer · {{ offerTotalLabel }}</button>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <!-- BOOKING -->
+          <sc-if value="{{ isBooking }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:54px 18px 140px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <button onClick="{{ goDetail }}" style="cursor:pointer;width:44px;height:44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:18px;color:var(--ink)">‹</button>
+              <div style="margin-top:14px;font-family:'Instrument Serif',serif;font-size:36px;line-height:1.02">Choisir les dates</div>
+              <div style="margin-top:6px;font-size:calc(14px * var(--ts));color:var(--ink2)">{{ active.title }} · taille {{ selectedSize }}</div>
+
+              <div style="margin-top:22px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+                <div style="font-size:calc(16px * var(--ts));font-weight:700">Septembre 2026</div>
+                <div style="font-size:calc(13px * var(--ts));color:var(--ink3)">3 nuits minimum</div>
+              </div>
+              <div style="margin-top:14px;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-size:calc(11px * var(--ts));color:var(--ink3);text-align:center">
+                <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
+              </div>
+              <div style="margin-top:6px;display:grid;grid-template-columns:repeat(7,1fr);gap:4px">
+                <sc-for list="{{ days }}" as="d" hint-placeholder-count="31">
+                  <div onClick="{{ d.pick }}" style="min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;font-size:calc(14px * var(--ts));font-weight:600;cursor:{{ d.cursor }};background:{{ d.bg }};color:{{ d.fg }};text-decoration:{{ d.deco }}">{{ d.label }}</div>
+                </sc-for>
+              </div>
+
+              <div style="margin-top:22px;font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">Remise</div>
+              <div style="margin-top:10px;display:grid;gap:8px">
+                <div onClick="{{ pickShip }}" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid {{ shipBorder }};background:var(--surf)">
+                  <div style="width:20px;height:20px;flex:0 0 20px;border-radius:99px;border:2px solid {{ shipRing }};background:{{ shipDot }}"></div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:calc(15px * var(--ts));font-weight:700">Livraison · prépayée aller-retour</div>
+                    <div style="font-size:calc(13px * var(--ts));color:var(--ink2)">Arrive jeu. 17 sept. · étiquette retour dans le colis</div>
+                  </div>
+                  <div style="font-size:calc(14px * var(--ts));font-weight:700;flex:0 0 auto">{{ shipFeeLabel }}</div>
+                </div>
+                <div onClick="{{ pickMeet }}" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid {{ meetBorder }};background:var(--surf)">
+                  <div style="width:20px;height:20px;flex:0 0 20px;border-radius:99px;border:2px solid {{ meetRing }};background:{{ meetDot }}"></div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:calc(15px * var(--ts));font-weight:700">Remise en main propre</div>
+                    <div style="font-size:calc(13px * var(--ts));color:var(--ink2)">Paris 9e · 2,4 km · jeudi soir</div>
+                  </div>
+                  <div style="font-size:calc(14px * var(--ts));font-weight:700;flex:0 0 auto">Offert</div>
+                </div>
+              </div>
+              <div onClick="{{ goSafety }}" style="cursor:pointer;margin-top:8px;display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:14px;background:var(--surf2)">
+                <div style="flex:1;min-width:0;font-size:calc(13px * var(--ts));line-height:1.45;color:var(--ink2)">Conseils de remise en main propre et code à 4 chiffres</div>
+                <div style="flex:0 0 auto;font-size:calc(13px * var(--ts));font-weight:700;color:var(--clay)">Lire ›</div>
+              </div>
+
+              <div style="margin-top:22px;padding:16px;border-radius:16px;background:var(--surf);border:1px solid var(--line)">
+                <sc-for list="{{ breakdown }}" as="b" hint-placeholder-count="4">
+                  <div style="display:flex;justify-content:space-between;gap:12px;font-size:calc(14px * var(--ts));padding:5px 0;color:var(--ink2)"><span>{{ b.label }}</span><span style="flex:0 0 auto">{{ b.value }}</span></div>
+                </sc-for>
+                <div style="margin-top:10px;padding-top:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+                  <span style="font-size:calc(13px * var(--ts));letter-spacing:0.12em;text-transform:uppercase;color:var(--ink3)">Total</span>
+                  <span style="font-family:'Instrument Serif',serif;font-size:30px;color:var(--clay)">{{ totalLabel }}</span>
+                </div>
+                <div style="margin-top:8px;font-size:calc(12px * var(--ts));line-height:1.5;color:var(--ink3)">Caution de {{ depositLabel }} bloquée, libérée au retour. Annulation gratuite jusqu'à 7 jours avant.</div>
+              </div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 18px 26px;background:linear-gradient(180deg, rgba(18,16,17,0) 0%, var(--bg) 42%)">
+              <button onClick="{{ goCheckout }}" style="cursor:pointer;width:100%;min-height:54px;font-family:Archivo,sans-serif;font-size:calc(17px * var(--ts));font-weight:700;border:none;border-radius:16px;background:var(--clay);color:var(--onclay)">Continuer · {{ nightsLabel }}</button>
+            </div>
+          </sc-if>
+
+          <!-- CHECKOUT -->
+          <sc-if value="{{ isCheckout }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:54px 18px 140px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <button onClick="{{ goBooking }}" style="cursor:pointer;width:44px;height:44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:18px;color:var(--ink)">‹</button>
+              <div style="margin-top:14px;font-family:'Instrument Serif',serif;font-size:36px;line-height:1.02">Confirmer la location</div>
+
+              <div style="margin-top:20px;display:flex;gap:12px;padding:12px;border-radius:16px;background:var(--surf);border:1px solid var(--line)">
+                <div style="width:76px;height:96px;flex:0 0 76px;border-radius:10px;overflow:hidden"><image-slot id="rota2-checkout" shape="rounded" radius="10" placeholder="Item"></image-slot></div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:calc(15px * var(--ts));font-weight:700;line-height:1.25">{{ active.title }}</div>
+                  <div style="margin-top:4px;font-size:calc(13px * var(--ts));color:var(--ink2)">Taille {{ selectedSize }} · {{ nightsLabel }}</div>
+                  <div style="margin-top:4px;font-size:calc(13px * var(--ts));color:var(--ink2)">18–21 sept. · {{ handoverLabel }}</div>
+                  <div style="margin-top:8px;font-size:calc(14px * var(--ts));font-weight:700;color:var(--clay)">{{ totalLabel }}</div>
+                </div>
+              </div>
+
+              <div style="margin-top:22px;font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">Payer avec</div>
+              <div style="margin-top:10px;display:grid;gap:8px">
+                <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:0 16px;border-radius:14px;border:1px solid var(--clay);background:var(--surf)">
+                  <div style="width:20px;height:20px;flex:0 0 20px;border-radius:99px;border:2px solid var(--clay);background:var(--clay)"></div>
+                  <svg width="15" height="18" viewBox="0 0 15 18" fill="currentColor" style="color:var(--ink)"><path d="M12.3 9.6c0-2 1.6-3 1.7-3.1-.9-1.4-2.4-1.5-2.9-1.6-1.3-.1-2.4.7-3 .7-.6 0-1.5-.7-2.5-.7-1.3 0-2.5.8-3.2 2C.9 9.4 1.9 13 3.2 15c.6 1 1.4 2.1 2.4 2 .9 0 1.3-.6 2.4-.6 1.1 0 1.4.6 2.4.6 1 0 1.7-1 2.4-2 .5-.8.7-1.2 1-2-2.4-.9-2.5-3.3-2.5-3.4zM9.9 3.4c.5-.6.9-1.5.8-2.4-.8 0-1.8.5-2.3 1.2-.5.6-.9 1.5-.8 2.3.9.1 1.8-.5 2.3-1.1z"/></svg>
+                  <div style="flex:1;font-size:calc(15px * var(--ts));font-weight:700">Apple Pay</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:0 16px;border-radius:14px;border:1px solid var(--line);background:none">
+                  <div style="width:20px;height:20px;flex:0 0 20px;border-radius:99px;border:2px solid var(--ink3)"></div>
+                  <div style="flex:1;font-size:calc(15px * var(--ts));color:var(--ink2)">Visa ·· 4417</div>
+                </div>
+              </div>
+
+              <div style="margin-top:22px;padding:16px;border-radius:16px;background:var(--surf);border:1px solid var(--line)">
+                <div style="font-size:calc(14px * var(--ts));font-weight:700">Ce qui est compris</div>
+                <div style="margin-top:8px;font-size:calc(13px * var(--ts));line-height:1.6;color:var(--ink2)">Protection dommages jusqu'à {{ coverLabel }} et nettoyage professionnel inclus. Une autorisation de {{ depositLabel }} est placée sur votre moyen de paiement et libérée 48 h après le scan du retour. Retard : {{ lateLabel }} par jour.</div>
+                <div onClick="{{ goFees }}" style="cursor:pointer;margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding-top:12px;border-top:1px solid var(--line)">
+                  <div style="font-size:calc(13px * var(--ts));color:var(--ink2)">Frais, annulation et remboursements</div>
+                  <div style="font-size:calc(13px * var(--ts));font-weight:700;color:var(--clay);flex:0 0 auto">Voir ›</div>
+                </div>
+              </div>
+              <div style="margin-top:12px;font-size:calc(12px * var(--ts));line-height:1.55;color:var(--ink3)">En payant, vous acceptez les conditions de location et la politique d'annulation. Rota est une place de marché : le contrat de location vous lie à {{ active.name }}.</div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 18px 26px;background:linear-gradient(180deg, rgba(18,16,17,0) 0%, var(--bg) 42%)">
+              <button onClick="{{ confirm }}" style="cursor:pointer;width:100%;min-height:54px;font-family:Archivo,sans-serif;font-size:calc(17px * var(--ts));font-weight:700;border:none;border-radius:16px;background:var(--clay);color:var(--onclay)">Payer {{ totalLabel }}</button>
+            </div>
+            <sc-if value="{{ confirmed }}">
+              <div style="position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px;text-align:center;animation:rotaIn .25s ease">
+                <div style="width:64px;height:64px;border-radius:999px;background:var(--clay);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--onclay)">✓</div>
+                <div style="margin-top:20px;font-family:'Instrument Serif',serif;font-size:40px;line-height:1.02">C'est réservé.</div>
+                <div style="margin-top:12px;font-size:calc(15px * var(--ts));line-height:1.55;color:var(--ink2)">{{ active.name }} a 24 h pour confirmer la remise. On vous rappellera de poster une vidéo — elle vous donne {{ creditLabel }} sur la prochaine location.</div>
+                <button onClick="{{ goRentals }}" style="cursor:pointer;margin-top:26px;width:100%;min-height:54px;font-family:Archivo,sans-serif;font-size:calc(17px * var(--ts));font-weight:700;border:none;border-radius:16px;background:var(--clay);color:var(--onclay)">Voir mes locations</button>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <!-- RENTALS -->
+          <sc-if value="{{ isRentals }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:60px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
+                <div style="font-family:'Instrument Serif',serif;font-size:38px;line-height:1">Locations</div>
+                <button onClick="{{ goNotifs }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;display:flex;align-items:center;justify-content:center;position:relative">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink)"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z"/><path d="M10.5 19a2 2 0 0 0 3 0"/></svg>
+                  <div style="position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:99px;background:var(--plum)"></div>
+                </button>
+              </div>
+              <div style="margin-top:16px;display:flex;gap:6px;padding:4px;border-radius:12px;background:var(--surf)">
+                <button onClick="{{ pickRenting }}" style="cursor:pointer;flex:1;min-height:40px;font-family:Archivo,sans-serif;font-size:calc(14px * var(--ts));font-weight:700;border:none;border-radius:9px;background:{{ rentingBg }};color:{{ rentingFg }}">Je loue</button>
+                <button onClick="{{ pickLending }}" style="cursor:pointer;flex:1;min-height:40px;font-family:Archivo,sans-serif;font-size:calc(14px * var(--ts));font-weight:700;border:none;border-radius:9px;background:{{ lendingBg }};color:{{ lendingFg }}">Je prête</button>
+              </div>
+              <div style="margin-top:16px;display:grid;gap:12px">
+                <sc-for list="{{ orders }}" as="o" hint-placeholder-count="3">
+                  <div style="padding:12px;border-radius:16px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="display:flex;gap:12px">
+                      <div style="width:72px;height:92px;flex:0 0 72px;border-radius:10px;overflow:hidden"><image-slot id="{{ o.slot }}" shape="rounded" radius="10" placeholder="Item"></image-slot></div>
+                      <div style="flex:1;min-width:0">
+                        <div style="font-size:calc(11px * var(--ts));font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:{{ o.statusFg }}">{{ o.status }}</div>
+                        <div style="margin-top:5px;font-size:calc(15px * var(--ts));font-weight:700;line-height:1.25">{{ o.title }}</div>
+                        <div style="margin-top:4px;font-size:calc(13px * var(--ts));color:var(--ink2)">{{ o.who }} · {{ o.dates }}</div>
+                        <div style="margin-top:4px;font-size:calc(13px * var(--ts));font-weight:700;color:{{ o.amountFg }}">{{ o.amount }}</div>
+                      </div>
+                    </div>
+                    <div style="margin-top:12px;display:flex;gap:8px">
+                      <button onClick="{{ o.primary }}" style="cursor:pointer;flex:1;min-width:0;min-height:44px;font-family:Archivo,sans-serif;font-size:calc(14px * var(--ts));font-weight:700;border:none;border-radius:11px;background:var(--clay);color:var(--onclay)">{{ o.cta }}</button>
+                      <button onClick="{{ goMessages }}" style="cursor:pointer;flex:0 0 auto;min-height:44px;padding:0 16px;font-family:Archivo,sans-serif;font-size:calc(14px * var(--ts));font-weight:700;border:1px solid var(--line2);border-radius:11px;background:none;color:var(--ink)">Message</button>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ ordersEmpty }}">
+                <div style="margin-top:40px;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 20px">
+                  <div style="width:72px;height:72px;border-radius:20px;background:var(--surf);border:1px solid var(--line);display:flex;align-items:center;justify-content:center">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--ink3)"><path d="M4 8h16l-1.2 12H5.2z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+                  </div>
+                  <div style="margin-top:18px;font-family:'Instrument Serif',serif;font-size:28px;line-height:1.1">Rien en cours</div>
+                  <div style="margin-top:8px;font-size:calc(14px * var(--ts));line-height:1.5;color:var(--ink2);max-width:30ch">Vos locations et vos prêts apparaîtront ici, avec les dates et les étiquettes de retour.</div>
+                  <button onClick="{{ goFeed }}" style="cursor:pointer;margin-top:20px;min-height:48px;padding:0 22px;font-family:Archivo,sans-serif;font-size:calc(15px * var(--ts));font-weight:700;border:none;border-radius:14px;background:var(--clay);color:var(--onclay)">Découvrir des pièces</button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <!-- BOARDS -->
+          <sc-if value="{{ isBoards }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:60px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:12px">
+                <button onClick="{{ goDiscover }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:18px;color:var(--ink)">‹</button>
+                <div style="font-family:'Instrument Serif',serif;font-size:34px;line-height:1">Vos tableaux</div>
+              </div>
+              <div style="margin-top:8px;font-size:calc(14px * var(--ts));color:var(--ink2)">{{ wishCount }} enregistrements · 3 libres ce week-end</div>
+              <div style="margin-top:18px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+                <sc-for list="{{ boards }}" as="b" hint-placeholder-count="4">
+                  <div onClick="{{ b.open }}" style="cursor:pointer;min-width:0">
+                    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,66px);gap:3px;border-radius:16px;overflow:hidden;background:var(--surf2)">
+                      <div style="overflow:hidden"><image-slot id="{{ b.s1 }}" shape="rect" placeholder=""></image-slot></div>
+                      <div style="overflow:hidden"><image-slot id="{{ b.s2 }}" shape="rect" placeholder=""></image-slot></div>
+                      <div style="overflow:hidden"><image-slot id="{{ b.s3 }}" shape="rect" placeholder=""></image-slot></div>
+                      <div style="overflow:hidden"><image-slot id="{{ b.s4 }}" shape="rect" placeholder=""></image-slot></div>
+                    </div>
+                    <div style="margin-top:9px;font-size:calc(15px * var(--ts));font-weight:700;line-height:1.2">{{ b.name }}</div>
+                    <div style="margin-top:2px;font-size:calc(12px * var(--ts));color:var(--ink3)">{{ b.count }} enregistrements · {{ b.meta }}</div>
+                  </div>
+                </sc-for>
+                <div onClick="{{ goDiscover }}" style="cursor:pointer;min-width:0">
+                  <div style="height:135px;border-radius:16px;border:1px dashed var(--line2);display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--clay)">+</div>
+                  <div style="margin-top:9px;font-size:calc(15px * var(--ts));font-weight:700;color:var(--clay)">Nouveau tableau</div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- BOARD DETAIL -->
+          <sc-if value="{{ isBoard }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:54px 12px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:10px;padding:0 4px">
+                <button onClick="{{ goBoards }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:18px;color:var(--ink)">‹</button>
+                <div style="flex:1;min-width:0">
+                  <div style="font-family:'Instrument Serif',serif;font-size:28px;line-height:1.05">{{ boardName }}</div>
+                  <div style="margin-top:3px;font-size:calc(13px * var(--ts));color:var(--ink3)">{{ boardMeta }}</div>
+                </div>
+                <button onClick="{{ goSearch }}" style="cursor:pointer;min-height:40px;padding:0 14px;flex:0 0 auto;font-family:Archivo,sans-serif;font-size:calc(13px * var(--ts));font-weight:700;border-radius:999px;border:none;background:var(--clay);color:var(--onclay)">Tout louer</button>
+              </div>
+              <div style="margin-top:16px;column-count:2;column-gap:10px">
+                <sc-for list="{{ saved }}" as="s" hint-placeholder-count="6">
+                  <div style="break-inside:avoid;margin-bottom:10px">
+                    <div onClick="{{ s.open }}" style="cursor:pointer;position:relative;border-radius:16px;overflow:hidden;background:var(--surf2);height:{{ s.h }}">
+                      <image-slot id="{{ s.slot }}" shape="rounded" radius="16" placeholder="Saved look"></image-slot>
+                      <div style="position:absolute;bottom:8px;left:8px;right:8px;font-size:calc(10px * var(--ts));font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:5px 7px;border-radius:6px;background:{{ s.tagBg }};color:{{ s.tagFg }};pointer-events:none">{{ s.tag }}</div>
+                    </div>
+                    <div style="margin-top:7px;font-size:calc(14px * var(--ts));font-weight:600;line-height:1.25">{{ s.title }}</div>
+                    <div style="margin-top:2px;font-size:calc(13px * var(--ts));color:var(--ink3)">{{ s.priceLabel }} / nuit</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- LENDER PROFILE -->
+          <sc-if value="{{ isProfile }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);animation:rotaIn .22s ease">
+              <div style="position:relative;height:200px;background:var(--surf2)">
+                <image-slot id="rota2-cover" shape="rect" placeholder="Profile cover"></image-slot>
+                <button onClick="{{ goFeed }}" style="position:absolute;top:54px;left:14px;cursor:pointer;width:44px;height:44px;border-radius:999px;border:none;background:rgba(12,10,11,0.66);color:#F6F1E9;font-size:18px">‹</button>
+                <button onClick="{{ openReport }}" style="position:absolute;top:54px;right:14px;cursor:pointer;width:44px;height:44px;border-radius:999px;border:none;background:rgba(12,10,11,0.66);display:flex;align-items:center;justify-content:center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#F6F1E9"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                </button>
+              </div>
+              <div style="padding:0 18px 24px">
+                <div style="margin-top:-38px;display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
+                  <div style="width:88px;height:88px;flex:0 0 88px;border-radius:999px;padding:3px;box-sizing:border-box;background:var(--clay)">
+                    <div style="width:100%;height:100%;border-radius:999px;overflow:hidden;border:2px solid var(--bg);box-sizing:border-box"><image-slot id="rota2-avatar" shape="circle" placeholder="Avatar"></image-slot></div>
+                  </div>
+                  <button onClick="{{ toggleFollow }}" style="cursor:pointer;margin-bottom:6px;min-height:44px;padding:0 22px;font-family:Archivo,sans-serif;font-size:calc(15px * var(--ts));font-weight:700;border:1px solid {{ followBorder }};border-radius:12px;background:{{ followBg }};color:{{ followFg }}">{{ followLabel }}</button>
+                  <button onClick="{{ goMessages }}" style="cursor:pointer;margin-bottom:6px;min-height:44px;padding:0 16px;font-family:Archivo,sans-serif;font-size:calc(15px * var(--ts));font-weight:700;border:1px solid var(--line2);border-radius:12px;background:none;color:var(--ink)">Écrire</button>
+                </div>
+                <div style="margin-top:14px;font-family:'Instrument Serif',serif;font-size:32px;line-height:1">{{ active.name }}</div>
+                <div style="margin-top:4px;font-size:calc(14px * var(--ts));color:var(--ink3)">@{{ active.handle }} · {{ active.city }}</div>
+                <div style="margin-top:12px;font-size:calc(15px * var(--ts));line-height:1.5;color:var(--ink2);max-width:36ch">Collectionneuse d'archives. 40 pièces en rotation, surtout du tailoring 90s et des robes de soirée. Tout est défroissé à la vapeur entre deux locataires.</div>
+                <div style="margin-top:18px;display:flex;gap:8px">
+                  <sc-for list="{{ stats }}" as="st" hint-placeholder-count="3">
+                    <div style="flex:1;min-width:0;padding:12px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                      <div style="font-family:'Instrument Serif',serif;font-size:26px;line-height:1;color:var(--clay)">{{ st.value }}</div>
+                      <div style="margin-top:4px;font-size:calc(11px * var(--ts));letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3)">{{ st.label }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:6px">
+                  <sc-for list="{{ badges }}" as="b" hint-placeholder-count="4">
+                    <div style="font-size:calc(12px * var(--ts));font-weight:600;padding:8px 11px;border-radius:999px;background:var(--surf2);color:var(--ink)">{{ b }}</div>
+                  </sc-for>
+                </div>
+                <div style="margin-top:22px;font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">En rotation</div>
+                <div style="margin-top:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">
+                  <sc-for list="{{ grid }}" as="g" hint-placeholder-count="6">
+                    <div onClick="{{ g.open }}" style="cursor:pointer;position:relative;height:150px;border-radius:10px;overflow:hidden;background:var(--surf2)">
+                      <image-slot id="{{ g.slot }}" shape="rounded" radius="10" placeholder="Look"></image-slot>
+                      <div style="position:absolute;bottom:6px;left:6px;font-size:calc(10px * var(--ts));font-weight:700;padding:4px 6px;border-radius:5px;background:rgba(12,10,11,0.84);color:#F6F1E9;pointer-events:none">{{ g.priceLabel }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- CLOSET -->
+          <sc-if value="{{ isCloset }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:60px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
+                <div style="font-family:'Instrument Serif',serif;font-size:38px;line-height:1">Votre dressing</div>
+                <button onClick="{{ goSettings }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;display:flex;align-items:center;justify-content:center">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="color:var(--ink)"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M4.2 7.5l1.9 1.1M17.9 15.4l1.9 1.1M4.2 16.5l1.9-1.1M17.9 8.6l1.9-1.1"/></svg>
+                </button>
+              </div>
+              <div onClick="{{ goPayouts }}" style="cursor:pointer;margin-top:16px;padding:18px;border-radius:18px;background:var(--clay);color:var(--onclay)">
+                <div style="font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase">Gagné ce mois-ci</div>
+                <div style="margin-top:6px;font-family:'Instrument Serif',serif;font-size:44px;line-height:1">{{ earnedLabel }}</div>
+                <div style="margin-top:6px;font-size:calc(14px * var(--ts))">{{ payoutLabel }} versés vendredi · 7 pièces en rotation</div>
+                <div style="margin-top:14px;height:6px;border-radius:99px;background:rgba(0,0,0,0.22);position:relative">
+                  <div style="position:absolute;left:0;top:0;bottom:0;width:74%;border-radius:99px;background:var(--onclay)"></div>
+                </div>
+                <div style="margin-top:8px;font-size:calc(12px * var(--ts))">74% de votre dressing a déjà été loué au moins une fois</div>
+              </div>
+              <button onClick="{{ goList }}" style="cursor:pointer;margin-top:12px;width:100%;min-height:52px;font-family:Archivo,sans-serif;font-size:calc(16px * var(--ts));font-weight:700;border:1px dashed var(--clay);border-radius:16px;background:none;color:var(--clay)">+ Publier une pièce</button>
+              <div style="margin-top:12px;display:flex;gap:8px">
+                <button onClick="{{ goMember }}" style="cursor:pointer;flex:1;min-height:44px;font-family:Archivo,sans-serif;font-size:calc(14px * var(--ts));font-weight:700;border-radius:12px;border:1px solid var(--line2);background:var(--surf);color:var(--ink)">Rota+</button>
+                <button onClick="{{ goReviews }}" style="cursor:pointer;flex:1;min-height:44px;font-family:Archivo,sans-serif;font-size:calc(14px * var(--ts));font-weight:700;border-radius:12px;border:1px solid var(--line2);background:var(--surf);color:var(--ink)">Mes notes</button>
+              </div>
+              <div style="margin-top:20px;font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">Vos pièces</div>
+              <div style="margin-top:10px;display:grid;gap:10px">
+                <sc-for list="{{ closet }}" as="c" hint-placeholder-count="3">
+                  <div style="display:flex;gap:12px;align-items:center;padding:10px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="width:58px;height:74px;flex:0 0 58px;border-radius:9px;overflow:hidden"><image-slot id="{{ c.slot }}" shape="rounded" radius="9" placeholder="Piece"></image-slot></div>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:calc(15px * var(--ts));font-weight:700;line-height:1.25">{{ c.title }}</div>
+                      <div style="margin-top:3px;font-size:calc(13px * var(--ts));color:var(--ink2)">{{ c.meta }}</div>
+                      <div style="margin-top:5px;font-size:calc(11px * var(--ts));font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:{{ c.stateFg }}">{{ c.state }}</div>
+                    </div>
+                    <div style="text-align:right;flex:0 0 auto">
+                      <div style="font-size:calc(15px * var(--ts));font-weight:700">{{ c.priceLabel }}</div>
+                      <div style="font-size:calc(12px * var(--ts));color:var(--ink3)">/ nuit</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- LIST A PIECE -->
+          <sc-if value="{{ isList }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:54px 18px 140px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:12px">
+                <button onClick="{{ listBack }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:18px;color:var(--ink)">‹</button>
+                <div style="flex:1;display:flex;gap:5px">
+                  <div style="flex:1;height:4px;border-radius:99px;background:{{ step1Bg }}"></div>
+                  <div style="flex:1;height:4px;border-radius:99px;background:{{ step2Bg }}"></div>
+                  <div style="flex:1;height:4px;border-radius:99px;background:{{ step3Bg }}"></div>
+                </div>
+              </div>
+              <div style="margin-top:18px;font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--clay)">{{ stepLabel }}</div>
+              <div style="margin-top:8px;font-family:'Instrument Serif',serif;font-size:36px;line-height:1.02">{{ stepTitle }}</div>
+              <div style="margin-top:8px;font-size:calc(15px * var(--ts));line-height:1.5;color:var(--ink2);max-width:34ch">{{ stepBody }}</div>
+
+              <sc-if value="{{ listStep1 }}">
+                <div style="margin-top:20px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+                  <div style="grid-column:span 2;height:230px;border-radius:14px;overflow:hidden"><image-slot id="rota2-list-video" shape="rounded" radius="14" placeholder="Drop your 9:16 outfit video"></image-slot></div>
+                  <div style="height:120px;border-radius:12px;overflow:hidden"><image-slot id="rota2-list-1" shape="rounded" radius="12" placeholder="Face"></image-slot></div>
+                  <div style="height:120px;border-radius:12px;overflow:hidden"><image-slot id="rota2-list-2" shape="rounded" radius="12" placeholder="Étiquette / défauts"></image-slot></div>
+                </div>
+                <div style="margin-top:14px;padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line);font-size:calc(13px * var(--ts));line-height:1.55;color:var(--ink2)">Les annonces avec une vidéo sont louées 4× plus souvent. Filmez en lumière du jour, montrez le dos, et photographiez chaque défaut — c'est ce qui vous protège en cas de litige.</div>
+              </sc-if>
+
+              <sc-if value="{{ listStep2 }}">
+                <div style="margin-top:20px;display:grid;gap:10px">
+                  <div style="padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="font-size:calc(11px * var(--ts));letter-spacing:0.12em;text-transform:uppercase;color:var(--ink3)">Titre</div>
+                    <div style="margin-top:5px;font-size:calc(16px * var(--ts));font-weight:600">Nuisette en biais, ivoire</div>
+                  </div>
+                  <div style="padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="font-size:calc(11px * var(--ts));letter-spacing:0.12em;text-transform:uppercase;color:var(--ink3)">Marque et valeur neuve</div>
+                    <div style="margin-top:5px;font-size:calc(16px * var(--ts));font-weight:600">Réalisation Par · {{ retailInput }}</div>
+                  </div>
+                  <div style="padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="font-size:calc(11px * var(--ts));letter-spacing:0.12em;text-transform:uppercase;color:var(--ink3)">Taille et tombé</div>
+                    <div style="margin-top:8px;display:flex;gap:8px">
+                      <sc-for list="{{ sizes }}" as="s" hint-placeholder-count="4">
+                        <button onClick="{{ s.pick }}" style="cursor:pointer;flex:1;min-height:44px;font-family:Archivo,sans-serif;font-size:calc(14px * var(--ts));font-weight:600;border-radius:10px;border:1px solid {{ s.border }};background:{{ s.bg }};color:{{ s.fg }}">{{ s.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div style="padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="font-size:calc(11px * var(--ts));letter-spacing:0.12em;text-transform:uppercase;color:var(--ink3)">Occasions</div>
+                    <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">
+                      <sc-for list="{{ occasions }}" as="o" hint-placeholder-count="6">
+                        <button onClick="{{ o.pick }}" style="cursor:pointer;font-family:Archivo,sans-serif;font-size:calc(13px * var(--ts));font-weight:600;min-height:40px;padding:0 13px;border-radius:999px;border:1px solid {{ o.border }};background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ listStep3 }}">
+                <div style="margin-top:20px;padding:16px;border-radius:16px;background:var(--surf);border:1px solid var(--line)">
+                  <div style="font-size:calc(11px * var(--ts));letter-spacing:0.12em;text-transform:uppercase;color:var(--ink3)">Votre prix par nuit</div>
+                  <div style="margin-top:6px;font-family:'Instrument Serif',serif;font-size:44px;line-height:1;color:var(--clay)">{{ suggestLabel }}</div>
+                  <div style="margin-top:10px;height:4px;border-radius:99px;background:var(--surf2);position:relative">
+                    <div style="position:absolute;left:0;top:0;bottom:0;width:48%;border-radius:99px;background:var(--clay)"></div>
+                    <div style="position:absolute;left:48%;top:-9px;width:22px;height:22px;border-radius:99px;background:var(--ink);transform:translateX(-50%)"></div>
+                  </div>
+                  <div style="margin-top:10px;font-size:calc(13px * var(--ts));line-height:1.5;color:var(--ink2)">Les nuisettes similaires près de vous se louent {{ compLabel }}. À ce prix vous gardez {{ clearLabel }} sur 3 nuits, après nettoyage et notre commission de 12%.</div>
+                </div>
+                <div style="margin-top:12px;display:grid;gap:8px">
+                  <div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="flex:1;min-width:0"><div style="font-size:calc(15px * var(--ts));font-weight:700">Réservation immédiate</div><div style="font-size:calc(13px * var(--ts));color:var(--ink2)">Les locataires vérifiés réservent sans demander</div></div>
+                    <div onClick="{{ toggleInstant }}" style="cursor:pointer;width:50px;height:30px;flex:0 0 50px;border-radius:99px;background:{{ instantTrack }};position:relative"><div style="position:absolute;top:3px;left:{{ instantKnob }};width:24px;height:24px;border-radius:99px;background:var(--sink)"></div></div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="flex:1;min-width:0"><div style="font-size:calc(15px * var(--ts));font-weight:700">Remise en main propre</div><div style="font-size:calc(13px * var(--ts));color:var(--ink2)">Paris 11e · dans un rayon de 5 km</div></div>
+                    <div onClick="{{ toggleLocal }}" style="cursor:pointer;width:50px;height:30px;flex:0 0 50px;border-radius:99px;background:{{ localTrack }};position:relative"><div style="position:absolute;top:3px;left:{{ localKnob }};width:24px;height:24px;border-radius:99px;background:var(--sink)"></div></div>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 18px 26px;background:linear-gradient(180deg, rgba(18,16,17,0) 0%, var(--bg) 42%)">
+              <button onClick="{{ listNext }}" style="cursor:pointer;width:100%;min-height:54px;font-family:Archivo,sans-serif;font-size:calc(17px * var(--ts));font-weight:700;border:none;border-radius:16px;background:var(--clay);color:var(--onclay)">{{ listCta }}</button>
+            </div>
+          </sc-if>
+
+          <!-- MESSAGES -->
+          <sc-if value="{{ isMessages }}">
+            <sc-if value="{{ threadOpen }}">
+              <div style="position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;animation:rotaIn .22s ease">
+                <div style="padding:54px 14px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)">
+                  <button onClick="{{ closeThread }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:17px;color:var(--ink)">‹</button>
+                  <div style="width:38px;height:38px;flex:0 0 38px;border-radius:999px;overflow:hidden"><image-slot id="rota2-thread-av" shape="circle" placeholder="Av"></image-slot></div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:calc(15px * var(--ts));font-weight:700">{{ active.name }}</div>
+                    <div style="font-size:calc(12px * var(--ts));color:var(--ink3)">Location · 18–21 sept.</div>
+                  </div>
+                  <button onClick="{{ openReport }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:none;background:none;display:flex;align-items:center;justify-content:center">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:var(--ink2)"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                  </button>
+                </div>
+                <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px">
+                  <sc-for list="{{ bubbles }}" as="m" hint-placeholder-count="5">
+                    <div style="max-width:78%;align-self:{{ m.align }};padding:11px 14px;border-radius:{{ m.radius }};background:{{ m.bg }};color:{{ m.fg }};font-size:calc(14px * var(--ts));line-height:1.45">{{ m.text }}</div>
+                  </sc-for>
+                  <div style="align-self:center;margin-top:6px;padding:10px 14px;border-radius:12px;background:var(--surf);border:1px solid var(--line);font-size:calc(12px * var(--ts));line-height:1.45;color:var(--ink2);text-align:center;max-width:82%">Gardez le paiement sur Rota — la protection ne couvre que les réservations dans l'app.</div>
+                </div>
+                <div style="padding:12px 16px 30px;display:flex;gap:10px;border-top:1px solid var(--line)">
+                  <div style="flex:1;min-height:46px;display:flex;align-items:center;padding:0 14px;border-radius:14px;background:var(--surf2);color:var(--ink3);font-size:calc(14px * var(--ts))">Écrire à {{ active.name }}…</div>
+                  <div style="width:46px;height:46px;flex:0 0 46px;border-radius:14px;background:var(--clay);display:flex;align-items:center;justify-content:center;color:var(--onclay);font-size:18px">↑</div>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ threadList }}">
+              <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:60px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+                <div style="font-family:'Instrument Serif',serif;font-size:38px;line-height:1">Messages</div>
+                <div style="margin-top:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:4px">
+                  <sc-for list="{{ threads }}" as="t" hint-placeholder-count="3">
+                    <div onClick="{{ t.open }}" style="cursor:pointer;min-width:0;display:flex;gap:12px;align-items:center;padding:12px;border-radius:14px;background:{{ t.bg }}">
+                      <div style="width:46px;height:46px;flex:0 0 46px;border-radius:999px;overflow:hidden"><image-slot id="{{ t.slot }}" shape="circle" placeholder="Av"></image-slot></div>
+                      <div style="flex:1;min-width:0">
+                        <div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:calc(15px * var(--ts));font-weight:700">{{ t.name }}</div><div style="font-size:calc(12px * var(--ts));color:var(--ink3);flex:0 0 auto">{{ t.time }}</div></div>
+                        <div style="margin-top:3px;font-size:calc(13px * var(--ts));color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.preview }}</div>
+                      </div>
+                      <div style="width:8px;height:8px;flex:0 0 8px;border-radius:99px;background:{{ t.dot }}"></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <!-- NOTIFICATIONS -->
+          <sc-if value="{{ isNotifs }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:54px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:12px">
+                <button onClick="{{ goRentals }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:18px;color:var(--ink)">‹</button>
+                <div style="font-family:'Instrument Serif',serif;font-size:34px;line-height:1">Notifications</div>
+              </div>
+              <sc-for list="{{ notifs }}" as="g" hint-placeholder-count="2">
+                <div style="margin-top:20px">
+                  <div style="font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">{{ g.head }}</div>
+                  <div style="margin-top:10px;display:grid;gap:8px">
+                    <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="2">
+                      <div onClick="{{ n.go }}" style="cursor:pointer;display:flex;gap:12px;align-items:flex-start;padding:13px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                        <div style="width:40px;height:40px;flex:0 0 40px;border-radius:999px;overflow:hidden"><image-slot id="{{ n.slot }}" shape="circle" placeholder="Av"></image-slot></div>
+                        <div style="flex:1;min-width:0">
+                          <div style="font-size:calc(14px * var(--ts));font-weight:700;line-height:1.3">{{ n.title }}</div>
+                          <div style="margin-top:3px;font-size:calc(13px * var(--ts));line-height:1.4;color:var(--ink2)">{{ n.body }}</div>
+                        </div>
+                        <div style="flex:0 0 auto;font-size:calc(12px * var(--ts));color:var(--ink3)">{{ n.time }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ notifsEmpty }}">
+                <div style="margin-top:60px;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 20px">
+                  <div style="width:72px;height:72px;border-radius:20px;background:var(--surf);border:1px solid var(--line);display:flex;align-items:center;justify-content:center">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--ink3)"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z"/><path d="M10.5 19a2 2 0 0 0 3 0"/></svg>
+                  </div>
+                  <div style="margin-top:18px;font-family:'Instrument Serif',serif;font-size:28px;line-height:1.1">Tout est à jour</div>
+                  <div style="margin-top:8px;font-size:calc(14px * var(--ts));line-height:1.5;color:var(--ink2);max-width:30ch">On vous écrira pour les confirmations, les remises et les retours à rendre.</div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <!-- RATINGS -->
+          <sc-if value="{{ isReviews }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:54px 18px 130px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:12px">
+                <button onClick="{{ goRentals }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:18px;color:var(--ink)">‹</button>
+                <div style="font-family:'Instrument Serif',serif;font-size:34px;line-height:1">Notes réciproques</div>
+              </div>
+              <div style="margin-top:16px;padding:16px;border-radius:18px;background:var(--surf);border:1px solid var(--line)">
+                <div style="display:flex;gap:12px;align-items:center">
+                  <div style="width:52px;height:52px;flex:0 0 52px;border-radius:999px;overflow:hidden"><image-slot id="rota2-rate-av" shape="circle" placeholder="Av"></image-slot></div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:calc(15px * var(--ts));font-weight:700">Noter Léa M.</div>
+                    <div style="margin-top:3px;font-size:calc(13px * var(--ts));color:var(--ink2)">Jupe midi plissée · 22–25 août</div>
+                  </div>
+                </div>
+                <div style="margin-top:16px;display:flex;gap:8px">
+                  <sc-for list="{{ starRow }}" as="st" hint-placeholder-count="5">
+                    <div onClick="{{ st.pick }}" style="cursor:pointer;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center">
+                      <svg width="30" height="30" viewBox="0 0 24 24" fill="{{ st.fill }}" stroke="{{ st.stroke }}" stroke-width="1.6"><path d="M12 3.5l2.7 5.6 6.1.8-4.5 4.2 1.2 6-5.5-3-5.5 3 1.2-6L3.2 9.9l6.1-.8z"/></svg>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:6px">
+                  <sc-for list="{{ ratingTagList }}" as="t" hint-placeholder-count="5">
+                    <button onClick="{{ t.pick }}" style="cursor:pointer;font-family:Archivo,sans-serif;font-size:calc(13px * var(--ts));font-weight:600;min-height:40px;padding:0 13px;border-radius:999px;border:1px solid {{ t.border }};background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button>
+                  </sc-for>
+                </div>
+                <div style="margin-top:14px;padding:14px;border-radius:14px;background:var(--surf2);font-size:calc(14px * var(--ts));line-height:1.45;color:var(--ink3)">Ajouter un mot public (optionnel)…</div>
+                <div style="margin-top:12px;font-size:calc(12px * var(--ts));line-height:1.5;color:var(--ink3)">Les deux notes se publient en même temps, 14 jours après le retour. Personne ne peut modifier la sienne après avoir lu l'autre.</div>
+              </div>
+              <div style="margin-top:22px;font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">Ce qu'on dit de vous</div>
+              <div style="margin-top:10px;display:grid;gap:8px">
+                <sc-for list="{{ reviewsList }}" as="r" hint-placeholder-count="2">
+                  <div style="padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="display:flex;gap:10px;align-items:center">
+                      <div style="width:34px;height:34px;flex:0 0 34px;border-radius:999px;overflow:hidden"><image-slot id="{{ r.slot }}" shape="circle" placeholder="Av"></image-slot></div>
+                      <div style="flex:1;min-width:0;font-size:calc(14px * var(--ts));font-weight:700">{{ r.name }}</div>
+                      <div style="flex:0 0 auto;font-size:calc(13px * var(--ts));color:var(--clay)">{{ r.stars }}</div>
+                    </div>
+                    <div style="margin-top:8px;font-size:calc(13px * var(--ts));line-height:1.5;color:var(--ink2)">{{ r.body }}</div>
+                    <div style="margin-top:6px;font-size:calc(12px * var(--ts));color:var(--ink3)">{{ r.time }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 18px 26px;background:linear-gradient(180deg, rgba(18,16,17,0) 0%, var(--bg) 42%)">
+              <button onClick="{{ goRentals }}" style="cursor:pointer;width:100%;min-height:54px;font-family:Archivo,sans-serif;font-size:calc(17px * var(--ts));font-weight:700;border:none;border-radius:16px;background:var(--clay);color:var(--onclay)">Envoyer la note</button>
+            </div>
+          </sc-if>
+
+          <!-- RETURN / DAMAGE CLAIM -->
+          <sc-if value="{{ isClaim }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:54px 18px 130px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:12px">
+                <button onClick="{{ claimBack }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:18px;color:var(--ink)">‹</button>
+                <div style="flex:1;display:flex;gap:5px">
+                  <div style="flex:1;height:4px;border-radius:99px;background:{{ claimS1Bg }}"></div>
+                  <div style="flex:1;height:4px;border-radius:99px;background:{{ claimS2Bg }}"></div>
+                  <div style="flex:1;height:4px;border-radius:99px;background:{{ claimS3Bg }}"></div>
+                </div>
+              </div>
+              <div style="margin-top:18px;font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--plum)">{{ claimStepLabel }}</div>
+              <div style="margin-top:8px;font-family:'Instrument Serif',serif;font-size:34px;line-height:1.05">{{ claimTitle }}</div>
+              <div style="margin-top:8px;font-size:calc(15px * var(--ts));line-height:1.5;color:var(--ink2);max-width:34ch">{{ claimBody }}</div>
+
+              <sc-if value="{{ claim1 }}">
+                <div style="margin-top:20px;display:grid;gap:8px">
+                  <sc-for list="{{ claimKinds }}" as="k" hint-placeholder-count="4">
+                    <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:0 15px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                      <div style="width:20px;height:20px;flex:0 0 20px;border-radius:99px;border:2px solid var(--line2)"></div>
+                      <div style="flex:1;min-width:0;font-size:calc(15px * var(--ts))">{{ k }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="margin-top:12px;padding:14px;border-radius:14px;background:var(--surf2);font-size:calc(13px * var(--ts));line-height:1.5;color:var(--ink2)">Le nettoyage normal n'est jamais un dommage — il est déjà payé dans la location.</div>
+              </sc-if>
+
+              <sc-if value="{{ claim2 }}">
+                <div style="margin-top:20px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+                  <div style="height:150px;border-radius:12px;overflow:hidden"><image-slot id="rota2-claim-1" shape="rounded" radius="12" placeholder="Photo large"></image-slot></div>
+                  <div style="height:150px;border-radius:12px;overflow:hidden"><image-slot id="rota2-claim-2" shape="rounded" radius="12" placeholder="Gros plan"></image-slot></div>
+                </div>
+                <div style="margin-top:12px;padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line);font-size:calc(14px * var(--ts));line-height:1.5;color:var(--ink3)">Décrire ce qui s'est passé…</div>
+                <div style="margin-top:10px;padding:14px;border-radius:14px;background:var(--surf2);font-size:calc(13px * var(--ts));line-height:1.5;color:var(--ink2)">La prêteuse voit votre signalement et peut répondre avant toute décision.</div>
+              </sc-if>
+
+              <sc-if value="{{ claim3 }}">
+                <div style="margin-top:20px;display:grid;gap:8px">
+                  <div style="padding:15px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="font-size:calc(14px * var(--ts));font-weight:700">Sous 48 h</div>
+                    <div style="margin-top:4px;font-size:calc(13px * var(--ts));line-height:1.5;color:var(--ink2)">Un humain examine les photos et les messages des deux côtés.</div>
+                  </div>
+                  <div style="padding:15px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="font-size:calc(14px * var(--ts));font-weight:700">Caution bloquée, pas prélevée</div>
+                    <div style="margin-top:4px;font-size:calc(13px * var(--ts));line-height:1.5;color:var(--ink2)">Les {{ depositLabel }} restent en autorisation. Aucun prélèvement sans décision écrite.</div>
+                  </div>
+                  <div style="padding:15px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="font-size:calc(14px * var(--ts));font-weight:700">Couverture jusqu'à {{ coverLabel }}</div>
+                    <div style="margin-top:4px;font-size:calc(13px * var(--ts));line-height:1.5;color:var(--ink2)">Réparation d'abord, remplacement si la pièce est perdue.</div>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 18px 26px;background:linear-gradient(180deg, rgba(18,16,17,0) 0%, var(--bg) 42%)">
+              <button onClick="{{ claimNext }}" style="cursor:pointer;width:100%;min-height:54px;font-family:Archivo,sans-serif;font-size:calc(17px * var(--ts));font-weight:700;border:none;border-radius:16px;background:var(--clay);color:var(--onclay)">{{ claimCta }}</button>
+            </div>
+          </sc-if>
+
+          <!-- PAYOUTS -->
+          <sc-if value="{{ isPayouts }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:54px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:12px">
+                <button onClick="{{ goCloset }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:18px;color:var(--ink)">‹</button>
+                <div style="font-family:'Instrument Serif',serif;font-size:34px;line-height:1">Versements</div>
+              </div>
+              <div style="margin-top:18px;display:flex;gap:8px">
+                <div style="flex:1;min-width:0;padding:14px;border-radius:16px;background:var(--surf);border:1px solid var(--line)">
+                  <div style="font-size:calc(11px * var(--ts));letter-spacing:0.12em;text-transform:uppercase;color:var(--ink3)">Solde</div>
+                  <div style="margin-top:5px;font-family:'Instrument Serif',serif;font-size:30px;line-height:1;color:var(--clay)">{{ balanceLabel }}</div>
+                </div>
+                <div style="flex:1;min-width:0;padding:14px;border-radius:16px;background:var(--surf);border:1px solid var(--line)">
+                  <div style="font-size:calc(11px * var(--ts));letter-spacing:0.12em;text-transform:uppercase;color:var(--ink3)">Depuis le début</div>
+                  <div style="margin-top:5px;font-family:'Instrument Serif',serif;font-size:30px;line-height:1">{{ lifetimeLabel }}</div>
+                </div>
+              </div>
+              <div style="margin-top:10px;display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;background:var(--surf);border:1px solid var(--line)">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:calc(15px * var(--ts));font-weight:700">Virement SEPA ·· FR76 4417</div>
+                  <div style="margin-top:3px;font-size:calc(13px * var(--ts));color:var(--ink2)">Prochain versement vendredi · {{ payoutLabel }}</div>
+                </div>
+                <div style="flex:0 0 auto;font-size:calc(13px * var(--ts));font-weight:700;color:var(--clay)">Modifier</div>
+              </div>
+              <div style="margin-top:22px;font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">Mouvements</div>
+              <div style="margin-top:10px;display:grid;gap:2px">
+                <sc-for list="{{ txns }}" as="t" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid var(--line)">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:calc(14px * var(--ts));font-weight:600;line-height:1.3">{{ t.label }}</div>
+                      <div style="margin-top:3px;font-size:calc(12px * var(--ts));color:var(--ink3)">{{ t.sub }}</div>
+                    </div>
+                    <div style="flex:0 0 auto;font-size:calc(14px * var(--ts));font-weight:700;color:{{ t.fg }}">{{ t.value }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div onClick="{{ goFees }}" style="cursor:pointer;margin-top:18px;display:flex;align-items:center;gap:10px;min-height:52px;padding:0 15px;border-radius:14px;background:var(--surf2)">
+                <div style="flex:1;min-width:0;font-size:calc(14px * var(--ts))">Comment la commission est calculée</div>
+                <div style="flex:0 0 auto;font-size:calc(13px * var(--ts));font-weight:700;color:var(--clay)">Voir ›</div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ROTA+ MEMBERSHIP -->
+          <sc-if value="{{ isMember }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:54px 18px 130px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <button onClick="{{ goCloset }}" style="cursor:pointer;width:44px;height:44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:18px;color:var(--ink)">‹</button>
+              <div style="margin-top:16px;font-family:'Instrument Serif',serif;font-size:44px;line-height:0.98">Rota<span style="color:var(--clay)">+</span></div>
+              <div style="margin-top:10px;font-size:calc(15px * var(--ts));line-height:1.55;color:var(--ink2);max-width:34ch">Pour celles et ceux qui louent plus d'une fois par mois. Résiliable à tout moment depuis les réglages de votre abonnement.</div>
+              <div style="margin-top:20px;display:grid;gap:8px">
+                <sc-for list="{{ memberPerks }}" as="p" hint-placeholder-count="4">
+                  <div style="display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="width:20px;height:20px;flex:0 0 20px;border-radius:99px;background:var(--claySoft);color:var(--clay);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">✓</div>
+                    <div style="flex:1;min-width:0;font-size:calc(14px * var(--ts));line-height:1.45">{{ p }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top:16px;padding:16px;border-radius:16px;background:var(--surf);border:1px solid var(--clay)">
+                <div style="display:flex;align-items:baseline;gap:8px">
+                  <div style="font-family:'Instrument Serif',serif;font-size:36px;line-height:1">{{ memberPriceLabel }}</div>
+                  <div style="font-size:calc(14px * var(--ts));color:var(--ink2)">/ mois</div>
+                </div>
+                <div style="margin-top:8px;font-size:calc(13px * var(--ts));line-height:1.5;color:var(--ink2)">14 jours offerts, puis {{ memberPriceLabel }} par mois. Le renouvellement se fait automatiquement, sauf résiliation au moins 24 h avant la fin de la période. Gérez ou résiliez dans vos réglages.</div>
+              </div>
+              <div style="margin-top:12px;font-size:calc(12px * var(--ts));line-height:1.55;color:var(--ink3)">Les locations elles-mêmes restent payées à l'acte. Rota+ ne couvre pas le prix des pièces.</div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 18px 26px;background:linear-gradient(180deg, rgba(18,16,17,0) 0%, var(--bg) 42%)">
+              <button onClick="{{ toggleMember }}" style="cursor:pointer;width:100%;min-height:54px;font-family:Archivo,sans-serif;font-size:calc(17px * var(--ts));font-weight:700;border:none;border-radius:16px;background:var(--clay);color:var(--onclay)">{{ memberLabel }}</button>
+            </div>
+          </sc-if>
+
+          <!-- SETTINGS -->
+          <sc-if value="{{ isSettings }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:54px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:12px">
+                <button onClick="{{ goCloset }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:18px;color:var(--ink)">‹</button>
+                <div style="font-family:'Instrument Serif',serif;font-size:34px;line-height:1">Réglages</div>
+              </div>
+
+              <sc-for list="{{ settingsGroups }}" as="g" hint-placeholder-count="3">
+                <div style="margin-top:20px">
+                  <div style="font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">{{ g.head }}</div>
+                  <div style="margin-top:10px;border-radius:16px;background:var(--surf);border:1px solid var(--line);overflow:hidden">
+                    <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3">
+                      <div onClick="{{ r.go }}" style="cursor:pointer;display:flex;align-items:center;gap:12px;min-height:52px;padding:0 15px;border-bottom:1px solid var(--line)">
+                        <div style="flex:1;min-width:0;font-size:calc(15px * var(--ts))">{{ r.label }}</div>
+                        <div style="flex:0 0 auto;font-size:calc(13px * var(--ts));color:var(--ink3)">{{ r.detail }}</div>
+                        <div style="flex:0 0 auto;font-size:16px;color:var(--ink3)">›</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+
+              <div style="margin-top:20px">
+                <div style="font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">Préférences</div>
+                <div style="margin-top:10px;display:grid;gap:8px">
+                  <sc-for list="{{ prefRows }}" as="p" hint-placeholder-count="4">
+                    <div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                      <div style="flex:1;min-width:0">
+                        <div style="font-size:calc(15px * var(--ts));font-weight:600">{{ p.label }}</div>
+                        <div style="margin-top:3px;font-size:calc(13px * var(--ts));color:var(--ink2)">{{ p.body }}</div>
+                      </div>
+                      <div onClick="{{ p.toggle }}" style="cursor:pointer;width:50px;height:30px;flex:0 0 50px;border-radius:99px;background:{{ p.track }};position:relative"><div style="position:absolute;top:3px;left:{{ p.knob }};width:24px;height:24px;border-radius:99px;background:var(--sink)"></div></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="margin-top:20px">
+                <div style="font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">Accessibilité</div>
+                <div style="margin-top:10px;display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:calc(15px * var(--ts));font-weight:600">Texte agrandi</div>
+                    <div style="margin-top:3px;font-size:calc(13px * var(--ts));color:var(--ink2)">Suit la taille de texte d'iOS (Dynamic Type)</div>
+                  </div>
+                  <div onClick="{{ toggleText }}" style="cursor:pointer;width:50px;height:30px;flex:0 0 50px;border-radius:99px;background:{{ textTrack }};position:relative"><div style="position:absolute;top:3px;left:{{ textKnob }};width:24px;height:24px;border-radius:99px;background:var(--sink)"></div></div>
+                </div>
+                <div style="margin-top:8px;display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:calc(15px * var(--ts));font-weight:600">Apparence sombre</div>
+                    <div style="margin-top:3px;font-size:calc(13px * var(--ts));color:var(--ink2)">Par défaut, Rota suit le réglage du système</div>
+                  </div>
+                  <div onClick="{{ toggleTheme }}" style="cursor:pointer;width:50px;height:30px;flex:0 0 50px;border-radius:99px;background:{{ themeTrack }};position:relative"><div style="position:absolute;top:3px;left:{{ themeKnob }};width:24px;height:24px;border-radius:99px;background:var(--sink)"></div></div>
+                </div>
+              </div>
+
+              <div style="margin-top:24px;display:grid;gap:8px">
+                <button style="cursor:pointer;width:100%;min-height:50px;font-family:Archivo,sans-serif;font-size:calc(15px * var(--ts));font-weight:700;border:1px solid var(--line2);border-radius:14px;background:none;color:var(--ink)">Se déconnecter</button>
+                <button onClick="{{ openDelete }}" style="cursor:pointer;width:100%;min-height:50px;font-family:Archivo,sans-serif;font-size:calc(15px * var(--ts));font-weight:700;border:1px solid var(--plum);border-radius:14px;background:none;color:var(--plum)">Supprimer mon compte</button>
+                <div style="margin-top:4px;font-size:calc(12px * var(--ts));line-height:1.55;color:var(--ink3)">La suppression efface votre profil, vos annonces, vos enregistrements et vos messages. L'historique de facturation est conservé le temps légal, puis supprimé.</div>
+              </div>
+              <div style="margin-top:18px;font-size:calc(12px * var(--ts));color:var(--ink3)">Rota 1.0 (build 118) · Paris</div>
+            </div>
+          </sc-if>
+
+          <!-- BLOCKED ACCOUNTS -->
+          <sc-if value="{{ isBlocked }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:54px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:12px">
+                <button onClick="{{ goSettings }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:18px;color:var(--ink)">‹</button>
+                <div style="font-family:'Instrument Serif',serif;font-size:34px;line-height:1">Comptes bloqués</div>
+              </div>
+              <div style="margin-top:10px;font-size:calc(14px * var(--ts));line-height:1.5;color:var(--ink2);max-width:34ch">Les comptes bloqués ne voient plus vos annonces et ne peuvent plus vous écrire.</div>
+              <div style="margin-top:18px;display:grid;gap:8px">
+                <sc-for list="{{ blockedList }}" as="b" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="width:42px;height:42px;flex:0 0 42px;border-radius:999px;overflow:hidden"><image-slot id="{{ b.slot }}" shape="circle" placeholder="Av"></image-slot></div>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:calc(15px * var(--ts));font-weight:700">{{ b.handle }}</div>
+                      <div style="margin-top:3px;font-size:calc(12px * var(--ts));line-height:1.4;color:var(--ink3)">{{ b.meta }}</div>
+                    </div>
+                    <button style="cursor:pointer;flex:0 0 auto;min-height:40px;padding:0 14px;font-family:Archivo,sans-serif;font-size:calc(13px * var(--ts));font-weight:700;border-radius:11px;border:1px solid var(--line2);background:none;color:var(--ink)">Débloquer</button>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- FEES & CANCELLATION -->
+          <sc-if value="{{ isFees }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:54px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:12px">
+                <button onClick="{{ goDetail }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:18px;color:var(--ink)">‹</button>
+                <div style="font-family:'Instrument Serif',serif;font-size:32px;line-height:1.05">Frais et annulation</div>
+              </div>
+              <div style="margin-top:10px;font-size:calc(14px * var(--ts));line-height:1.5;color:var(--ink2);max-width:34ch">Tous les montants sont affichés avant paiement. Rien n'est ajouté après.</div>
+              <div style="margin-top:18px;display:grid;gap:8px">
+                <sc-for list="{{ feeRows }}" as="f" hint-placeholder-count="6">
+                  <div style="padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                      <div style="font-size:calc(15px * var(--ts));font-weight:700">{{ f.label }}</div>
+                      <div style="flex:0 0 auto;font-size:calc(14px * var(--ts));font-weight:700;color:var(--clay)">{{ f.value }}</div>
+                    </div>
+                    <div style="margin-top:5px;font-size:calc(13px * var(--ts));line-height:1.5;color:var(--ink2)">{{ f.body }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top:22px;font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">Annulation</div>
+              <div style="margin-top:10px;border-radius:16px;background:var(--surf);border:1px solid var(--line);overflow:hidden">
+                <sc-for list="{{ cancelRows }}" as="c" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 15px;border-bottom:1px solid var(--line)">
+                    <div style="flex:1;min-width:0;font-size:calc(14px * var(--ts))">{{ c.label }}</div>
+                    <div style="flex:0 0 45%;text-align:right;font-size:calc(13px * var(--ts));font-weight:600;color:var(--ink2)">{{ c.value }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top:14px;padding:14px;border-radius:14px;background:var(--surf2);font-size:calc(13px * var(--ts));line-height:1.55;color:var(--ink2)">Rota est une place de marché : le contrat de location lie le locataire et la prêteuse. Nous encaissons, couvrons les dommages et arbitrons les litiges. Droit de rétractation : la location d'un bien à date fixe en est exclue, comme pour une réservation d'hôtel.</div>
+            </div>
+          </sc-if>
+
+          <!-- HANDOVER SAFETY -->
+          <sc-if value="{{ isSafety }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:54px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:12px">
+                <button onClick="{{ goRentals }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:18px;color:var(--ink)">‹</button>
+                <div style="font-family:'Instrument Serif',serif;font-size:32px;line-height:1.05">Remise en main propre</div>
+              </div>
+              <div style="margin-top:18px;padding:18px;border-radius:18px;background:var(--surf);border:1px solid var(--clay)">
+                <div style="font-size:calc(12px * var(--ts));letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3)">Votre code de remise</div>
+                <div style="margin-top:8px;font-family:'Instrument Serif',serif;font-size:48px;line-height:1;letter-spacing:0.14em;color:var(--clay)">4 7 1 9</div>
+                <div style="margin-top:8px;font-size:calc(13px * var(--ts));line-height:1.5;color:var(--ink2)">Montrez-le à Juliette au moment de l'échange. Elle entre le code dans l'app pour démarrer la location.</div>
+              </div>
+              <div style="margin-top:12px;padding:14px;border-radius:16px;background:var(--surf);border:1px solid var(--line)">
+                <div style="font-size:calc(15px * var(--ts));font-weight:700">Point de rendez-vous suggéré</div>
+                <div style="margin-top:4px;font-size:calc(13px * var(--ts));color:var(--ink2)">Café de la Gare · 12 rue de Belleville · ouvert jusqu'à 23 h</div>
+                <div style="margin-top:12px;height:130px;border-radius:12px;overflow:hidden"><image-slot id="rota2-safety-map" shape="rounded" radius="12" placeholder="Carte du point de remise"></image-slot></div>
+                <button style="cursor:pointer;margin-top:12px;width:100%;min-height:46px;font-family:Archivo,sans-serif;font-size:calc(14px * var(--ts));font-weight:700;border:1px solid var(--line2);border-radius:12px;background:none;color:var(--ink)">Partager l'heure et le lieu à un proche</button>
+              </div>
+              <div style="margin-top:18px;display:grid;gap:8px">
+                <sc-for list="{{ safetyTips }}" as="t" hint-placeholder-count="4">
+                  <div style="padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="font-size:calc(14px * var(--ts));font-weight:700">{{ t.title }}</div>
+                    <div style="margin-top:4px;font-size:calc(13px * var(--ts));line-height:1.5;color:var(--ink2)">{{ t.body }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <button onClick="{{ openReport }}" style="cursor:pointer;margin-top:14px;width:100%;min-height:50px;font-family:Archivo,sans-serif;font-size:calc(15px * var(--ts));font-weight:700;border:1px solid var(--plum);border-radius:14px;background:none;color:var(--plum)">Signaler un problème de sécurité</button>
+            </div>
+          </sc-if>
+
+          <!-- GUIDELINES (reference) -->
+          <sc-if value="{{ isGuidelines }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:54px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:12px">
+                <button onClick="{{ goSettings }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid var(--line2);background:none;font-size:18px;color:var(--ink)">‹</button>
+                <div style="font-family:'Instrument Serif',serif;font-size:32px;line-height:1.05">Règles de la communauté</div>
+              </div>
+              <div style="margin-top:10px;font-size:calc(14px * var(--ts));line-height:1.55;color:var(--ink2);max-width:34ch">Acceptées à l'inscription. Signalez tout manquement depuis le menu ••• d'une annonce, d'un profil ou d'un message.</div>
+              <div style="margin-top:18px;display:grid;gap:10px">
+                <sc-for list="{{ rules }}" as="r" hint-placeholder-count="4">
+                  <div style="padding:15px;border-radius:16px;background:var(--surf);border:1px solid var(--line)">
+                    <div style="font-size:calc(15px * var(--ts));font-weight:700">{{ r.title }}</div>
+                    <div style="margin-top:5px;font-size:calc(14px * var(--ts));line-height:1.5;color:var(--ink2)">{{ r.body }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top:14px;padding:15px;border-radius:16px;background:var(--surf2);font-size:calc(13px * var(--ts));line-height:1.55;color:var(--ink2)">Nous examinons chaque signalement sous 24 h. Les annonces signalées sont masquées pendant l'examen. Les récidives entraînent la suppression définitive du compte et le remboursement des locataires concernés.</div>
+              <button onClick="{{ openReport }}" style="cursor:pointer;margin-top:14px;width:100%;min-height:50px;font-family:Archivo,sans-serif;font-size:calc(15px * var(--ts));font-weight:700;border:none;border-radius:14px;background:var(--clay);color:var(--onclay)">Signaler un contenu</button>
+            </div>
+          </sc-if>
+
+          <!--MORE1-->
+
+        </div>
+
+        <!-- TAB BAR -->
+        <sc-if value="{{ showTabs }}">
+          <div style="flex:0 0 auto;background:var(--sink);border-top:1px solid var(--line);padding:8px 6px 30px;display:flex;align-items:flex-start">
+            <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+              <div onClick="{{ t.go }}" style="cursor:pointer;flex:1;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:4px 0">
+                <div style="width:26px;height:26px;display:flex;align-items:center;justify-content:center">
+                  <sc-if value="{{ t.isFeed }}"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ t.color }}" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M10 8.5l6 3.5-6 3.5z" fill="{{ t.color }}" stroke="none"/></svg></sc-if>
+                  <sc-if value="{{ t.isDiscover }}"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ t.color }}" stroke-width="1.8"><rect x="3" y="3" width="7.5" height="11" rx="2.2"/><rect x="13.5" y="3" width="7.5" height="7" rx="2.2"/><rect x="3" y="17" width="7.5" height="4" rx="1.8"/><rect x="13.5" y="13" width="7.5" height="8" rx="2.2"/></svg></sc-if>
+                  <sc-if value="{{ t.isAdd }}"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="{{ t.color }}" stroke-width="1.9"><rect x="2.5" y="4.5" width="19" height="15" rx="4"/><path d="M12 9v6M9 12h6"/></svg></sc-if>
+                  <sc-if value="{{ t.isRentals }}"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ t.color }}" stroke-width="1.8"><path d="M4 8h16l-1.2 12H5.2z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></sc-if>
+                  <sc-if value="{{ t.isCloset }}"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ t.color }}" stroke-width="1.8"><path d="M12 7.5 4 12v8h16v-8z"/><path d="M12 7.5V5.8a2 2 0 1 1 2-2"/></svg></sc-if>
+                </div>
+                <div style="font-size:calc(10px * var(--ts));font-weight:600;color:{{ t.color }}">{{ t.label }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- REPORT / BLOCK -->
+        <sc-if value="{{ reportOpen }}">
+          <div onClick="{{ closeReport }}" style="position:absolute;inset:0;background:rgba(6,5,5,0.62)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surf);border-radius:24px 24px 0 0;border-top:1px solid var(--line);padding:18px 20px 30px;animation:rotaUp .2s ease">
+            <div style="width:44px;height:4px;border-radius:99px;background:var(--line2);margin:0 auto 16px"></div>
+            <sc-if value="{{ reportSent }}">
+              <div style="padding:6px 0 4px;text-align:center">
+                <div style="margin:0 auto;width:56px;height:56px;border-radius:999px;background:var(--claySoft);color:var(--clay);display:flex;align-items:center;justify-content:center;font-size:24px">✓</div>
+                <div style="margin-top:16px;font-family:'Instrument Serif',serif;font-size:30px;line-height:1.05">Signalement envoyé</div>
+                <div style="margin-top:8px;font-size:calc(14px * var(--ts));line-height:1.5;color:var(--ink2)">Notre équipe l'examine sous 24 h. L'annonce est masquée pour vous en attendant.</div>
+                <div style="margin-top:20px;display:grid;gap:8px">
+                  <button onClick="{{ blockUser }}" style="cursor:pointer;width:100%;min-height:52px;font-family:Archivo,sans-serif;font-size:calc(16px * var(--ts));font-weight:700;border:1px solid var(--plum);border-radius:14px;background:none;color:var(--plum)">Bloquer aussi {{ reportTarget }}</button>
+                  <button onClick="{{ closeReport }}" style="cursor:pointer;width:100%;min-height:52px;font-family:Archivo,sans-serif;font-size:calc(16px * var(--ts));font-weight:700;border:none;border-radius:14px;background:var(--clay);color:var(--onclay)">Terminé</button>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ reportForm }}">
+              <div>
+                <div style="font-family:'Instrument Serif',serif;font-size:30px;line-height:1.05">Signaler {{ reportTarget }}</div>
+                <div style="margin-top:8px;font-size:calc(14px * var(--ts));line-height:1.5;color:var(--ink2);max-width:34ch">Choisissez ce qui correspond le mieux. Les signalements sont anonymes pour la personne concernée.</div>
+                <div style="margin-top:16px;display:grid;gap:6px">
+                  <sc-for list="{{ reportReasons }}" as="r" hint-placeholder-count="6">
+                    <div onClick="{{ r.pick }}" style="cursor:pointer;display:flex;align-items:center;gap:12px;min-height:48px;padding:0 14px;border-radius:12px;background:var(--surf2)">
+                      <div style="width:20px;height:20px;flex:0 0 20px;border-radius:99px;border:2px solid {{ r.ring }};display:flex;align-items:center;justify-content:center">
+                        <div style="width:10px;height:10px;border-radius:99px;background:{{ r.dot }}"></div>
+                      </div>
+                      <div style="flex:1;min-width:0;font-size:calc(14px * var(--ts))">{{ r.label }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="margin-top:14px;display:grid;gap:8px">
+                  <button onClick="{{ submitReport }}" style="cursor:pointer;width:100%;min-height:52px;font-family:Archivo,sans-serif;font-size:calc(16px * var(--ts));font-weight:700;border:none;border-radius:14px;background:var(--clay);color:var(--onclay)">Envoyer le signalement</button>
+                  <button onClick="{{ blockUser }}" style="cursor:pointer;width:100%;min-height:52px;font-family:Archivo,sans-serif;font-size:calc(16px * var(--ts));font-weight:700;border:1px solid var(--line2);border-radius:14px;background:none;color:var(--ink)">Bloquer sans signaler</button>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- GUEST SIGN-IN GATE -->
+        <sc-if value="{{ signInOpen }}">
+          <div onClick="{{ closeSignIn }}" style="position:absolute;inset:0;background:rgba(6,5,5,0.62)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surf);border-radius:24px 24px 0 0;border-top:1px solid var(--line);padding:18px 20px 30px;animation:rotaUp .2s ease">
+            <div style="width:44px;height:4px;border-radius:99px;background:var(--line2);margin:0 auto 16px"></div>
+            <div style="font-family:'Instrument Serif',serif;font-size:30px;line-height:1.05">Un compte pour réserver</div>
+            <div style="margin-top:8px;font-size:calc(14px * var(--ts));line-height:1.5;color:var(--ink2);max-width:34ch">Vous pouvez continuer à explorer sans compte. Réserver demande une identité vérifiée, pour la prêteuse comme pour vous.</div>
+            <div style="margin-top:18px;display:grid;gap:8px">
+              <button onClick="{{ completeSignIn }}" style="cursor:pointer;width:100%;min-height:54px;font-family:Archivo,sans-serif;font-size:calc(16px * var(--ts));font-weight:700;border:none;border-radius:16px;background:var(--ink);color:var(--bg);display:flex;align-items:center;justify-content:center;gap:9px"><svg width="15" height="18" viewBox="0 0 15 18" fill="currentColor"><path d="M12.3 9.6c0-2 1.6-3 1.7-3.1-.9-1.4-2.4-1.5-2.9-1.6-1.3-.1-2.4.7-3 .7-.6 0-1.5-.7-2.5-.7-1.3 0-2.5.8-3.2 2C.9 9.4 1.9 13 3.2 15c.6 1 1.4 2.1 2.4 2 .9 0 1.3-.6 2.4-.6 1.1 0 1.4.6 2.4.6 1 0 1.7-1 2.4-2 .5-.8.7-1.2 1-2-2.4-.9-2.5-3.3-2.5-3.4zM9.9 3.4c.5-.6.9-1.5.8-2.4-.8 0-1.8.5-2.3 1.2-.5.6-.9 1.5-.8 2.3.9.1 1.8-.5 2.3-1.1z"/></svg>Continuer avec Apple</button>
+              <button onClick="{{ closeSignIn }}" style="cursor:pointer;width:100%;min-height:52px;font-family:Archivo,sans-serif;font-size:calc(16px * var(--ts));font-weight:600;border:1px solid var(--line2);border-radius:16px;background:none;color:var(--ink)">Continuer à explorer</button>
+            </div>
+            <div style="margin-top:12px;font-size:calc(12px * var(--ts));line-height:1.5;color:var(--ink3);text-align:center">Avec Apple, vous pouvez masquer votre e-mail. Nous ne publions jamais votre nom complet.</div>
+          </div>
+        </sc-if>
+
+        <!-- DELETE ACCOUNT -->
+        <sc-if value="{{ deleteOpen }}">
+          <div onClick="{{ closeDelete }}" style="position:absolute;inset:0;background:rgba(6,5,5,0.7)"></div>
+          <sc-if value="{{ deleteForm }}">
+            <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surf);border-radius:24px 24px 0 0;border-top:1px solid var(--line);padding:18px 20px 30px;animation:rotaUp .2s ease">
+              <div style="width:44px;height:4px;border-radius:99px;background:var(--line2);margin:0 auto 16px"></div>
+              <div style="font-family:'Instrument Serif',serif;font-size:30px;line-height:1.05">Supprimer votre compte</div>
+              <div style="margin-top:10px;font-size:calc(14px * var(--ts));line-height:1.55;color:var(--ink2)">Ceci supprime votre profil, vos 7 annonces, vos tableaux et vos messages. Deux locations sont en cours : elles doivent être rendues avant la suppression.</div>
+              <div style="margin-top:14px;display:grid;gap:6px">
+                <div style="display:flex;gap:10px;align-items:center;min-height:44px;padding:0 14px;border-radius:12px;background:var(--surf2);font-size:calc(13px * var(--ts));color:var(--ink2)">Solde de {{ balanceLabel }} versé avant la fermeture</div>
+                <div style="display:flex;gap:10px;align-items:center;min-height:44px;padding:0 14px;border-radius:12px;background:var(--surf2);font-size:calc(13px * var(--ts));color:var(--ink2)">Factures conservées le temps légal, puis effacées</div>
+              </div>
+              <div style="margin-top:18px;display:grid;gap:8px">
+                <button onClick="{{ confirmDelete }}" style="cursor:pointer;width:100%;min-height:52px;font-family:Archivo,sans-serif;font-size:calc(16px * var(--ts));font-weight:700;border:none;border-radius:14px;background:var(--plum);color:var(--onplum)">Supprimer définitivement</button>
+                <button onClick="{{ closeDelete }}" style="cursor:pointer;width:100%;min-height:52px;font-family:Archivo,sans-serif;font-size:calc(16px * var(--ts));font-weight:700;border:1px solid var(--line2);border-radius:14px;background:none;color:var(--ink)">Annuler</button>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ deleteConfirm }}">
+            <div style="position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px;text-align:center;animation:rotaIn .22s ease">
+              <div style="font-family:'Instrument Serif',serif;font-size:36px;line-height:1.05">Compte supprimé</div>
+              <div style="margin-top:12px;font-size:calc(15px * var(--ts));line-height:1.55;color:var(--ink2)">Vos données sont effacées sous 30 jours. Un e-mail de confirmation part maintenant. Vous pouvez revenir quand vous voulez.</div>
+              <button onClick="{{ closeDelete }}" style="cursor:pointer;margin-top:24px;min-height:52px;padding:0 24px;font-family:Archivo,sans-serif;font-size:calc(16px * var(--ts));font-weight:700;border:1px solid var(--line2);border-radius:14px;background:none;color:var(--ink)">Fermer</button>
+            </div>
+          </sc-if>
+        </sc-if>
+      </div>
+
+    </x-import>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:1040},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;currency&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;€&quot;,&quot;$&quot;,&quot;£&quot;],&quot;default&quot;:&quot;€&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Market&quot;},&quot;instantBook&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;showTabLabels&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;demoEmptyStates&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'onboard', obStep: 0, agreed: false,
+    permOn: { camera: false, photos: false, location: false, notif: false },
+    guest: false, signedIn: false, signInSheet: false,
+    activeId: 'f3', size: 'S', occasion: 'Soirée', liked: {}, wish: { f3: true, f1: true },
+    delivery: 'ship', dates: [18, 21], rentalTab: 'renting', listStep: 0, thread: null,
+    filters: false, confirmed: false, follow: false, instant: true, local: true,
+    idea: 'Saison des galas', sortIdx: 0, category: 'Robes', board: null,
+    offer: false, offerIdx: 1, favs: {}, pinSaves: { p2: true, p5: true },
+    theme: null, textLg: false,
+    report: false, reportReason: 0, reportSent: false, blocked: {},
+    deleteStep: 0, claimStep: 0, stars: 5, ratingTags: {},
+    member: false, prefs: { location: true, personalized: true, push: true, email: false },
+  };
+
+  th() { return this.state.theme || this.props.theme || 'dark'; }
+  cur() { return this.props.currency ?? '€'; }
+  m(n) { return this.cur() === '€' ? n + ' €' : this.cur() + n; }
+  go(screen) { this.setState({ screen, filters: false, confirmed: false, thread: null, offer: false, report: false, reportSent: false, deleteStep: 0 }); }
+
+  renderVals() {
+    const S = this.state;
+    const dark = this.th() === 'dark';
+    const CLAY = 'var(--clay)', ONCLAY = 'var(--onclay)', PLUM = 'var(--plum)';
+    const INK = 'var(--ink)', MUT = 'var(--ink3)', LINE = 'var(--line2)';
+    const m = (n) => this.m(n);
+
+    const feedData = [
+      { id: 'f1', title: 'Nuisette en biais, ivoire', brand: 'Réalisation Par', price: 24, retail: 340, size: 'S', city: 'Paris 11e', handle: 'camille.b', name: 'Camille B.', likes: '12,4k', comments: '318', occasion: 'Dîner', badge: 'Réservation immédiate', wornCount: 'louée 9×' },
+      { id: 'f2', title: 'Trench en cuir vintage', brand: 'Pièce d\'archive', price: 31, retail: 620, size: 'M', city: 'Lyon 2e', handle: 'yasmine.k', name: 'Yasmine K.', likes: '8,1k', comments: '204', occasion: 'Tous les jours', badge: 'Livraison offerte', wornCount: 'louée 23×' },
+      { id: 'f3', title: 'Robe colonne à sequins', brand: 'Rasario', price: 58, retail: 1480, size: 'S–M', city: 'Paris 9e', handle: 'juliette.m', name: 'Juliette M.', likes: '31,2k', comments: '1,1k', occasion: 'Gala', badge: 'Créateur', wornCount: 'louée 4×' },
+    ];
+    const active = feedData.find(f => f.id === S.activeId) || feedData[2];
+
+    const feed = feedData.map(f => ({
+      ...f, slot: 'rota2-feed-' + f.id, avatarSlot: 'rota2-av-' + f.id, priceLabel: m(f.price),
+      likeFill: S.liked[f.id] ? '#E8865F' : 'none', likeStroke: S.liked[f.id] ? '#E8865F' : '#F6F1E9',
+      wishFill: S.wish[f.id] ? '#F6F1E9' : 'none', wishStroke: '#F6F1E9',
+      like: () => this.setState(s => ({ liked: { ...s.liked, [f.id]: !s.liked[f.id] } })),
+      wish: () => this.setState(s => ({ wish: { ...s.wish, [f.id]: !s.wish[f.id] } })),
+      openDetail: () => this.setState({ screen: 'detail', activeId: f.id }),
+      openProfile: () => this.setState({ screen: 'profile', activeId: f.id }),
+    }));
+
+    const chipDefs = [
+      ['Onboarding', 'onboard'], ['Feed', 'feed'], ['Discover', 'discover'], ['Catalogue', 'search'],
+      ['Detail', 'detail'], ['Dates', 'booking'], ['Checkout', 'checkout'], ['Rentals', 'rentals'],
+      ['Boards', 'boards'], ['Board', 'board'], ['Lender', 'profile'], ['Closet', 'closet'],
+      ['List a piece', 'list'], ['Messages', 'messages'], ['Notifications', 'notifs'],
+      ['Ratings', 'reviews'], ['Return claim', 'claim'], ['Payouts', 'payouts'],
+      ['Rota+', 'member'], ['Settings', 'settings'], ['Blocked', 'blocked'],
+      ['Fees & policy', 'fees'], ['Handover safety', 'safety'], ['Guidelines', 'guidelines'],
+    ];
+    const chips = chipDefs.map(([label, key]) => ({
+      label, go: () => this.go(key),
+      bg: S.screen === key ? CLAY : 'transparent',
+      fg: S.screen === key ? ONCLAY : INK,
+      border: S.screen === key ? CLAY : LINE,
+    }));
+
+    const sizes = ['XS', 'S', 'M', 'L'].map(l => ({
+      label: l, pick: () => this.setState({ size: l }),
+      bg: S.size === l ? CLAY : 'transparent', fg: S.size === l ? ONCLAY : INK,
+      border: S.size === l ? CLAY : LINE,
+    }));
+
+    const occasions = ['Gala', 'Mariage', 'Tous les jours', 'Festival', 'Entretien', 'Dîner'].map(l => ({
+      label: l, pick: () => this.setState({ occasion: l }),
+      bg: S.occasion === l ? PLUM : 'transparent', fg: S.occasion === l ? 'var(--onplum)' : INK,
+      border: S.occasion === l ? PLUM : LINE,
+    }));
+
+    const rules = [
+      { title: 'Send it back as it arrived', body: 'Cleaning is priced into every booking. Stains happen — tell the lender instead of hiding them.' },
+      { title: 'Real pieces, real photos', body: 'No counterfeits, no stock images, no listing something you do not own.' },
+      { title: 'Keep it in the app', body: 'Payments, offers and messages stay on Rota. Off-app deals lose all cover.' },
+      { title: 'Be kind at handover', body: 'No pressure, no comments on anyone\'s body. Meet in public places.' },
+    ];
+
+    const permDefs = [
+      ['camera', 'Camera', 'Only when you film a listing video or photograph a piece at return.'],
+      ['photos', 'Photos', 'To pick outfit photos from your library. We only read what you select.'],
+      ['location', 'Location', 'To show pieces near you and suggest public handover spots. Never in the background.'],
+      ['notif', 'Notifications', 'Booking confirmations, handover reminders and return deadlines.'],
+    ];
+    const perms = permDefs.map(([key, title, body]) => {
+      const on = S.permOn[key];
+      return {
+        title, body, label: on ? 'Activé' : 'Activer',
+        bg: on ? CLAY : 'transparent', fg: on ? ONCLAY : INK, border: on ? CLAY : LINE,
+        toggle: () => this.setState(s => ({ permOn: { ...s.permOn, [key]: !s.permOn[key] } })),
+      };
+    });
+
+    const booked = [24, 25, 26];
+    const [d0, d1] = S.dates;
+    const cells = [{ blank: true }];
+    for (let d = 1; d <= 30; d++) cells.push({ label: String(d), day: d });
+    const days = cells.map((c, i) => {
+      if (c.blank) return { key: 'b' + i, label: '', bg: 'transparent', fg: 'transparent', cursor: 'default', deco: 'none', pick: () => {} };
+      const past = c.day < 13, isBooked = booked.includes(c.day);
+      const inRange = c.day > d0 && c.day < d1, edge = c.day === d0 || c.day === d1;
+      return {
+        key: 'd' + c.day, label: c.label,
+        bg: edge ? CLAY : inRange ? 'var(--claySoft)' : 'transparent',
+        fg: edge ? ONCLAY : (past || isBooked) ? MUT : INK,
+        cursor: (past || isBooked) ? 'default' : 'pointer',
+        deco: isBooked ? 'line-through' : 'none',
+        pick: (past || isBooked) ? (() => {}) : (() => this.setState({ dates: [c.day, c.day + 3] })),
+      };
+    });
+
+    const nights = Math.max(1, d1 - d0);
+    const ship = S.delivery === 'ship';
+    const shipFee = 9, cleaning = 12, cover = 8;
+    const rentSub = active.price * nights;
+    const total = rentSub + cleaning + cover + (ship ? shipFee : 0);
+
+    const breakdown = [
+      { label: m(active.price) + ' × ' + nights + ' nuits', value: m(rentSub) },
+      { label: 'Nettoyage professionnel', value: m(cleaning) },
+      { label: 'Protection dommages', value: m(cover) },
+      { label: ship ? 'Livraison aller-retour' : 'Remise en main propre', value: ship ? m(shipFee) : 'Offert' },
+    ];
+
+    const instantOn = this.props.instantBook ?? true;
+    const trust = [
+      { title: 'Dommages couverts jusqu\'à ' + m(1500), body: 'Inclus dans chaque location. À signaler dans les 24 h après le retour.' },
+      { title: 'Nettoyage inclus', body: 'Nettoyé entre chaque locataire — vous ne le payez jamais deux fois.' },
+      { title: instantOn ? 'Réservation immédiate' : 'Demande de réservation', body: instantOn ? 'Les locataires vérifiés confirment tout de suite.' : 'La prêteuse répond en 12 h en moyenne.' },
+      { title: 'Notes réciproques', body: 'Vous notez la prêteuse, elle vous note. Les deux sont publiques.' },
+    ];
+
+    const emptyDemo = this.props.demoEmptyStates ?? false;
+
+    const renting = [
+      { slot: 'rota2-o1', status: 'Arrive jeudi', statusFg: CLAY, title: 'Robe colonne à sequins', who: 'de Juliette M.', dates: '18–21 sept.', amount: m(total), cta: 'Suivre le colis', act: 'safety' },
+      { slot: 'rota2-o2', status: 'Retour avant lundi', statusFg: PLUM, title: 'Trench en cuir vintage', who: 'de Yasmine K.', dates: '5–9 sept.', amount: m(136), cta: 'Signaler un problème', act: 'claim' },
+      { slot: 'rota2-o3', status: 'Terminé · à noter', statusFg: MUT, title: 'Jupe midi plissée', who: 'de Léa M.', dates: '22–25 août', amount: m(78), cta: 'Laisser une note', act: 'reviews' },
+    ];
+    const lending = [
+      { slot: 'rota2-l1', status: 'Demande · 2 h restantes', statusFg: PLUM, title: 'Veste en tweed courte', who: 'Jess T. la veut', dates: '26–29 sept.', amount: '+' + m(96), cta: 'Accepter la demande', act: 'messages' },
+      { slot: 'rota2-l2', status: 'Chez la locataire', statusFg: CLAY, title: 'Maxi robe en soie, olive', who: 'avec Dana P.', dates: '11–15 sept.', amount: '+' + m(104), cta: 'Confirmer le retour', act: 'claim' },
+    ];
+    const rawOrders = S.rentalTab === 'renting' ? renting : lending;
+    const orders = (emptyDemo ? [] : rawOrders).map(o => ({
+      ...o, amountFg: INK, primary: () => this.go(o.act),
+    }));
+
+    const savedData = [
+      { slot: 'rota2-w1', title: 'Nuisette en biais, ivoire', price: 24, h: '206px', tag: 'Libre ce week-end', tagBg: CLAY, tagFg: ONCLAY, id: 'f1' },
+      { slot: 'rota2-w2', title: 'Robe colonne à sequins', price: 58, h: '258px', tag: 'Réservée 18–21', tagBg: 'rgba(12,10,11,0.82)', tagFg: '#F6F1E9', id: 'f3' },
+      { slot: 'rota2-w3', title: 'Top résille manches longues', price: 14, h: '166px', tag: 'À 1,2 km', tagBg: 'rgba(12,10,11,0.82)', tagFg: '#F6F1E9', id: 'f1' },
+      { slot: 'rota2-w4', title: 'Manteau en laine, camel', price: 27, h: '232px', tag: 'Prix baissé', tagBg: PLUM, tagFg: 'var(--onplum)', id: 'f2' },
+      { slot: 'rota2-w5', title: 'Mini robe perlée, jais', price: 41, h: '190px', tag: 'Livraison offerte', tagBg: 'rgba(12,10,11,0.82)', tagFg: '#F6F1E9', id: 'f3' },
+      { slot: 'rota2-w6', title: 'Gants d\'opéra en satin', price: 9, h: '150px', tag: 'À combiner', tagBg: CLAY, tagFg: ONCLAY, id: 'f1' },
+    ];
+    const saved = savedData.map(s => ({ ...s, priceLabel: m(s.price), open: () => this.setState({ screen: 'detail', activeId: s.id }) }));
+
+    const boardData = [
+      { id: 'b1', name: 'Saison des galas', count: 18, meta: '6 libres 18–21 sept.' },
+      { id: 'b2', name: 'Invitée de mariage', count: 24, meta: '4 livrables chez vous' },
+      { id: 'b3', name: 'Tailoring 90s', count: 11, meta: 'surtout en local' },
+      { id: 'b4', name: 'Festival', count: 9, meta: 'à partir de ' + m(9) + ' / nuit' },
+    ];
+    const boards = boardData.map(b => ({
+      ...b, s1: 'rota2-bd-' + b.id + '-1', s2: 'rota2-bd-' + b.id + '-2',
+      s3: 'rota2-bd-' + b.id + '-3', s4: 'rota2-bd-' + b.id + '-4',
+      open: () => this.setState({ screen: 'board', board: b.id }),
+    }));
+    const activeBoard = boardData.find(b => b.id === S.board) || boardData[0];
+
+    const ideas = ['Saison des galas', 'Invitée de mariage', 'Denim d\'archive', 'Festival', 'Bureau', 'Soirée'].map(l => ({
+      label: l, pick: () => this.setState({ idea: l }),
+      bg: S.idea === l ? INK : 'transparent', fg: S.idea === l ? 'var(--bg)' : INK,
+      border: S.idea === l ? INK : LINE,
+    }));
+
+    const pinData = [
+      { id: 'p1', title: 'Robe colonne à sequins', price: 58, h: '268px', handle: '@juliette.m', size: 'S–M', to: 'f3' },
+      { id: 'p2', title: 'Nuisette en biais', price: 24, h: '188px', handle: '@camille.b', size: 'S', to: 'f1' },
+      { id: 'p3', title: 'Trench en cuir', price: 31, h: '222px', handle: '@yasmine.k', size: 'M', to: 'f2' },
+      { id: 'p4', title: 'Mini à plumes', price: 47, h: '296px', handle: '@dana.p', size: 'S', to: 'f3' },
+      { id: 'p5', title: 'Blazer en velours', price: 19, h: '172px', handle: '@lea.m', size: 'S', to: 'f2' },
+      { id: 'p6', title: 'Top résille', price: 14, h: '240px', handle: '@ines.d', size: 'XS', to: 'f1' },
+      { id: 'p7', title: 'Manteau en laine', price: 27, h: '206px', handle: '@mira.s', size: 'L', to: 'f2' },
+      { id: 'p8', title: 'Mini robe perlée', price: 41, h: '278px', handle: '@manon.l', size: 'M', to: 'f3' },
+    ];
+    const pins = pinData.map(p => {
+      const on = !!S.pinSaves[p.id];
+      return {
+        ...p, slot: 'rota2-pin-' + p.id, avSlot: 'rota2-pinav-' + p.id, priceLabel: m(p.price),
+        saveLabel: on ? 'Enregistré' : 'Enregistrer',
+        saveBg: on ? '#F6F1E9' : '#E8865F', saveFg: on ? '#14100E' : '#1B1009',
+        save: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState(s => ({ pinSaves: { ...s.pinSaves, [p.id]: !s.pinSaves[p.id] } })); },
+        open: () => this.setState({ screen: 'detail', activeId: p.to }),
+      };
+    });
+
+    const categories = ['Robes', 'Manteaux', 'Tailoring', 'Soirée', 'Chaussures', 'Sacs', 'Vintage'].map(l => ({
+      label: l, slot: 'rota2-cat-' + l.toLowerCase(),
+      pick: () => this.setState({ category: l }),
+      ring: S.category === l ? CLAY : 'transparent',
+      fg: S.category === l ? CLAY : MUT,
+    }));
+
+    const sortOptions = ['Recommandé', 'Prix croissant', 'Nouveautés', 'Au plus près'];
+    const sortLabel = sortOptions[S.sortIdx];
+
+    const resultData = [
+      { slot: 'rota2-r1', title: 'Robe colonne à sequins', brand: 'Rasario', price: 58, size: 'S–M', dist: '3,1 km', handle: '@juliette.m', favCount: '312', status: 'Libre 18–21', id: 'f3' },
+      { slot: 'rota2-r2', title: 'Nuisette satin, huître', brand: 'Réalisation', price: 22, size: 'S', dist: '1,4 km', handle: '@camille.b', favCount: '184', status: 'Immédiat', id: 'f1' },
+      { slot: 'rota2-r3', title: 'Mini robe perlée', brand: 'Self-Portrait', price: 41, size: 'M', dist: '4,8 km', handle: '@manon.l', favCount: '96', status: 'Main propre', id: 'f3' },
+      { slot: 'rota2-r4', title: 'Blazer en velours', brand: 'Ganni', price: 19, size: 'S', dist: 'Livraison', handle: '@lea.m', favCount: '71', status: 'Livraison offerte', id: 'f2' },
+      { slot: 'rota2-r5', title: 'Robe à plumes', brand: '16Arlington', price: 47, size: 'S', dist: '2,2 km', handle: '@dana.p', favCount: '228', status: 'Prise vendredi', id: 'f3' },
+      { slot: 'rota2-r6', title: 'Trench en cuir', brand: 'Archive', price: 31, size: 'M', dist: 'Livraison', handle: '@yasmine.k', favCount: '403', status: 'Louée 23×', id: 'f2' },
+    ];
+    const sortedResults = S.sortIdx === 1 ? [...resultData].sort((a, b) => a.price - b.price) : resultData;
+    const results = sortedResults.map(r => {
+      const on = !!S.favs[r.slot];
+      return {
+        ...r, priceLabel: m(r.price), weekLabel: m(r.price * 3), avSlot: 'rota2-rav-' + r.slot,
+        favFill: on ? '#E8865F' : 'none', favStroke: on ? '#E8865F' : '#F6F1E9',
+        fav: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState(s => ({ favs: { ...s.favs, [r.slot]: !s.favs[r.slot] } })); },
+        open: () => this.setState({ screen: 'detail', activeId: r.id }),
+      };
+    });
+
+    const grid = [
+      { slot: 'rota2-g1', price: 58, id: 'f3' }, { slot: 'rota2-g2', price: 34, id: 'f3' },
+      { slot: 'rota2-g3', price: 27, id: 'f2' }, { slot: 'rota2-g4', price: 19, id: 'f1' },
+      { slot: 'rota2-g5', price: 44, id: 'f3' }, { slot: 'rota2-g6', price: 22, id: 'f1' },
+    ].map(g => ({ ...g, priceLabel: m(g.price), open: () => this.setState({ screen: 'detail', activeId: g.id }) }));
+
+    const closet = [
+      { slot: 'rota2-c1', title: 'Veste en tweed courte', meta: 'Taille S · louée 6×', state: '1 demande en attente', stateFg: PLUM, price: 32 },
+      { slot: 'rota2-c2', title: 'Maxi robe en soie, olive', meta: 'Taille M · louée 11×', state: 'Sortie jusqu\'au 15 sept.', stateFg: CLAY, price: 26 },
+      { slot: 'rota2-c3', title: 'Bottines plateforme', meta: '39 · louées 2×', state: 'Disponible', stateFg: MUT, price: 15 },
+    ].map(c => ({ ...c, priceLabel: m(c.price) }));
+
+    const threads = [
+      { id: 't1', slot: 'rota2-t1', name: 'Juliette M.', time: '2 min', preview: 'Défroissée et prête — jeudi soir, ça te va ?', unread: true },
+      { id: 't2', slot: 'rota2-t2', name: 'Jess T.', time: '1 h', preview: 'Tu ferais 26–29 sept. pour la veste en tweed ?', unread: true },
+      { id: 't3', slot: 'rota2-t3', name: 'Yasmine K.', time: 'Hier', preview: 'Retour scanné, caution libérée — merci !', unread: false },
+    ].map(t => ({
+      ...t, open: () => this.setState({ thread: t.id }),
+      bg: t.unread ? 'var(--surf)' : 'transparent', dot: t.unread ? PLUM : 'transparent',
+    }));
+
+    const bubbleData = [
+      { me: false, text: 'Salut ! La robe est libre 18–21, je viens de la défroisser.' },
+      { me: true, text: 'Parfait. Je fais 1,68 m — la longueur traîne ?' },
+      { me: false, text: 'Elle touche un peu au sol sur moi (1,70 m). Avec des talons c\'est réglé. Je peux ajouter l\'étole.' },
+      { me: true, text: 'Oui volontiers. Je réserve — en livraison, pas en main propre.' },
+      { me: false, text: 'Étiquette envoyée. Le sachet retour est dans la housse.' },
+    ];
+    const bubbles = bubbleData.map((b, i) => ({
+      key: i, text: b.text, align: b.me ? 'flex-end' : 'flex-start',
+      bg: b.me ? CLAY : 'var(--surf2)', fg: b.me ? ONCLAY : INK,
+      radius: b.me ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+    }));
+
+    const showLabels = this.props.showTabLabels ?? true;
+    const tabGroups = { discover: ['discover', 'search', 'boards', 'board'], closet: ['closet', 'profile', 'settings', 'payouts', 'blocked', 'member', 'fees'], rentals: ['rentals', 'claim', 'reviews', 'safety'] };
+    const tabs = [['feed', 'Feed'], ['discover', 'Explorer'], ['list', 'Publier'], ['rentals', 'Locations'], ['closet', 'Dressing']]
+      .map(([key, label]) => ({
+        key, label: showLabels ? label : '',
+        color: (S.screen === key || (tabGroups[key] || []).includes(S.screen)) ? CLAY : 'var(--ink3)',
+        go: () => this.go(key),
+        isFeed: key === 'feed', isDiscover: key === 'discover', isAdd: key === 'list',
+        isRentals: key === 'rentals', isCloset: key === 'closet',
+      }));
+
+    const offerTiers = [0.9, 0.85, 0.75];
+    const offers = offerTiers.map((pct, i) => {
+      const per = Math.round(active.price * pct);
+      return {
+        label: m(per), sub: Math.round((1 - pct) * 100) + '% / nuit',
+        pick: () => this.setState({ offerIdx: i }),
+        bg: S.offerIdx === i ? CLAY : 'transparent', fg: S.offerIdx === i ? ONCLAY : INK,
+        border: S.offerIdx === i ? CLAY : LINE,
+      };
+    });
+    const offerTotal = Math.round(active.price * offerTiers[S.offerIdx]) * nights;
+
+    const stepMeta = [
+      { label: 'Étape 1 sur 3', title: 'Montrez-la en mouvement', body: 'Une vidéo verticale et deux photos. C\'est la vidéo qui fait scroller.' },
+      { label: 'Étape 2 sur 3', title: 'Ce que les locataires demandent', body: 'Marque, taille réelle, et comment ça tombe sur vous.' },
+      { label: 'Étape 3 sur 3', title: 'Prix et disponibilité', body: 'On suggère un tarif à partir de ce que gagnent les pièces similaires près de vous.' },
+    ][S.listStep];
+
+    const reportReasons = [
+      'Contrefaçon ou pièce fausse', 'Photos qui ne sont pas les siennes',
+      'Paiement hors application', 'Harcèlement ou propos déplacés',
+      'Annonce inexacte ou trompeuse', 'Autre',
+    ].map((label, i) => ({
+      label, pick: () => this.setState({ reportReason: i }),
+      ring: S.reportReason === i ? CLAY : 'var(--line2)',
+      dot: S.reportReason === i ? CLAY : 'transparent',
+    }));
+
+    const claimMeta = [
+      { label: 'Étape 1 sur 3', title: 'Qu\'est-ce qui s\'est passé ?', body: 'Signalez dans les 24 h après le retour pour rester couvert.' },
+      { label: 'Étape 2 sur 3', title: 'Montrez les dégâts', body: 'Deux photos minimum, dont une de près. Les photos du jour du retour sont acceptées.' },
+      { label: 'Étape 3 sur 3', title: 'Ce qui se passe ensuite', body: 'Notre équipe répond en 48 h. La caution reste bloquée pendant l\'examen, sans prélèvement automatique.' },
+    ][S.claimStep];
+
+    const claimKinds = ['Tache ou marque', 'Déchirure ou couture', 'Pièce non rendue', 'Autre chose'];
+
+    const ratingTagList = ['Ponctuelle', 'Pièce comme décrite', 'Emballage impeccable', 'Communication claire', 'Flexible sur les dates'].map(l => ({
+      label: l, pick: () => this.setState(s => ({ ratingTags: { ...s.ratingTags, [l]: !s.ratingTags[l] } })),
+      bg: S.ratingTags[l] ? CLAY : 'transparent', fg: S.ratingTags[l] ? ONCLAY : INK,
+      border: S.ratingTags[l] ? CLAY : LINE,
+    }));
+    const starRow = [1, 2, 3, 4, 5].map(n => ({
+      fill: n <= S.stars ? CLAY : 'transparent', stroke: n <= S.stars ? CLAY : 'var(--ink3)',
+      pick: () => this.setState({ stars: n }),
+    }));
+
+    const txns = [
+      { label: 'Maxi robe en soie · Dana P.', sub: '11–15 sept. · 4 nuits', value: '+' + m(104), fg: CLAY },
+      { label: 'Commission Rota (12%)', sub: 'sur ' + m(104), value: '−' + m(12), fg: MUT },
+      { label: 'Veste en tweed · Jess T.', sub: '2–4 sept. · 2 nuits', value: '+' + m(64), fg: CLAY },
+      { label: 'Versement vers ·· FR76 4417', sub: '1 sept.', value: '−' + m(186), fg: MUT },
+    ];
+
+    const notifGroups = [
+      {
+        head: 'Aujourd\'hui', items: [
+          { slot: 'rota2-n1', title: 'Juliette a confirmé votre location', body: 'Robe colonne à sequins · 18–21 sept.', time: '2 min', unread: true, go: () => this.go('rentals') },
+          { slot: 'rota2-n2', title: 'Jess veut louer votre veste en tweed', body: 'Demande expirant dans 2 h', time: '1 h', unread: true, go: () => this.go('messages') },
+        ],
+      },
+      {
+        head: 'Cette semaine', items: [
+          { slot: 'rota2-n3', title: 'Caution libérée', body: m(150) + ' rendus sur votre moyen de paiement', time: 'mar.', unread: false, go: () => this.go('payouts') },
+          { slot: 'rota2-n4', title: 'Notez Léa', body: 'Les notes réciproques se publient après 14 jours', time: 'lun.', unread: false, go: () => this.go('reviews') },
+        ],
+      },
+    ];
+    const notifs = emptyDemo ? [] : notifGroups;
+
+    const settingsGroups = [
+      {
+        head: 'Compte', rows: [
+          { label: 'Connecté avec Apple', detail: 'relay privé', go: () => {} },
+          { label: 'Pièce d\'identité vérifiée', detail: 'Camille B.', go: () => {} },
+          { label: 'Versements et gains', detail: m(412), go: () => this.go('payouts') },
+          { label: 'Rota+', detail: S.member ? 'Actif' : 'Découvrir', go: () => this.go('member') },
+        ],
+      },
+      {
+        head: 'Confidentialité', rows: [
+          { label: 'Télécharger mes données', detail: 'e-mail sous 48 h', go: () => {} },
+          { label: 'Comptes bloqués', detail: String(Object.keys(S.blocked).length), go: () => this.go('blocked') },
+          { label: 'Autorisations de l\'app', detail: 'Réglages iOS', go: () => this.go('onboard') },
+        ],
+      },
+      {
+        head: 'Sécurité et règles', rows: [
+          { label: 'Règles de la communauté', detail: '', go: () => this.go('guidelines') },
+          { label: 'Remise en main propre', detail: '', go: () => this.go('safety') },
+          { label: 'Frais et annulation', detail: '', go: () => this.go('fees') },
+        ],
+      },
+    ];
+    const prefRows = [
+      ['push', 'Notifications push', 'Réservations, remises, retours'],
+      ['email', 'E-mails marketing', 'Nouveautés près de vous'],
+      ['location', 'Utiliser ma position', 'Pièces et points de remise proches'],
+      ['personalized', 'Feed personnalisé', 'Basé sur ce que vous regardez et enregistrez'],
+    ].map(([key, label, body]) => ({
+      label, body, on: S.prefs[key],
+      track: S.prefs[key] ? CLAY : 'var(--surf2)', knob: S.prefs[key] ? '23px' : '3px',
+      toggle: () => this.setState(s => ({ prefs: { ...s.prefs, [key]: !s.prefs[key] } })),
+    }));
+
+    const feeRows = [
+      { label: 'Commission Rota', value: '12% pour la prêteuse', body: 'Prélevée sur le versement, jamais ajoutée au locataire.' },
+      { label: 'Nettoyage', value: m(12) + ' par location', body: 'Nettoyage professionnel entre chaque locataire, affiché avant paiement.' },
+      { label: 'Protection dommages', value: m(8) + ' par location', body: 'Couvre jusqu\'à ' + m(1500) + ' après examen du dossier.' },
+      { label: 'Livraison aller-retour', value: m(9), body: 'Étiquette prépayée dans les deux sens. Offerte en main propre.' },
+      { label: 'Caution', value: m(150) + ' bloqués', body: 'Autorisation, pas un prélèvement. Libérée 48 h après le retour.' },
+      { label: 'Retard', value: m(20) + ' par jour', body: 'Plafonné à la valeur de remplacement de la pièce.' },
+    ];
+    const cancelRows = [
+      { label: 'Plus de 7 jours avant', value: 'Remboursement intégral' },
+      { label: '3 à 7 jours avant', value: 'Remboursement à 50%' },
+      { label: 'Moins de 48 h', value: 'Frais de nettoyage et de livraison non remboursés' },
+      { label: 'Annulation par la prêteuse', value: 'Remboursement intégral + ' + m(15) + ' de crédit' },
+    ];
+
+    const safetyTips = [
+      { title: 'Retrouvez-vous dans un lieu public', body: 'Cafés, halls de gare, boutiques. Les points suggérés sont ouverts et passants.' },
+      { title: 'Vérifiez le code de remise', body: 'Chacune montre un code à 4 chiffres dans l\'app. Pas de code, pas de remise.' },
+      { title: 'Partagez votre trajet', body: 'Envoyez l\'heure et le lieu à un proche depuis l\'app, sans partager votre adresse.' },
+      { title: 'Photographiez la pièce ensemble', body: 'Deux photos à la remise protègent les deux parties en cas de litige.' },
+    ];
+
+    const memberPerks = [
+      'Livraison aller-retour offerte sur toutes les locations',
+      'Protection dommages portée à ' + m(3000),
+      'Accès 24 h avant aux pièces de créateurs',
+      'Retours prolongés : rendez le lundi au lieu du dimanche',
+    ];
+
+    const blockedList = [
+      { slot: 'rota2-bl1', handle: '@compte.spam', meta: 'bloqué le 2 sept. · signalé pour paiement hors app' },
+      { slot: 'rota2-bl2', handle: '@fake.designer', meta: 'bloqué le 21 août · contrefaçon' },
+    ];
+
+    const reviewsList = [
+      { slot: 'rota2-rv1', name: 'Yasmine K.', stars: '★★★★★', time: 'il y a 3 j', body: 'Rendue impeccable et repassée. Locataire idéale.' },
+      { slot: 'rota2-rv2', name: 'Dana P.', stars: '★★★★☆', time: 'il y a 2 sem.', body: 'Retour un jour en retard mais prévenue à l\'avance, aucun souci.' },
+    ];
+
+    return {
+      theme: this.th(), frameDark: dark, textSize: S.textLg ? 'lg' : 'md',
+      themeLabel: dark ? 'Mode clair' : 'Mode sombre',
+      themeTrack: dark ? CLAY : 'var(--surf2)', themeKnob: dark ? '23px' : '3px',
+      textTrack: S.textLg ? CLAY : 'var(--surf2)', textKnob: S.textLg ? '23px' : '3px',
+      reportForm: !S.reportSent, deleteForm: S.deleteStep === 1,
+      textLabel: S.textLg ? 'Texte standard' : 'Texte agrandi',
+      toggleTheme: () => this.setState({ theme: dark ? 'light' : 'dark' }),
+      toggleText: () => this.setState(s => ({ textLg: !s.textLg })),
+
+      chips, feed, sizes, occasions, tabs, trust, orders, saved, results, grid, closet, threads,
+      bubbles, days, breakdown, pins, ideas, categories, boards, offers, sortLabel, rules, perms,
+      reportReasons, claimKinds, ratingTagList, starRow, txns, notifs, settingsGroups, prefRows,
+      feeRows, cancelRows, safetyTips, memberPerks, blockedList, reviewsList,
+
+      obWelcome: S.screen === 'onboard' && S.obStep === 0,
+      obRules: S.screen === 'onboard' && S.obStep === 1,
+      obPerms: S.screen === 'onboard' && S.obStep === 2,
+      appleSignIn: () => this.setState({ signedIn: true, guest: false, obStep: 1 }),
+      guestBrowse: () => this.setState({ guest: true, screen: 'feed' }),
+      obNext: () => S.agreed ? this.setState({ obStep: 2 }) : this.setState({ agreed: true }),
+      toggleAgree: () => this.setState(s => ({ agreed: !s.agreed })),
+      agreeRing: S.agreed ? CLAY : 'var(--line2)', agreeFill: S.agreed ? CLAY : 'transparent',
+      agreeMark: S.agreed ? '✓' : '',
+      agreeBtnBg: S.agreed ? CLAY : 'var(--surf2)', agreeBtnFg: S.agreed ? ONCLAY : 'var(--ink3)',
+
+      isFeed: S.screen === 'feed', isDiscover: S.screen === 'discover', isSearch: S.screen === 'search',
+      isDetail: S.screen === 'detail', isBooking: S.screen === 'booking', isCheckout: S.screen === 'checkout',
+      isRentals: S.screen === 'rentals', isBoards: S.screen === 'boards', isBoard: S.screen === 'board',
+      isProfile: S.screen === 'profile', isCloset: S.screen === 'closet', isList: S.screen === 'list',
+      isMessages: S.screen === 'messages', isSettings: S.screen === 'settings', isPayouts: S.screen === 'payouts',
+      isNotifs: S.screen === 'notifs', isReviews: S.screen === 'reviews', isClaim: S.screen === 'claim',
+      isSafety: S.screen === 'safety', isFees: S.screen === 'fees', isMember: S.screen === 'member',
+      isGuidelines: S.screen === 'guidelines', isBlocked: S.screen === 'blocked',
+      showOffline: emptyDemo, ordersEmpty: orders.length === 0, notifsEmpty: notifs.length === 0,
+
+      active: { ...active, priceLabel: m(active.price), retailLabel: m(active.retail) },
+      showTabs: S.screen !== 'onboard' && !(S.screen === 'messages' && S.thread),
+      threadOpen: S.screen === 'messages' && !!S.thread,
+      threadList: S.screen === 'messages' && !S.thread,
+      filtersOpen: S.filters, confirmed: S.confirmed,
+      selectedSize: S.size, city: 'Paris', resultCount: 248, wishCount: 4,
+      ideaActive: S.idea, boardName: activeBoard.name,
+      boardMeta: activeBoard.count + ' enregistrements · ' + activeBoard.meta,
+      cycleSort: () => this.setState(s => ({ sortIdx: (s.sortIdx + 1) % 4 })),
+      nightsLabel: nights + ' nuits',
+      totalLabel: m(total), depositLabel: m(150), coverLabel: m(1500), lateLabel: m(20),
+      creditLabel: m(10), maxPriceLabel: m(60), shipFeeLabel: m(shipFee), cleaningLabel: m(cleaning),
+      handoverLabel: ship ? 'livraison' : 'main propre',
+      bookCta: instantOn ? 'Voir les dates' : 'Demander ces dates',
+      earnedLabel: m(412), payoutLabel: m(186), suggestLabel: m(24),
+      compLabel: m(18) + '–' + m(29), clearLabel: m(51), retailInput: m(340),
+      balanceLabel: m(226), lifetimeLabel: m(3140),
+
+      offerOpen: S.offer, acceptRate: '70%', offerTotalLabel: m(offerTotal),
+      openOffer: () => this.setState({ offer: true }), closeOffer: () => this.setState({ offer: false }),
+      sendOffer: () => this.setState({ offer: false, screen: 'messages', thread: 't1' }),
+
+      reportOpen: S.report, reportSent: S.reportSent,
+      openReport: () => this.setState({ report: true, reportSent: false }),
+      closeReport: () => this.setState({ report: false, reportSent: false }),
+      submitReport: () => this.setState({ reportSent: true }),
+      blockUser: () => this.setState(s => ({ blocked: { ...s.blocked, [active.handle]: true }, report: false, reportSent: false, screen: 'blocked' })),
+      reportTarget: '@' + active.handle,
+
+      guestBanner: S.guest, signInOpen: S.signInSheet,
+      closeSignIn: () => this.setState({ signInSheet: false }),
+      completeSignIn: () => this.setState({ signInSheet: false, guest: false, signedIn: true }),
+
+      claimStepLabel: claimMeta.label, claimTitle: claimMeta.title, claimBody: claimMeta.body,
+      claim1: S.claimStep === 0, claim2: S.claimStep === 1, claim3: S.claimStep === 2,
+      claimCta: ['Ajouter des photos', 'Envoyer le signalement', 'Retour aux locations'][S.claimStep],
+      claimNext: () => S.claimStep < 2 ? this.setState({ claimStep: S.claimStep + 1 }) : this.setState({ screen: 'rentals', claimStep: 0 }),
+      claimBack: () => S.claimStep > 0 ? this.setState({ claimStep: S.claimStep - 1 }) : this.go('rentals'),
+      claimS1Bg: CLAY, claimS2Bg: S.claimStep >= 1 ? CLAY : 'var(--surf2)', claimS3Bg: S.claimStep >= 2 ? CLAY : 'var(--surf2)',
+
+      deleteOpen: S.deleteStep > 0, deleteConfirm: S.deleteStep === 2,
+      openDelete: () => this.setState({ deleteStep: 1 }),
+      closeDelete: () => this.setState({ deleteStep: 0 }),
+      confirmDelete: () => this.setState({ deleteStep: 2 }),
+
+      memberLabel: S.member ? 'Abonnement actif' : 'Essayer 14 jours offerts',
+      memberOn: S.member, toggleMember: () => this.setState(s => ({ member: !s.member })),
+      memberPriceLabel: m(9),
+
+      stepLabel: stepMeta.label, stepTitle: stepMeta.title, stepBody: stepMeta.body,
+      listStep1: S.listStep === 0, listStep2: S.listStep === 1, listStep3: S.listStep === 2,
+      listCta: ['Ajouter les détails', 'Définir le prix', 'Publier l\'annonce'][S.listStep],
+      step1Bg: CLAY, step2Bg: S.listStep >= 1 ? CLAY : 'var(--surf2)', step3Bg: S.listStep >= 2 ? CLAY : 'var(--surf2)',
+      listNext: () => S.listStep < 2 ? this.setState({ listStep: S.listStep + 1 }) : this.setState({ screen: 'closet', listStep: 0 }),
+      listBack: () => S.listStep > 0 ? this.setState({ listStep: S.listStep - 1 }) : this.go('closet'),
+      instantTrack: S.instant ? CLAY : 'var(--surf2)', instantKnob: S.instant ? '23px' : '3px',
+      localTrack: S.local ? CLAY : 'var(--surf2)', localKnob: S.local ? '23px' : '3px',
+      toggleInstant: () => this.setState(s => ({ instant: !s.instant })),
+      toggleLocal: () => this.setState(s => ({ local: !s.local })),
+
+      shipBg: ship ? CLAY : 'transparent', shipFg: ship ? ONCLAY : INK,
+      meetBg: ship ? 'transparent' : CLAY, meetFg: ship ? INK : ONCLAY,
+      shipBorder: ship ? CLAY : LINE, meetBorder: ship ? LINE : CLAY,
+      shipRing: ship ? CLAY : 'var(--ink3)', meetRing: ship ? 'var(--ink3)' : CLAY,
+      shipDot: ship ? CLAY : 'transparent', meetDot: ship ? 'transparent' : CLAY,
+      pickShip: () => this.setState({ delivery: 'ship' }), pickMeet: () => this.setState({ delivery: 'meet' }),
+
+      rentingBg: S.rentalTab === 'renting' ? CLAY : 'transparent', rentingFg: S.rentalTab === 'renting' ? ONCLAY : INK,
+      lendingBg: S.rentalTab === 'lending' ? CLAY : 'transparent', lendingFg: S.rentalTab === 'lending' ? ONCLAY : INK,
+      pickRenting: () => this.setState({ rentalTab: 'renting' }), pickLending: () => this.setState({ rentalTab: 'lending' }),
+
+      activeWishFill: S.wish[active.id] ? CLAY : 'transparent',
+      activeWishStroke: S.wish[active.id] ? CLAY : '#F6F1E9',
+      toggleWishActive: () => this.setState(s => ({ wish: { ...s.wish, [active.id]: !s.wish[active.id] } })),
+      followLabel: S.follow ? 'Suivi' : 'Suivre',
+      followBg: S.follow ? 'transparent' : CLAY, followFg: S.follow ? INK : ONCLAY,
+      followBorder: S.follow ? LINE : CLAY,
+      toggleFollow: () => this.setState(s => ({ follow: !s.follow })),
+      stats: [{ value: '4,96', label: 'Note' }, { value: '68', label: 'Locations' }, { value: '2,1k', label: 'Abonnés' }],
+      badges: ['Identité vérifiée', 'Expédie le jour même', 'Top 5% des prêteuses', 'Nettoyage inclus'],
+
+      openFilters: () => this.setState({ filters: true }), closeFilters: () => this.setState({ filters: false }),
+      closeThread: () => this.setState({ thread: null }),
+      confirm: () => this.setState({ confirmed: true }),
+      goFeed: () => this.go('feed'), goDetail: () => this.go('detail'), goBooking: () => this.go('booking'),
+      goCheckout: () => this.go('checkout'), goRentals: () => this.go('rentals'), goProfile: () => this.go('profile'),
+      goMessages: () => this.go('messages'), goList: () => this.go('list'), goCloset: () => this.go('closet'),
+      goDiscover: () => this.go('discover'), goBoards: () => this.go('boards'), goSearch: () => this.go('search'),
+      goSettings: () => this.go('settings'), goPayouts: () => this.go('payouts'), goNotifs: () => this.go('notifs'),
+      goReviews: () => this.go('reviews'), goClaim: () => this.go('claim'), goSafety: () => this.go('safety'),
+      goFees: () => this.go('fees'), goMember: () => this.go('member'), goGuidelines: () => this.go('guidelines'),
+      goBlocked: () => this.go('blocked'),
+      bookOrSignIn: () => S.guest ? this.setState({ signInSheet: true }) : this.go('booking'),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

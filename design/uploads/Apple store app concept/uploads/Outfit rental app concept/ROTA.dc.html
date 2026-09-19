@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  body { margin: 0; background: #08080B; }
+  a { color: #25F4EE; text-decoration: none; }
+  a:hover { color: #FE2C55; }
+  *::-webkit-scrollbar { width: 0; height: 0; }
+  * { scrollbar-width: none; }
+  @keyframes rotaIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-wrap:wrap;align-items:flex-start;gap:56px;padding:56px 48px 80px;box-sizing:border-box;background:radial-gradient(110% 70% at 12% 0%, #1A1020 0%, #0C0C11 55%, #08080B 100%);font-family:Archivo, system-ui, sans-serif;color:#F5F5F7">
+
+  <div style="flex:1 1 320px;max-width:460px;min-width:280px">
+    <div style="font-family:'Instrument Serif',serif;font-size:84px;line-height:0.88;letter-spacing:-0.02em;color:#F5F5F7">ROTA</div>
+    <div style="margin-top:10px;font-size:15px;letter-spacing:0.22em;text-transform:uppercase;color:#25F4EE">Rent the look. Return the look.</div>
+    <div style="margin-top:24px;font-size:17px;line-height:1.55;color:#B6B6C2;text-wrap:pretty;max-width:38ch">A peer-to-peer rental feed. Scroll outfits in full-screen video, book the exact piece for your dates, and send it on to the next person. Every wardrobe earns.</div>
+
+    <div style="margin-top:36px;display:flex;flex-wrap:wrap;gap:8px">
+      <sc-for list="{{ chips }}" as="chip" hint-placeholder-count="12">
+        <button onClick="{{ chip.go }}" style="cursor:pointer;font-family:Archivo,sans-serif;font-size:13px;font-weight:600;letter-spacing:0.02em;padding:9px 14px;border-radius:999px;border:1px solid {{ chip.border }};background:{{ chip.bg }};color:{{ chip.fg }}">{{ chip.label }}</button>
+      </sc-for>
+    </div>
+
+    <div style="margin-top:40px;padding-top:24px;border-top:1px solid rgba(245,245,247,0.14);display:grid;gap:14px;max-width:34ch">
+      <div style="font-size:13px;letter-spacing:0.18em;text-transform:uppercase;color:#9A9AA6">Built into the flow</div>
+      <div style="font-size:15px;line-height:1.5;color:#B6B6C2">ID-verified lenders · two-way ratings · damage cover on every booking · cleaning priced in · real fit photos from past renters · ship or meet, lender's choice.</div>
+    </div>
+  </div>
+
+  <div style="flex:0 0 auto">
+    <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="402px,874px">
+
+      <div style="position:relative;height:100%;background:#0B0B0E;overflow:hidden;display:flex;flex-direction:column;font-family:Archivo, system-ui, sans-serif;color:#F5F5F7">
+        <div style="position:relative;flex:1;overflow:hidden">
+
+          <!-- ONBOARDING -->
+          <sc-if value="{{ isOnboard }}" hint-placeholder-val="{{ true }}">
+            <div style="position:absolute;inset:0;background:#0B0B0E">
+              <div style="position:absolute;inset:0">
+                <image-slot id="rota-ob" shape="rect" placeholder="Drop a hero outfit photo"></image-slot>
+              </div>
+              <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(11,11,14,0.55) 0%, rgba(11,11,14,0.05) 32%, rgba(11,11,14,0.9) 76%, #0B0B0E 100%);pointer-events:none"></div>
+              <div style="position:absolute;left:0;right:0;bottom:0;padding:0 28px 44px;pointer-events:none">
+                <div style="display:inline-block;font-size:11px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;padding:6px 10px;border-radius:6px;background:linear-gradient(135deg,#F77737 0%,#E1306C 52%,#833AB4 100%);color:#FFFFFF">Rota · peer-to-peer rental</div>
+                <div style="margin-top:16px;font-family:'Instrument Serif',serif;font-size:52px;line-height:0.98;color:#F5F5F7;letter-spacing:-0.01em">Wear it once.<br><span style="font-style:italic;color:#25F4EE">Then pass it on.</span></div>
+                <div style="margin-top:14px;font-size:15px;line-height:1.5;color:#B6B6C2;max-width:30ch">Rent from wardrobes near you for a night, a weekend, or a week. List yours and it pays for itself.</div>
+                <div style="margin-top:26px;display:grid;gap:10px;pointer-events:auto">
+                  <button onClick="{{ goFeed }}" style="cursor:pointer;font-family:Archivo,sans-serif;font-size:17px;font-weight:700;height:54px;border:none;border-radius:16px;background:#25F4EE;color:#0B0B0E">Start browsing</button>
+                  <button onClick="{{ goFeed }}" style="cursor:pointer;font-family:Archivo,sans-serif;font-size:17px;font-weight:600;height:54px;border:1px solid rgba(245,245,247,0.28);border-radius:16px;background:rgba(245,245,247,0.07);color:#F5F5F7;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="15" height="18" viewBox="0 0 15 18" fill="#F5F5F7"><path d="M12.3 9.6c0-2 1.6-3 1.7-3.1-.9-1.4-2.4-1.5-2.9-1.6-1.3-.1-2.4.7-3 .7-.6 0-1.5-.7-2.5-.7-1.3 0-2.5.8-3.2 2C.9 9.4 1.9 13 3.2 15c.6 1 1.4 2.1 2.4 2 .9 0 1.3-.6 2.4-.6 1.1 0 1.4.6 2.4.6 1 0 1.7-1 2.4-2 .5-.8.7-1.2 1-2-2.4-.9-2.5-3.3-2.5-3.4zM9.9 3.4c.5-.6.9-1.5.8-2.4-.8 0-1.8.5-2.3 1.2-.5.6-.9 1.5-.8 2.3.9.1 1.8-.5 2.3-1.1z"/></svg>Continue with Apple</button>
+                </div>
+                <div style="margin-top:16px;text-align:center;font-size:12px;color:#8A8A96">Lenders are ID-verified. Every rental is covered.</div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- FEED -->
+          <sc-if value="{{ isFeed }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;scroll-snap-type:y mandatory;background:#0B0B0E">
+              <sc-for list="{{ feed }}" as="item" hint-placeholder-count="3">
+                <div style="position:relative;height:790px;scroll-snap-align:start;overflow:hidden">
+                  <div style="position:absolute;inset:0">
+                    <image-slot id="{{ item.slot }}" shape="rect" placeholder="Drop outfit video still"></image-slot>
+                  </div>
+                  <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(11,11,14,0.5) 0%, rgba(11,11,14,0) 24%, rgba(11,11,14,0) 46%, rgba(11,11,14,0.9) 92%);pointer-events:none"></div>
+
+                  <div style="position:absolute;top:58px;left:0;right:0;display:flex;justify-content:center;gap:22px;pointer-events:none">
+                    <div style="font-size:15px;font-weight:600;color:rgba(245,245,247,0.55)">Near you</div>
+                    <div style="font-size:15px;font-weight:700;color:#F5F5F7;padding-bottom:5px;border-bottom:2px solid #25F4EE">For you</div>
+                    <div style="font-size:15px;font-weight:600;color:rgba(245,245,247,0.55)">Following</div>
+                  </div>
+
+                  <div style="position:absolute;right:12px;bottom:206px;display:flex;flex-direction:column;align-items:center;gap:20px">
+                    <div onClick="{{ item.openProfile }}" style="cursor:pointer;width:50px;height:50px;border-radius:999px;padding:2px;box-sizing:border-box;background:linear-gradient(135deg,#F77737 0%,#E1306C 52%,#833AB4 100%)">
+                      <div style="width:100%;height:100%;border-radius:999px;overflow:hidden;border:2px solid #0B0B0E;box-sizing:border-box">
+                        <image-slot id="{{ item.avatarSlot }}" shape="circle" placeholder="Lender"></image-slot>
+                      </div>
+                    </div>
+                    <div onClick="{{ item.like }}" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px">
+                      <svg width="30" height="30" viewBox="0 0 24 24" fill="{{ item.likeFill }}" stroke="{{ item.likeStroke }}" stroke-width="1.6"><path d="M12 20.5s-7.5-4.7-7.5-9.8a4.3 4.3 0 0 1 7.5-2.8 4.3 4.3 0 0 1 7.5 2.8c0 5.1-7.5 9.8-7.5 9.8z"/></svg>
+                      <div style="font-size:12px;font-weight:600;color:#F5F5F7">{{ item.likes }}</div>
+                    </div>
+                    <div onClick="{{ item.openDetail }}" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px">
+                      <svg width="29" height="29" viewBox="0 0 24 24" fill="none" stroke="#F5F5F7" stroke-width="1.6"><path d="M21 12a8.5 8.5 0 0 1-12.3 7.6L4 21l1.4-4.3A8.5 8.5 0 1 1 21 12z"/></svg>
+                      <div style="font-size:12px;font-weight:600;color:#F5F5F7">{{ item.comments }}</div>
+                    </div>
+                    <div onClick="{{ item.wish }}" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="{{ item.wishFill }}" stroke="{{ item.wishStroke }}" stroke-width="1.6"><path d="M6 3.5h12v17l-6-4.3-6 4.3z"/></svg>
+                      <div style="font-size:12px;font-weight:600;color:#F5F5F7">Save</div>
+                    </div>
+                  </div>
+
+                  <div style="position:absolute;left:0;right:0;bottom:0;padding:0 18px 26px">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:5px 9px;border-radius:6px;background:#FE2C55;color:#FFFFFF">{{ item.occasion }}</div>
+                      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:5px 9px;border-radius:6px;border:1px solid #25F4EE;color:#25F4EE">{{ item.badge }}</div>
+                    </div>
+                    <div onClick="{{ item.openProfile }}" style="cursor:pointer;margin-top:14px;font-size:15px;font-weight:600;color:#F5F5F7">@{{ item.handle }} <span style="color:rgba(245,245,247,0.6);font-weight:400">· {{ item.wornCount }}</span></div>
+                    <div style="margin-top:6px;font-family:'Instrument Serif',serif;font-size:34px;line-height:1.04;color:#F5F5F7">{{ item.title }}</div>
+                    <div style="margin-top:6px;font-size:14px;color:rgba(245,245,247,0.7)">{{ item.brand }} · size {{ item.size }} · {{ item.city }}</div>
+                    <div style="margin-top:16px;display:flex;align-items:center;gap:12px">
+                      <button onClick="{{ item.openDetail }}" style="cursor:pointer;flex:1;font-family:Archivo,sans-serif;font-size:16px;font-weight:700;height:52px;border:none;border-radius:14px;background:#25F4EE;color:#0B0B0E">Rent · {{ item.priceLabel }} / night</button>
+                      <button onClick="{{ item.openDetail }}" style="cursor:pointer;width:52px;height:52px;flex:0 0 52px;border-radius:14px;border:1px solid rgba(245,245,247,0.3);background:rgba(245,245,247,0.1);color:#F5F5F7;font-size:19px">›</button>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <!-- SEARCH -->
+          <sc-if value="{{ isSearch }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:#0B0B0E;padding:62px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="font-family:'Instrument Serif',serif;font-size:38px;line-height:1">Find a look</div>
+              <div style="margin-top:14px;display:flex;gap:10px">
+                <div style="flex:1;display:flex;align-items:center;gap:9px;height:46px;padding:0 14px;border-radius:14px;background:#1B1B22;color:#9A9AA6;font-size:15px">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9A9AA6" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>
+                  sequin dress, size S
+                </div>
+                <button onClick="{{ openFilters }}" style="cursor:pointer;width:46px;height:46px;border-radius:14px;border:none;background:#25F4EE;display:flex;align-items:center;justify-content:center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B0B0E" stroke-width="2"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                </button>
+              </div>
+              <div style="margin-top:16px;display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">
+                <sc-for list="{{ occasions }}" as="o" hint-placeholder-count="5">
+                  <button onClick="{{ o.pick }}" style="cursor:pointer;flex:0 0 auto;font-family:Archivo,sans-serif;font-size:13px;font-weight:600;padding:9px 14px;border-radius:999px;border:1px solid {{ o.border }};background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button>
+                </sc-for>
+              </div>
+              <div style="margin-top:18px;display:flex;gap:14px;overflow-x:auto;padding-bottom:4px">
+                <sc-for list="{{ categories }}" as="c" hint-placeholder-count="6">
+                  <div onClick="{{ c.pick }}" style="cursor:pointer;flex:0 0 auto;width:62px;text-align:center">
+                    <div style="width:62px;height:62px;border-radius:999px;overflow:hidden;background:#1B1B22;border:2px solid {{ c.ring }};box-sizing:border-box">
+                      <image-slot id="{{ c.slot }}" shape="circle" placeholder=""></image-slot>
+                    </div>
+                    <div style="margin-top:6px;font-size:11px;font-weight:600;color:{{ c.fg }};line-height:1.2">{{ c.label }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:12px;border-bottom:1px solid rgba(245,245,247,0.1)">
+                <div style="font-size:13px;color:#9A9AA6;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ resultCount }} pieces · {{ city }}</div>
+                <div onClick="{{ cycleSort }}" style="cursor:pointer;flex:0 0 auto;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#25F4EE">
+                  {{ sortLabel }}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#25F4EE" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+              </div>
+              <div style="margin-top:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+                <sc-for list="{{ results }}" as="r" hint-placeholder-count="6">
+                  <div style="min-width:0">
+                    <div onClick="{{ r.open }}" style="cursor:pointer;display:flex;align-items:center;gap:6px;min-width:0">
+                      <div style="width:22px;height:22px;flex:0 0 22px;border-radius:999px;overflow:hidden"><image-slot id="{{ r.avSlot }}" shape="circle" placeholder="Av"></image-slot></div>
+                      <div style="font-size:12px;color:#9A9AA6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.handle }}</div>
+                    </div>
+                    <div onClick="{{ r.open }}" style="cursor:pointer;margin-top:7px;position:relative;height:192px;border-radius:12px;overflow:hidden;background:#1B1B22">
+                      <image-slot id="{{ r.slot }}" shape="rounded" radius="12" placeholder="Outfit"></image-slot>
+                      <div onClick="{{ r.fav }}" style="position:absolute;top:7px;right:7px;cursor:pointer;height:28px;padding:0 9px;border-radius:999px;background:rgba(11,11,14,0.78);display:flex;align-items:center;gap:5px">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="{{ r.favFill }}" stroke="{{ r.favStroke }}" stroke-width="2"><path d="M12 20.5s-7.5-4.7-7.5-9.8a4.3 4.3 0 0 1 7.5-2.8 4.3 4.3 0 0 1 7.5 2.8c0 5.1-7.5 9.8-7.5 9.8z"/></svg>
+                        <span style="font-size:11px;font-weight:700;color:#F5F5F7">{{ r.favCount }}</span>
+                      </div>
+                      <div style="position:absolute;bottom:7px;left:7px;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 7px;border-radius:5px;background:rgba(11,11,14,0.82);color:#F5F5F7;pointer-events:none">{{ r.status }}</div>
+                    </div>
+                    <div onClick="{{ r.open }}" style="cursor:pointer;margin-top:8px">
+                      <div style="font-size:14px;font-weight:700;line-height:1.15">{{ r.priceLabel }} <span style="font-size:12px;font-weight:400;color:#9A9AA6">/ night</span></div>
+                      <div style="margin-top:3px;font-size:12px;color:#25F4EE;font-weight:600">{{ r.weekLabel }} for 3 nights</div>
+                      <div style="margin-top:4px;font-size:13px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</div>
+                      <div style="margin-top:2px;font-size:12px;color:#9A9AA6">{{ r.brand }} · {{ r.size }} · {{ r.dist }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <sc-if value="{{ filtersOpen }}">
+              <div onClick="{{ closeFilters }}" style="position:absolute;inset:0;background:rgba(4,4,6,0.66)"></div>
+              <div style="position:absolute;left:0;right:0;bottom:0;background:#16161C;border-radius:24px 24px 0 0;border-top:1px solid rgba(245,245,247,0.1);padding:20px 20px 30px;animation:rotaIn .22s ease">
+                <div style="width:44px;height:4px;border-radius:99px;background:#3A3A45;margin:0 auto 16px"></div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between">
+                  <div style="font-family:'Instrument Serif',serif;font-size:30px">Filters</div>
+                  <button onClick="{{ closeFilters }}" style="cursor:pointer;border:none;background:none;font-family:Archivo,sans-serif;font-size:14px;font-weight:600;color:#FE2C55">Reset</button>
+                </div>
+                <div style="margin-top:18px;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9A9AA6">Size</div>
+                <div style="margin-top:10px;display:flex;gap:8px">
+                  <sc-for list="{{ sizes }}" as="s" hint-placeholder-count="4">
+                    <button onClick="{{ s.pick }}" style="cursor:pointer;flex:1;height:44px;font-family:Archivo,sans-serif;font-size:15px;font-weight:600;border-radius:12px;border:1px solid {{ s.border }};background:{{ s.bg }};color:{{ s.fg }}">{{ s.label }}</button>
+                  </sc-for>
+                </div>
+                <div style="margin-top:20px;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9A9AA6">Handover</div>
+                <div style="margin-top:10px;display:flex;gap:8px">
+                  <button onClick="{{ pickShip }}" style="cursor:pointer;flex:1;height:44px;font-family:Archivo,sans-serif;font-size:15px;font-weight:600;border-radius:12px;border:1px solid {{ shipBorder }};background:{{ shipBg }};color:{{ shipFg }}">Ships to me</button>
+                  <button onClick="{{ pickMeet }}" style="cursor:pointer;flex:1;height:44px;font-family:Archivo,sans-serif;font-size:15px;font-weight:600;border-radius:12px;border:1px solid {{ meetBorder }};background:{{ meetBg }};color:{{ meetFg }}">Local pickup</button>
+                </div>
+                <div style="margin-top:20px;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9A9AA6">Nightly price · {{ maxPriceLabel }} max</div>
+                <div style="margin-top:14px;height:4px;border-radius:99px;background:#2A2A33;position:relative">
+                  <div style="position:absolute;left:0;top:0;bottom:0;width:62%;border-radius:99px;background:linear-gradient(90deg,#25F4EE 0%,#FE2C55 100%)"></div>
+                  <div style="position:absolute;left:62%;top:-8px;width:20px;height:20px;border-radius:99px;background:#F5F5F7;transform:translateX(-50%)"></div>
+                </div>
+                <button onClick="{{ closeFilters }}" style="cursor:pointer;margin-top:26px;width:100%;height:54px;font-family:Archivo,sans-serif;font-size:17px;font-weight:700;border:none;border-radius:16px;background:#25F4EE;color:#0B0B0E">Show {{ resultCount }} pieces</button>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <!-- DETAIL -->
+          <sc-if value="{{ isDetail }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:#0B0B0E;animation:rotaIn .22s ease">
+              <div style="position:relative;height:430px;background:#1B1B22">
+                <image-slot id="rota-detail" shape="rect" placeholder="Drop the hero outfit photo"></image-slot>
+                <div style="position:absolute;top:56px;left:16px;right:16px;display:flex;justify-content:space-between;pointer-events:none">
+                  <button onClick="{{ goFeed }}" style="pointer-events:auto;cursor:pointer;width:40px;height:40px;border-radius:999px;border:none;background:rgba(11,11,14,0.6);color:#F5F5F7;font-size:18px">‹</button>
+                  <button onClick="{{ toggleWishActive }}" style="pointer-events:auto;cursor:pointer;width:40px;height:40px;border-radius:999px;border:none;background:rgba(11,11,14,0.6);display:flex;align-items:center;justify-content:center">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="{{ activeWishFill }}" stroke="{{ activeWishStroke }}" stroke-width="1.8"><path d="M6 3.5h12v17l-6-4.3-6 4.3z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div style="padding:20px 18px 150px">
+                <div style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#FE2C55">{{ active.occasion }} · {{ active.badge }}</div>
+                <div style="margin-top:8px;font-family:'Instrument Serif',serif;font-size:36px;line-height:1.02">{{ active.title }}</div>
+                <div style="margin-top:6px;font-size:15px;color:#9A9AA6">{{ active.brand }} · retail {{ active.retailLabel }}</div>
+
+                <div onClick="{{ goProfile }}" style="cursor:pointer;margin-top:18px;display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;background:#16161C;border:1px solid rgba(245,245,247,0.08)">
+                  <div style="width:48px;height:48px;flex:0 0 48px;border-radius:999px;padding:2px;box-sizing:border-box;background:linear-gradient(135deg,#F77737 0%,#E1306C 52%,#833AB4 100%)">
+                    <div style="width:100%;height:100%;border-radius:999px;overflow:hidden"><image-slot id="rota-lender" shape="circle" placeholder="Lender"></image-slot></div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-size:15px;font-weight:700">{{ active.name }} <span style="color:#25F4EE">✓</span></div>
+                    <div style="font-size:13px;color:#9A9AA6">4.96 ★ · 68 rentals · ID verified</div>
+                  </div>
+                  <div style="font-size:19px;color:#9A9AA6">›</div>
+                </div>
+
+                <div onClick="{{ goProfile }}" style="cursor:pointer;margin-top:10px;padding:12px;border-radius:16px;background:#16161C;border:1px solid rgba(245,245,247,0.08)">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                    <div style="font-size:14px;font-weight:700">Bundle from this closet</div>
+                    <div style="font-size:12px;font-weight:700;color:#25F4EE;flex:0 0 auto">Save 15%</div>
+                  </div>
+                  <div style="margin-top:9px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px">
+                    <div style="height:72px;border-radius:9px;overflow:hidden"><image-slot id="rota-bundle-1" shape="rounded" radius="9" placeholder=""></image-slot></div>
+                    <div style="height:72px;border-radius:9px;overflow:hidden"><image-slot id="rota-bundle-2" shape="rounded" radius="9" placeholder=""></image-slot></div>
+                    <div style="height:72px;border-radius:9px;overflow:hidden"><image-slot id="rota-bundle-3" shape="rounded" radius="9" placeholder=""></image-slot></div>
+                    <div style="height:72px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:#1B1B22;font-size:13px;font-weight:700;color:#9A9AA6">+37</div>
+                  </div>
+                  <div style="margin-top:9px;font-size:13px;color:#9A9AA6">Rent 2+ pieces on the same dates and shipping is one fee.</div>
+                </div>
+
+                <div style="margin-top:24px;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9A9AA6">Size &amp; fit</div>
+                <div style="margin-top:10px;display:flex;gap:8px">
+                  <sc-for list="{{ sizes }}" as="s" hint-placeholder-count="4">
+                    <button onClick="{{ s.pick }}" style="cursor:pointer;flex:1;height:48px;font-family:Archivo,sans-serif;font-size:15px;font-weight:600;border-radius:12px;border:1px solid {{ s.border }};background:{{ s.bg }};color:{{ s.fg }}">{{ s.label }}</button>
+                  </sc-for>
+                </div>
+                <div style="margin-top:14px;padding:14px;border-radius:14px;background:#16161C;border:1px solid rgba(245,245,247,0.08)">
+                  <div style="display:flex;justify-content:space-between;font-size:13px;color:#9A9AA6"><span>Runs small</span><span>True to size</span><span>Runs large</span></div>
+                  <div style="margin-top:8px;height:4px;border-radius:99px;background:#2A2A33;position:relative">
+                    <div style="position:absolute;left:41%;top:-6px;width:16px;height:16px;border-radius:99px;background:#25F4EE;transform:translateX(-50%)"></div>
+                  </div>
+                  <div style="margin-top:12px;font-size:14px;line-height:1.5;color:#C9C9D4">Lender is 5'7" and wears a {{ active.size }}. Bust 86cm · waist 68cm · length 142cm. Stretch: minimal.</div>
+                </div>
+
+                <div style="margin-top:24px;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9A9AA6">Worn by renters</div>
+                <div style="margin-top:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+                  <div style="height:120px;border-radius:12px;overflow:hidden"><image-slot id="rota-fit-1" shape="rounded" radius="12" placeholder="Fit pic"></image-slot></div>
+                  <div style="height:120px;border-radius:12px;overflow:hidden"><image-slot id="rota-fit-2" shape="rounded" radius="12" placeholder="Fit pic"></image-slot></div>
+                  <div style="height:120px;border-radius:12px;overflow:hidden"><image-slot id="rota-fit-3" shape="rounded" radius="12" placeholder="Fit pic"></image-slot></div>
+                </div>
+
+                <div style="margin-top:24px;display:grid;gap:8px">
+                  <sc-for list="{{ trust }}" as="t" hint-placeholder-count="4">
+                    <div style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:#16161C;border:1px solid rgba(245,245,247,0.08)">
+                      <div style="font-size:15px;color:#25F4EE;line-height:1.4">●</div>
+                      <div>
+                        <div style="font-size:14px;font-weight:700">{{ t.title }}</div>
+                        <div style="margin-top:2px;font-size:13px;line-height:1.45;color:#9A9AA6">{{ t.body }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <div style="margin-top:24px;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9A9AA6">Reviews · 4.9</div>
+                <div style="margin-top:10px;padding:14px;border-radius:14px;background:#16161C;border:1px solid rgba(245,245,247,0.08);font-size:14px;line-height:1.55;color:#C9C9D4">"Arrived pressed and steamed in a garment bag. Wore it to a wedding, dropped it in the return mailer Monday. Cheaper than the dry-clean on my own dress." — Maya, rented 3 nights</div>
+              </div>
+
+              <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 18px 26px;background:linear-gradient(180deg, rgba(11,11,14,0) 0%, #0B0B0E 40%);display:flex;align-items:center;gap:10px">
+                <div style="flex:0 0 auto">
+                  <div style="font-family:'Instrument Serif',serif;font-size:26px;line-height:1">{{ active.priceLabel }}</div>
+                  <div style="font-size:12px;color:#9A9AA6">per night</div>
+                </div>
+                <button onClick="{{ openOffer }}" style="cursor:pointer;flex:0 0 auto;height:54px;padding:0 16px;font-family:Archivo,sans-serif;font-size:15px;font-weight:700;border:1px solid rgba(245,245,247,0.26);border-radius:16px;background:rgba(245,245,247,0.07);color:#F5F5F7">Offer</button>
+                <button onClick="{{ goBooking }}" style="cursor:pointer;flex:1;min-width:0;height:54px;font-family:Archivo,sans-serif;font-size:16px;font-weight:700;border:none;border-radius:16px;background:#25F4EE;color:#0B0B0E">{{ bookCta }}</button>
+              </div>
+            </div>
+            <sc-if value="{{ offerOpen }}">
+              <div onClick="{{ closeOffer }}" style="position:absolute;inset:0;background:rgba(4,4,6,0.66)"></div>
+              <div style="position:absolute;left:0;right:0;bottom:0;background:#16161C;border-radius:24px 24px 0 0;border-top:1px solid rgba(245,245,247,0.1);padding:20px 20px 30px;animation:rotaIn .22s ease">
+                <div style="width:44px;height:4px;border-radius:99px;background:#3A3A45;margin:0 auto 16px"></div>
+                <div style="font-family:'Instrument Serif',serif;font-size:30px;line-height:1">Make an offer</div>
+                <div style="margin-top:8px;font-size:14px;line-height:1.5;color:#9A9AA6;max-width:32ch">{{ active.name }} has 12h to accept. Asking {{ active.priceLabel }} / night for {{ nightsLabel }}.</div>
+                <div style="margin-top:18px;display:flex;gap:8px">
+                  <sc-for list="{{ offers }}" as="o" hint-placeholder-count="3">
+                    <button onClick="{{ o.pick }}" style="cursor:pointer;flex:1;min-width:0;padding:12px 6px;font-family:Archivo,sans-serif;border-radius:14px;border:1px solid {{ o.border }};background:{{ o.bg }};color:{{ o.fg }}">
+                      <div style="font-size:17px;font-weight:700">{{ o.label }}</div>
+                      <div style="margin-top:3px;font-size:11px;opacity:0.75">{{ o.sub }}</div>
+                    </button>
+                  </sc-for>
+                </div>
+                <div style="margin-top:16px;padding:14px;border-radius:14px;background:#1B1B22;font-size:13px;line-height:1.5;color:#C9C9D4">Offers on 3+ nights are accepted about {{ acceptRate }} of the time. Cleaning and cover stay included.</div>
+                <button onClick="{{ sendOffer }}" style="cursor:pointer;margin-top:20px;width:100%;height:54px;font-family:Archivo,sans-serif;font-size:17px;font-weight:700;border:none;border-radius:16px;background:#FE2C55;color:#FFFFFF">Send offer · {{ offerTotalLabel }}</button>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <!-- BOOKING -->
+          <sc-if value="{{ isBooking }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:#0B0B0E;padding:56px 18px 140px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <button onClick="{{ goDetail }}" style="cursor:pointer;width:40px;height:40px;border-radius:999px;border:1px solid rgba(245,245,247,0.2);background:none;font-size:18px;color:#F5F5F7">‹</button>
+              <div style="margin-top:14px;font-family:'Instrument Serif',serif;font-size:36px;line-height:1.02">Pick your dates</div>
+              <div style="margin-top:6px;font-size:14px;color:#9A9AA6">{{ active.title }} · size {{ selectedSize }}</div>
+
+              <div style="margin-top:22px;display:flex;align-items:center;justify-content:space-between">
+                <div style="font-size:16px;font-weight:700">September 2026</div>
+                <div style="font-size:13px;color:#9A9AA6">3-night minimum</div>
+              </div>
+              <div style="margin-top:14px;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-size:11px;color:#9A9AA6;text-align:center">
+                <div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div>
+              </div>
+              <div style="margin-top:6px;display:grid;grid-template-columns:repeat(7,1fr);gap:4px">
+                <sc-for list="{{ days }}" as="d" hint-placeholder-count="35">
+                  <div onClick="{{ d.pick }}" style="height:42px;display:flex;align-items:center;justify-content:center;border-radius:10px;font-size:14px;font-weight:600;cursor:{{ d.cursor }};background:{{ d.bg }};color:{{ d.fg }};text-decoration:{{ d.deco }}">{{ d.label }}</div>
+                </sc-for>
+              </div>
+
+              <div style="margin-top:22px;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9A9AA6">Handover</div>
+              <div style="margin-top:10px;display:grid;gap:8px">
+                <div onClick="{{ pickShip }}" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid {{ shipBorder }};background:#16161C">
+                  <div style="width:18px;height:18px;border-radius:99px;border:2px solid {{ shipRing }};background:{{ shipDot }}"></div>
+                  <div style="flex:1">
+                    <div style="font-size:15px;font-weight:700">Ship to me · prepaid both ways</div>
+                    <div style="font-size:13px;color:#9A9AA6">Arrives Thu 17 Sep · return label in the box</div>
+                  </div>
+                  <div style="font-size:14px;font-weight:700">{{ shipFeeLabel }}</div>
+                </div>
+                <div onClick="{{ pickMeet }}" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid {{ meetBorder }};background:#16161C">
+                  <div style="width:18px;height:18px;border-radius:99px;border:2px solid {{ meetRing }};background:{{ meetDot }}"></div>
+                  <div style="flex:1">
+                    <div style="font-size:15px;font-weight:700">Meet the lender</div>
+                    <div style="font-size:13px;color:#9A9AA6">Glebe · 2.4 km · Thu evening</div>
+                  </div>
+                  <div style="font-size:14px;font-weight:700">Free</div>
+                </div>
+              </div>
+
+              <div style="margin-top:22px;padding:16px;border-radius:16px;background:#16161C;border:1px solid rgba(245,245,247,0.1)">
+                <sc-for list="{{ breakdown }}" as="b" hint-placeholder-count="4">
+                  <div style="display:flex;justify-content:space-between;font-size:14px;padding:5px 0;color:#B6B6C2"><span>{{ b.label }}</span><span>{{ b.value }}</span></div>
+                </sc-for>
+                <div style="margin-top:10px;padding-top:12px;border-top:1px solid rgba(245,245,247,0.12);display:flex;justify-content:space-between;align-items:baseline">
+                  <span style="font-size:14px;letter-spacing:0.12em;text-transform:uppercase;color:#9A9AA6">Total</span>
+                  <span style="font-family:'Instrument Serif',serif;font-size:30px;color:#25F4EE">{{ totalLabel }}</span>
+                </div>
+                <div style="margin-top:8px;font-size:12px;color:#8A8A96">{{ depositLabel }} deposit held, released on return.</div>
+              </div>
+
+              <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 18px 26px;background:linear-gradient(180deg, rgba(11,11,14,0) 0%, #0B0B0E 40%)">
+                <button onClick="{{ goCheckout }}" style="cursor:pointer;width:100%;height:54px;font-family:Archivo,sans-serif;font-size:17px;font-weight:700;border:none;border-radius:16px;background:#25F4EE;color:#0B0B0E">Continue · {{ nightsLabel }}</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- CHECKOUT -->
+          <sc-if value="{{ isCheckout }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:#0B0B0E;padding:56px 18px 140px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <button onClick="{{ goBooking }}" style="cursor:pointer;width:40px;height:40px;border-radius:999px;border:1px solid rgba(245,245,247,0.2);background:none;font-size:18px;color:#F5F5F7">‹</button>
+              <div style="margin-top:14px;font-family:'Instrument Serif',serif;font-size:36px;line-height:1.02">Confirm rental</div>
+
+              <div style="margin-top:20px;display:flex;gap:12px;padding:12px;border-radius:16px;background:#16161C;border:1px solid rgba(245,245,247,0.08)">
+                <div style="width:76px;height:96px;flex:0 0 76px;border-radius:10px;overflow:hidden"><image-slot id="rota-checkout" shape="rounded" radius="10" placeholder="Item"></image-slot></div>
+                <div style="flex:1">
+                  <div style="font-size:15px;font-weight:700;line-height:1.25">{{ active.title }}</div>
+                  <div style="margin-top:4px;font-size:13px;color:#9A9AA6">Size {{ selectedSize }} · {{ nightsLabel }}</div>
+                  <div style="margin-top:4px;font-size:13px;color:#9A9AA6">18–21 Sep · {{ handoverLabel }}</div>
+                  <div style="margin-top:8px;font-size:14px;font-weight:700;color:#25F4EE">{{ totalLabel }}</div>
+                </div>
+              </div>
+
+              <div style="margin-top:22px;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9A9AA6">Pay with</div>
+              <div style="margin-top:10px;display:grid;gap:8px">
+                <div style="display:flex;align-items:center;gap:12px;padding:16px;border-radius:14px;border:1px solid #25F4EE;background:#16161C">
+                  <div style="width:18px;height:18px;border-radius:99px;border:2px solid #25F4EE;background:#25F4EE"></div>
+                  <svg width="15" height="18" viewBox="0 0 15 18" fill="#F5F5F7"><path d="M12.3 9.6c0-2 1.6-3 1.7-3.1-.9-1.4-2.4-1.5-2.9-1.6-1.3-.1-2.4.7-3 .7-.6 0-1.5-.7-2.5-.7-1.3 0-2.5.8-3.2 2C.9 9.4 1.9 13 3.2 15c.6 1 1.4 2.1 2.4 2 .9 0 1.3-.6 2.4-.6 1.1 0 1.4.6 2.4.6 1 0 1.7-1 2.4-2 .5-.8.7-1.2 1-2-2.4-.9-2.5-3.3-2.5-3.4zM9.9 3.4c.5-.6.9-1.5.8-2.4-.8 0-1.8.5-2.3 1.2-.5.6-.9 1.5-.8 2.3.9.1 1.8-.5 2.3-1.1z"/></svg>
+                  <div style="flex:1;font-size:15px;font-weight:700">Apple Pay</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:16px;border-radius:14px;border:1px solid rgba(245,245,247,0.12);background:none">
+                  <div style="width:18px;height:18px;border-radius:99px;border:2px solid #4A4A55"></div>
+                  <div style="flex:1;font-size:15px;color:#9A9AA6">Visa ·· 4417</div>
+                </div>
+              </div>
+
+              <div style="margin-top:22px;padding:16px;border-radius:16px;background:#16161C;border:1px solid rgba(245,245,247,0.08);font-size:13px;line-height:1.6;color:#C9C9D4">
+                <div style="font-size:14px;font-weight:700;margin-bottom:6px;color:#F5F5F7">What's covered</div>
+                Damage cover up to {{ coverLabel }} is included. Professional cleaning is in the price. A {{ depositLabel }} hold is placed on your card and released 48h after the item is scanned back in. Late returns are {{ lateLabel }} per day.
+              </div>
+
+              <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 18px 26px;background:linear-gradient(180deg, rgba(11,11,14,0) 0%, #0B0B0E 40%)">
+                <button onClick="{{ confirm }}" style="cursor:pointer;width:100%;height:54px;font-family:Archivo,sans-serif;font-size:17px;font-weight:700;border:none;border-radius:16px;background:#FE2C55;color:#FFFFFF">Pay {{ totalLabel }}</button>
+              </div>
+            </div>
+            <sc-if value="{{ confirmed }}">
+              <div style="position:absolute;inset:0;background:#0B0B0E;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;animation:rotaIn .25s ease">
+                <div style="width:64px;height:64px;border-radius:999px;background:linear-gradient(135deg,#F77737 0%,#E1306C 52%,#833AB4 100%);display:flex;align-items:center;justify-content:center;font-size:28px;color:#FFFFFF">✓</div>
+                <div style="margin-top:22px;font-family:'Instrument Serif',serif;font-size:40px;line-height:1.02;color:#F5F5F7">You're booked.</div>
+                <div style="margin-top:12px;font-size:15px;line-height:1.55;color:#B6B6C2">{{ active.name }} has 24h to confirm handover. We'll nudge you to post a fit video — it earns you {{ creditLabel }} off your next rental.</div>
+                <button onClick="{{ goRentals }}" style="cursor:pointer;margin-top:28px;width:100%;height:54px;font-family:Archivo,sans-serif;font-size:17px;font-weight:700;border:none;border-radius:16px;background:#25F4EE;color:#0B0B0E">See my rentals</button>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <!-- RENTALS -->
+          <sc-if value="{{ isRentals }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:#0B0B0E;padding:62px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="font-family:'Instrument Serif',serif;font-size:38px;line-height:1">Rentals</div>
+              <div style="margin-top:16px;display:flex;gap:6px;padding:4px;border-radius:12px;background:#16161C">
+                <button onClick="{{ pickRenting }}" style="cursor:pointer;flex:1;height:38px;font-family:Archivo,sans-serif;font-size:14px;font-weight:700;border:none;border-radius:9px;background:{{ rentingBg }};color:{{ rentingFg }}">Renting</button>
+                <button onClick="{{ pickLending }}" style="cursor:pointer;flex:1;height:38px;font-family:Archivo,sans-serif;font-size:14px;font-weight:700;border:none;border-radius:9px;background:{{ lendingBg }};color:{{ lendingFg }}">Lending out</button>
+              </div>
+              <div style="margin-top:16px;display:grid;gap:12px">
+                <sc-for list="{{ orders }}" as="o" hint-placeholder-count="3">
+                  <div style="padding:12px;border-radius:16px;background:#16161C;border:1px solid rgba(245,245,247,0.08)">
+                    <div style="display:flex;gap:12px">
+                      <div style="width:72px;height:92px;flex:0 0 72px;border-radius:10px;overflow:hidden"><image-slot id="{{ o.slot }}" shape="rounded" radius="10" placeholder="Item"></image-slot></div>
+                      <div style="flex:1">
+                        <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:{{ o.statusFg }}">{{ o.status }}</div>
+                        <div style="margin-top:5px;font-size:15px;font-weight:700;line-height:1.25">{{ o.title }}</div>
+                        <div style="margin-top:4px;font-size:13px;color:#9A9AA6">{{ o.who }} · {{ o.dates }}</div>
+                        <div style="margin-top:4px;font-size:13px;font-weight:700;color:{{ o.amountFg }}">{{ o.amount }}</div>
+                      </div>
+                    </div>
+                    <div style="margin-top:12px;display:flex;gap:8px">
+                      <button onClick="{{ o.primary }}" style="cursor:pointer;flex:1;height:40px;font-family:Archivo,sans-serif;font-size:14px;font-weight:700;border:none;border-radius:11px;background:#25F4EE;color:#0B0B0E">{{ o.cta }}</button>
+                      <button onClick="{{ goMessages }}" style="cursor:pointer;flex:1;height:40px;font-family:Archivo,sans-serif;font-size:14px;font-weight:700;border:1px solid rgba(245,245,247,0.22);border-radius:11px;background:none;color:#F5F5F7">Message</button>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- DISCOVER (masonry) -->
+          <sc-if value="{{ isDiscover }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:#0B0B0E;padding:56px 12px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:10px;padding:0 4px">
+                <div onClick="{{ goSearch }}" style="cursor:pointer;flex:1;min-width:0;display:flex;align-items:center;gap:9px;height:44px;padding:0 15px;border-radius:999px;background:#1B1B22;color:#9A9AA6;font-size:14px">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A9AA6" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Search wardrobes in Ottawa</span>
+                </div>
+                <button onClick="{{ goBoards }}" style="cursor:pointer;width:44px;height:44px;flex:0 0 44px;border-radius:999px;border:1px solid rgba(245,245,247,0.2);background:none;display:flex;align-items:center;justify-content:center">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#F5F5F7" stroke-width="1.8"><path d="M6 3.5h12v17l-6-4.3-6 4.3z"/></svg>
+                </button>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:7px;overflow-x:auto;padding:0 4px 4px">
+                <sc-for list="{{ ideas }}" as="i" hint-placeholder-count="6">
+                  <button onClick="{{ i.pick }}" style="cursor:pointer;flex:0 0 auto;font-family:Archivo,sans-serif;font-size:13px;font-weight:600;padding:9px 14px;border-radius:999px;border:1px solid {{ i.border }};background:{{ i.bg }};color:{{ i.fg }}">{{ i.label }}</button>
+                </sc-for>
+              </div>
+              <div style="margin-top:6px;padding:0 4px;font-size:13px;color:#9A9AA6">Ideas for <span style="color:#F5F5F7;font-weight:600">{{ ideaActive }}</span> · rentable near you</div>
+              <div style="margin-top:12px;column-count:2;column-gap:10px">
+                <sc-for list="{{ pins }}" as="p" hint-placeholder-count="8">
+                  <div style="break-inside:avoid;margin-bottom:10px">
+                    <div onClick="{{ p.open }}" style="cursor:pointer;position:relative;border-radius:16px;overflow:hidden;background:#1B1B22;height:{{ p.h }}">
+                      <image-slot id="{{ p.slot }}" shape="rounded" radius="16" placeholder="Outfit"></image-slot>
+                      <div onClick="{{ p.save }}" style="position:absolute;top:8px;right:8px;cursor:pointer;height:30px;padding:0 11px;border-radius:999px;background:{{ p.saveBg }};color:{{ p.saveFg }};font-size:12px;font-weight:700;display:flex;align-items:center">{{ p.saveLabel }}</div>
+                      <div style="position:absolute;bottom:8px;left:8px;font-size:11px;font-weight:700;padding:5px 8px;border-radius:7px;background:rgba(11,11,14,0.82);color:#F5F5F7;pointer-events:none">{{ p.priceLabel }} / night</div>
+                    </div>
+                    <div style="margin-top:7px;display:flex;align-items:center;gap:7px;min-width:0">
+                      <div style="width:20px;height:20px;flex:0 0 20px;border-radius:999px;overflow:hidden"><image-slot id="{{ p.avSlot }}" shape="circle" placeholder="Av"></image-slot></div>
+                      <div style="font-size:12px;color:#9A9AA6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.handle }} · {{ p.size }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- SAVED BOARDS -->
+          <sc-if value="{{ isBoards }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:#0B0B0E;padding:62px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:12px">
+                <button onClick="{{ goDiscover }}" style="cursor:pointer;width:40px;height:40px;flex:0 0 40px;border-radius:999px;border:1px solid rgba(245,245,247,0.2);background:none;font-size:18px;color:#F5F5F7">‹</button>
+                <div style="font-family:'Instrument Serif',serif;font-size:34px;line-height:1">Your boards</div>
+              </div>
+              <div style="margin-top:8px;font-size:14px;color:#9A9AA6">{{ wishCount }} saves · 3 free this weekend</div>
+              <div style="margin-top:18px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+                <sc-for list="{{ boards }}" as="b" hint-placeholder-count="4">
+                  <div onClick="{{ b.open }}" style="cursor:pointer;min-width:0">
+                    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,66px);gap:3px;border-radius:16px;overflow:hidden;background:#1B1B22">
+                      <div style="overflow:hidden"><image-slot id="{{ b.s1 }}" shape="rect" placeholder=""></image-slot></div>
+                      <div style="overflow:hidden"><image-slot id="{{ b.s2 }}" shape="rect" placeholder=""></image-slot></div>
+                      <div style="overflow:hidden"><image-slot id="{{ b.s3 }}" shape="rect" placeholder=""></image-slot></div>
+                      <div style="overflow:hidden"><image-slot id="{{ b.s4 }}" shape="rect" placeholder=""></image-slot></div>
+                    </div>
+                    <div style="margin-top:9px;font-size:15px;font-weight:700;line-height:1.2">{{ b.name }}</div>
+                    <div style="margin-top:2px;font-size:12px;color:#9A9AA6">{{ b.count }} saves · {{ b.meta }}</div>
+                  </div>
+                </sc-for>
+                <div onClick="{{ goDiscover }}" style="cursor:pointer;min-width:0">
+                  <div style="height:135px;border-radius:16px;border:1px dashed rgba(245,245,247,0.28);display:flex;align-items:center;justify-content:center;font-size:26px;color:#25F4EE">+</div>
+                  <div style="margin-top:9px;font-size:15px;font-weight:700;color:#25F4EE">New board</div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- BOARD DETAIL -->
+          <sc-if value="{{ isBoard }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:#0B0B0E;padding:56px 12px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:12px;padding:0 4px">
+                <button onClick="{{ goBoards }}" style="cursor:pointer;width:40px;height:40px;flex:0 0 40px;border-radius:999px;border:1px solid rgba(245,245,247,0.2);background:none;font-size:18px;color:#F5F5F7">‹</button>
+                <div style="flex:1;min-width:0">
+                  <div style="font-family:'Instrument Serif',serif;font-size:30px;line-height:1">{{ boardName }}</div>
+                  <div style="margin-top:3px;font-size:13px;color:#9A9AA6">{{ boardMeta }}</div>
+                </div>
+                <button onClick="{{ goSearch }}" style="cursor:pointer;height:38px;padding:0 14px;flex:0 0 auto;font-family:Archivo,sans-serif;font-size:13px;font-weight:700;border-radius:999px;border:none;background:#25F4EE;color:#0B0B0E">Rent all</button>
+              </div>
+              <div style="margin-top:16px;column-count:2;column-gap:10px">
+                <sc-for list="{{ saved }}" as="s" hint-placeholder-count="4">
+                  <div style="break-inside:avoid;margin-bottom:10px">
+                    <div onClick="{{ s.open }}" style="cursor:pointer;position:relative;border-radius:16px;overflow:hidden;background:#1B1B22;height:{{ s.h }}">
+                      <image-slot id="{{ s.slot }}" shape="rounded" radius="16" placeholder="Saved look"></image-slot>
+                      <div style="position:absolute;bottom:8px;left:8px;right:8px;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:5px 7px;border-radius:6px;background:{{ s.tagBg }};color:{{ s.tagFg }};pointer-events:none">{{ s.tag }}</div>
+                    </div>
+                    <div style="margin-top:7px;font-size:14px;font-weight:600;line-height:1.25">{{ s.title }}</div>
+                    <div style="margin-top:2px;font-size:13px;color:#9A9AA6">{{ s.priceLabel }} / night</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- PROFILE -->
+          <sc-if value="{{ isProfile }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:#0B0B0E;animation:rotaIn .22s ease">
+              <div style="position:relative;height:210px;background:#16161C">
+                <image-slot id="rota-cover" shape="rect" placeholder="Profile cover"></image-slot>
+                <button onClick="{{ goFeed }}" style="position:absolute;top:56px;left:16px;cursor:pointer;width:40px;height:40px;border-radius:999px;border:none;background:rgba(11,11,14,0.6);color:#F5F5F7;font-size:18px">‹</button>
+              </div>
+              <div style="padding:0 18px 24px">
+                <div style="margin-top:-38px;display:flex;align-items:flex-end;gap:14px">
+                  <div style="width:88px;height:88px;flex:0 0 88px;border-radius:999px;padding:3px;box-sizing:border-box;background:linear-gradient(135deg,#F77737 0%,#E1306C 52%,#833AB4 100%)">
+                    <div style="width:100%;height:100%;border-radius:999px;overflow:hidden;border:2px solid #0B0B0E;box-sizing:border-box"><image-slot id="rota-avatar" shape="circle" placeholder="Avatar"></image-slot></div>
+                  </div>
+                  <button onClick="{{ toggleFollow }}" style="cursor:pointer;margin-bottom:6px;height:42px;padding:0 22px;font-family:Archivo,sans-serif;font-size:15px;font-weight:700;border:1px solid {{ followBorder }};border-radius:12px;background:{{ followBg }};color:{{ followFg }}">{{ followLabel }}</button>
+                  <button onClick="{{ goMessages }}" style="cursor:pointer;margin-bottom:6px;height:42px;padding:0 16px;font-family:Archivo,sans-serif;font-size:15px;font-weight:700;border:1px solid rgba(245,245,247,0.22);border-radius:12px;background:none;color:#F5F5F7">Ask</button>
+                </div>
+                <div style="margin-top:14px;font-family:'Instrument Serif',serif;font-size:32px;line-height:1">{{ active.name }}</div>
+                <div style="margin-top:4px;font-size:14px;color:#9A9AA6">@{{ active.handle }} · {{ active.city }}</div>
+                <div style="margin-top:12px;font-size:15px;line-height:1.5;color:#C9C9D4;max-width:34ch">Archive collector. 40 pieces in rotation, mostly 90s tailoring and going-out dresses. Everything steam-cleaned between renters.</div>
+                <div style="margin-top:18px;display:flex;gap:8px">
+                  <sc-for list="{{ stats }}" as="st" hint-placeholder-count="3">
+                    <div style="flex:1;padding:12px;border-radius:14px;background:#16161C;border:1px solid rgba(245,245,247,0.08)">
+                      <div style="font-family:'Instrument Serif',serif;font-size:26px;line-height:1;color:#25F4EE">{{ st.value }}</div>
+                      <div style="margin-top:4px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#9A9AA6">{{ st.label }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:6px">
+                  <sc-for list="{{ badges }}" as="b" hint-placeholder-count="3">
+                    <div style="font-size:12px;font-weight:600;padding:7px 11px;border-radius:999px;background:#1B1B22;border:1px solid rgba(245,245,247,0.12);color:#F5F5F7">{{ b }}</div>
+                  </sc-for>
+                </div>
+                <div style="margin-top:24px;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9A9AA6">In rotation</div>
+                <div style="margin-top:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">
+                  <sc-for list="{{ grid }}" as="g" hint-placeholder-count="6">
+                    <div onClick="{{ g.open }}" style="cursor:pointer;position:relative;height:150px;border-radius:10px;overflow:hidden;background:#1B1B22">
+                      <image-slot id="{{ g.slot }}" shape="rounded" radius="10" placeholder="Look"></image-slot>
+                      <div style="position:absolute;bottom:6px;left:6px;font-size:10px;font-weight:700;padding:3px 6px;border-radius:5px;background:rgba(11,11,14,0.8);color:#F5F5F7;pointer-events:none">{{ g.priceLabel }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- CLOSET -->
+          <sc-if value="{{ isCloset }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:#0B0B0E;padding:62px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="font-family:'Instrument Serif',serif;font-size:38px;line-height:1">Your closet</div>
+              <div style="margin-top:16px;padding:18px;border-radius:18px;background:linear-gradient(135deg,#833AB4 0%,#E1306C 62%,#F77737 100%);color:#FFFFFF">
+                <div style="font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.85)">Earned this month</div>
+                <div style="margin-top:6px;font-family:'Instrument Serif',serif;font-size:44px;line-height:1">{{ earnedLabel }}</div>
+                <div style="margin-top:6px;font-size:14px;color:rgba(255,255,255,0.9)">{{ payoutLabel }} paying out Friday · 7 items in rotation</div>
+                <div style="margin-top:16px;height:6px;border-radius:99px;background:rgba(11,11,14,0.28);position:relative">
+                  <div style="position:absolute;left:0;top:0;bottom:0;width:74%;border-radius:99px;background:#25F4EE"></div>
+                </div>
+                <div style="margin-top:8px;font-size:12px;color:rgba(255,255,255,0.85)">74% of your closet has been rented at least once</div>
+              </div>
+              <button onClick="{{ goList }}" style="cursor:pointer;margin-top:14px;width:100%;height:52px;font-family:Archivo,sans-serif;font-size:16px;font-weight:700;border:1px dashed #25F4EE;border-radius:16px;background:none;color:#25F4EE">+ List a piece</button>
+              <div style="margin-top:20px;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9A9AA6">Your pieces</div>
+              <div style="margin-top:10px;display:grid;gap:10px">
+                <sc-for list="{{ closet }}" as="c" hint-placeholder-count="3">
+                  <div style="display:flex;gap:12px;align-items:center;padding:10px;border-radius:14px;background:#16161C;border:1px solid rgba(245,245,247,0.08)">
+                    <div style="width:58px;height:74px;flex:0 0 58px;border-radius:9px;overflow:hidden"><image-slot id="{{ c.slot }}" shape="rounded" radius="9" placeholder="Piece"></image-slot></div>
+                    <div style="flex:1">
+                      <div style="font-size:15px;font-weight:700;line-height:1.25">{{ c.title }}</div>
+                      <div style="margin-top:3px;font-size:13px;color:#9A9AA6">{{ c.meta }}</div>
+                      <div style="margin-top:5px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:{{ c.stateFg }}">{{ c.state }}</div>
+                    </div>
+                    <div style="text-align:right">
+                      <div style="font-size:15px;font-weight:700">{{ c.priceLabel }}</div>
+                      <div style="font-size:12px;color:#9A9AA6">/ night</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- LIST A PIECE -->
+          <sc-if value="{{ isList }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:#0B0B0E;padding:56px 18px 140px;box-sizing:border-box;animation:rotaIn .22s ease">
+              <div style="display:flex;align-items:center;gap:12px">
+                <button onClick="{{ listBack }}" style="cursor:pointer;width:40px;height:40px;border-radius:999px;border:1px solid rgba(245,245,247,0.2);background:none;font-size:18px;color:#F5F5F7">‹</button>
+                <div style="flex:1;display:flex;gap:5px">
+                  <div style="flex:1;height:4px;border-radius:99px;background:{{ step1Bg }}"></div>
+                  <div style="flex:1;height:4px;border-radius:99px;background:{{ step2Bg }}"></div>
+                  <div style="flex:1;height:4px;border-radius:99px;background:{{ step3Bg }}"></div>
+                </div>
+              </div>
+              <div style="margin-top:18px;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#FE2C55">{{ stepLabel }}</div>
+              <div style="margin-top:8px;font-family:'Instrument Serif',serif;font-size:36px;line-height:1.02">{{ stepTitle }}</div>
+              <div style="margin-top:8px;font-size:15px;line-height:1.5;color:#9A9AA6;max-width:32ch">{{ stepBody }}</div>
+
+              <sc-if value="{{ listStep1 }}">
+                <div style="margin-top:20px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+                  <div style="grid-column:span 2;height:230px;border-radius:14px;overflow:hidden"><image-slot id="rota-list-video" shape="rounded" radius="14" placeholder="Drop your 9:16 outfit video"></image-slot></div>
+                  <div style="height:120px;border-radius:12px;overflow:hidden"><image-slot id="rota-list-1" shape="rounded" radius="12" placeholder="Front"></image-slot></div>
+                  <div style="height:120px;border-radius:12px;overflow:hidden"><image-slot id="rota-list-2" shape="rounded" radius="12" placeholder="Label / flaws"></image-slot></div>
+                </div>
+                <div style="margin-top:14px;padding:14px;border-radius:14px;background:#16161C;border:1px solid rgba(245,245,247,0.08);font-size:13px;line-height:1.55;color:#C9C9D4">Listings with a walking video get rented 4× more often. Shoot in daylight, show the back, and photograph any flaw — it protects you in a damage claim.</div>
+              </sc-if>
+
+              <sc-if value="{{ listStep2 }}">
+                <div style="margin-top:20px;display:grid;gap:10px">
+                  <div style="padding:14px;border-radius:14px;background:#16161C;border:1px solid rgba(245,245,247,0.08)">
+                    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#9A9AA6">Title</div>
+                    <div style="margin-top:5px;font-size:16px;font-weight:600">Bias-cut slip, ivory</div>
+                  </div>
+                  <div style="padding:14px;border-radius:14px;background:#16161C;border:1px solid rgba(245,245,247,0.08)">
+                    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#9A9AA6">Brand &amp; retail value</div>
+                    <div style="margin-top:5px;font-size:16px;font-weight:600">Réalisation Par · {{ retailInput }}</div>
+                  </div>
+                  <div style="padding:14px;border-radius:14px;background:#16161C;border:1px solid rgba(245,245,247,0.08)">
+                    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#9A9AA6">Size &amp; fit notes</div>
+                    <div style="margin-top:8px;display:flex;gap:8px">
+                      <sc-for list="{{ sizes }}" as="s" hint-placeholder-count="4">
+                        <button onClick="{{ s.pick }}" style="cursor:pointer;flex:1;height:40px;font-family:Archivo,sans-serif;font-size:14px;font-weight:600;border-radius:10px;border:1px solid {{ s.border }};background:{{ s.bg }};color:{{ s.fg }}">{{ s.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div style="padding:14px;border-radius:14px;background:#16161C;border:1px solid rgba(245,245,247,0.08)">
+                    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#9A9AA6">Occasion tags</div>
+                    <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">
+                      <sc-for list="{{ occasions }}" as="o" hint-placeholder-count="5">
+                        <button onClick="{{ o.pick }}" style="cursor:pointer;font-family:Archivo,sans-serif;font-size:13px;font-weight:600;padding:8px 12px;border-radius:999px;border:1px solid {{ o.border }};background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ listStep3 }}">
+                <div style="margin-top:20px;padding:16px;border-radius:16px;background:#16161C;border:1px solid rgba(245,245,247,0.1)">
+                  <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#9A9AA6">Your nightly price</div>
+                  <div style="margin-top:6px;font-family:'Instrument Serif',serif;font-size:44px;line-height:1;color:#25F4EE">{{ suggestLabel }}</div>
+                  <div style="margin-top:10px;height:4px;border-radius:99px;background:#2A2A33;position:relative">
+                    <div style="position:absolute;left:0;top:0;bottom:0;width:48%;border-radius:99px;background:linear-gradient(90deg,#25F4EE 0%,#FE2C55 100%)"></div>
+                    <div style="position:absolute;left:48%;top:-8px;width:20px;height:20px;border-radius:99px;background:#F5F5F7;transform:translateX(-50%)"></div>
+                  </div>
+                  <div style="margin-top:10px;font-size:13px;color:#9A9AA6">Similar slips near you rent for {{ compLabel }}. At this price you'd clear {{ clearLabel }} on a 3-night booking after cleaning and our 12% fee.</div>
+                </div>
+                <div style="margin-top:12px;display:grid;gap:8px">
+                  <div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:#16161C;border:1px solid rgba(245,245,247,0.08)">
+                    <div style="flex:1"><div style="font-size:15px;font-weight:700">Instant book</div><div style="font-size:13px;color:#9A9AA6">Verified renters book without asking</div></div>
+                    <div onClick="{{ toggleInstant }}" style="cursor:pointer;width:50px;height:30px;border-radius:99px;background:{{ instantTrack }};position:relative"><div style="position:absolute;top:3px;left:{{ instantKnob }};width:24px;height:24px;border-radius:99px;background:#F5F5F7"></div></div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:#16161C;border:1px solid rgba(245,245,247,0.08)">
+                    <div style="flex:1"><div style="font-size:15px;font-weight:700">Local pickup allowed</div><div style="font-size:13px;color:#9A9AA6">Glebe · within 5 km</div></div>
+                    <div onClick="{{ toggleLocal }}" style="cursor:pointer;width:50px;height:30px;border-radius:99px;background:{{ localTrack }};position:relative"><div style="position:absolute;top:3px;left:{{ localKnob }};width:24px;height:24px;border-radius:99px;background:#F5F5F7"></div></div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 18px 26px;background:linear-gradient(180deg, rgba(11,11,14,0) 0%, #0B0B0E 40%)">
+                <button onClick="{{ listNext }}" style="cursor:pointer;width:100%;height:54px;font-family:Archivo,sans-serif;font-size:17px;font-weight:700;border:none;border-radius:16px;background:#25F4EE;color:#0B0B0E">{{ listCta }}</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- MESSAGES -->
+          <sc-if value="{{ isMessages }}">
+            <sc-if value="{{ threadOpen }}">
+              <div style="position:absolute;inset:0;background:#0B0B0E;display:flex;flex-direction:column;animation:rotaIn .22s ease">
+                <div style="padding:56px 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(245,245,247,0.1)">
+                  <button onClick="{{ closeThread }}" style="cursor:pointer;width:38px;height:38px;border-radius:999px;border:1px solid rgba(245,245,247,0.2);background:none;font-size:17px;color:#F5F5F7">‹</button>
+                  <div style="width:38px;height:38px;border-radius:999px;overflow:hidden"><image-slot id="rota-thread-av" shape="circle" placeholder="Av"></image-slot></div>
+                  <div style="flex:1">
+                    <div style="font-size:15px;font-weight:700">{{ active.name }}</div>
+                    <div style="font-size:12px;color:#9A9AA6">Booking · 18–21 Sep</div>
+                  </div>
+                </div>
+                <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px">
+                  <sc-for list="{{ bubbles }}" as="m" hint-placeholder-count="5">
+                    <div style="max-width:76%;align-self:{{ m.align }};padding:11px 14px;border-radius:{{ m.radius }};background:{{ m.bg }};color:{{ m.fg }};font-size:14px;line-height:1.45">{{ m.text }}</div>
+                  </sc-for>
+                  <div style="align-self:center;margin-top:6px;padding:10px 14px;border-radius:12px;background:#16161C;border:1px solid rgba(245,245,247,0.08);font-size:12px;color:#9A9AA6;text-align:center;max-width:80%">Keep payment in Rota — damage cover only applies to in-app bookings.</div>
+                </div>
+                <div style="padding:12px 16px 30px;display:flex;gap:10px;border-top:1px solid rgba(245,245,247,0.1)">
+                  <div style="flex:1;height:44px;display:flex;align-items:center;padding:0 14px;border-radius:14px;background:#1B1B22;color:#9A9AA6;font-size:14px">Message {{ active.name }}…</div>
+                  <div style="width:44px;height:44px;border-radius:14px;background:#25F4EE;display:flex;align-items:center;justify-content:center;color:#0B0B0E;font-size:18px">↑</div>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ threadList }}">
+              <div style="position:absolute;inset:0;overflow-y:auto;background:#0B0B0E;padding:62px 18px 24px;box-sizing:border-box;animation:rotaIn .22s ease">
+                <div style="font-family:'Instrument Serif',serif;font-size:38px;line-height:1">Messages</div>
+                <div style="margin-top:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:4px">
+                  <sc-for list="{{ threads }}" as="t" hint-placeholder-count="3">
+                    <div onClick="{{ t.open }}" style="cursor:pointer;min-width:0;display:flex;gap:12px;align-items:center;padding:12px;border-radius:14px;background:{{ t.bg }}">
+                      <div style="width:46px;height:46px;flex:0 0 46px;border-radius:999px;overflow:hidden"><image-slot id="{{ t.slot }}" shape="circle" placeholder="Av"></image-slot></div>
+                      <div style="flex:1;min-width:0">
+                        <div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:15px;font-weight:700">{{ t.name }}</div><div style="font-size:12px;color:#9A9AA6">{{ t.time }}</div></div>
+                        <div style="margin-top:3px;font-size:13px;color:#9A9AA6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.preview }}</div>
+                      </div>
+                      <div style="width:8px;height:8px;border-radius:99px;background:{{ t.dot }}"></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </sc-if>
+
+        </div>
+
+        <!-- TAB BAR -->
+        <sc-if value="{{ showTabs }}">
+          <div style="flex:0 0 auto;background:#08080B;border-top:1px solid rgba(245,245,247,0.1);padding:10px 8px 30px;display:flex;align-items:flex-start">
+            <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+              <div onClick="{{ t.go }}" style="cursor:pointer;flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0">
+                <div style="width:26px;height:26px;display:flex;align-items:center;justify-content:center">
+                  <sc-if value="{{ t.isFeed }}"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ t.color }}" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M10 8.5l6 3.5-6 3.5z" fill="{{ t.color }}" stroke="none"/></svg></sc-if>
+                  <sc-if value="{{ t.isDiscover }}"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ t.color }}" stroke-width="1.8"><rect x="3" y="3" width="7.5" height="11" rx="2.2"/><rect x="13.5" y="3" width="7.5" height="7" rx="2.2"/><rect x="3" y="17" width="7.5" height="4" rx="1.8"/><rect x="13.5" y="13" width="7.5" height="8" rx="2.2"/></svg></sc-if>
+                  <sc-if value="{{ t.isAdd }}"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="{{ t.color }}" stroke-width="1.9"><rect x="2.5" y="4.5" width="19" height="15" rx="4"/><path d="M12 9v6M9 12h6"/></svg></sc-if>
+                  <sc-if value="{{ t.isRentals }}"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ t.color }}" stroke-width="1.8"><path d="M4 8h16l-1.2 12H5.2z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></sc-if>
+                  <sc-if value="{{ t.isCloset }}"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ t.color }}" stroke-width="1.8"><path d="M12 7.5 4 12v8h16v-8z"/><path d="M12 7.5V5.8a2 2 0 1 1 2-2"/></svg></sc-if>
+                </div>
+                <div style="font-size:10px;font-weight:600;letter-spacing:0.02em;color:{{ t.color }}">{{ t.label }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+
+    </x-import>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;currency&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;$&quot;,&quot;£&quot;,&quot;€&quot;],&quot;default&quot;:&quot;$&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Market&quot;},&quot;instantBook&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;showTabLabels&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'onboard', activeId: 'f3', size: 'S', occasion: 'Gala',
+    liked: {}, wish: { f3: true, f1: true }, delivery: 'ship',
+    dates: [18, 21], rentalTab: 'renting', listStep: 0, thread: null,
+    filters: false, confirmed: false, follow: false,
+    instant: true, local: true,
+    idea: 'Gala season', sortIdx: 0, category: 'Dresses',
+    board: null, offer: false, offerIdx: 1, favs: {}, pinSaves: { p2: true, p5: true },
+  };
+
+  cur() { return this.props.currency ?? '$'; }
+  m(n) { return this.cur() + n; }
+  go(screen) { this.setState({ screen, filters: false, confirmed: false, thread: null, offer: false }); }
+
+  renderVals() {
+    const S = this.state;
+    const CYAN = '#25F4EE', PINK = '#FE2C55', INK = '#0B0B0E', SURF = '#16161C', SURF2 = '#1B1B22';
+    const TEXT = '#F5F5F7', MUT = '#9A9AA6', LINE = 'rgba(245,245,247,0.18)';
+    const m = (n) => this.m(n);
+
+    const feedData = [
+      { id: 'f1', title: 'Bias-cut slip, ivory', brand: 'Réalisation Par', price: 24, retail: 340, size: 'S', city: 'Toronto', handle: 'amara.k', name: 'Amara K.', likes: '12.4k', comments: '318', occasion: 'Dinner', badge: 'Instant book', wornCount: 'rented 9×' },
+      { id: 'f2', title: 'Vintage leather trench', brand: 'Archive find', price: 31, retail: 620, size: 'M', city: 'Montréal', handle: 'noor.b', name: 'Noor B.', likes: '8.1k', comments: '204', occasion: 'Everyday', badge: 'Ships free', wornCount: 'rented 23×' },
+      { id: 'f3', title: 'Sequin column gown', brand: 'Rasario', price: 58, retail: 1480, size: 'S–M', city: 'Ottawa', handle: 'priya.r', name: 'Priya R.', likes: '31.2k', comments: '1.1k', occasion: 'Gala', badge: 'Designer', wornCount: 'rented 4×' },
+    ];
+    const active = feedData.find(f => f.id === S.activeId) || feedData[2];
+
+    const feed = feedData.map(f => ({
+      ...f,
+      slot: 'rota-feed-' + f.id,
+      avatarSlot: 'rota-feed-av-' + f.id,
+      priceLabel: m(f.price),
+      likeFill: S.liked[f.id] ? PINK : 'none',
+      likeStroke: S.liked[f.id] ? PINK : TEXT,
+      wishFill: S.wish[f.id] ? CYAN : 'none',
+      wishStroke: S.wish[f.id] ? CYAN : TEXT,
+      like: () => this.setState(s => ({ liked: { ...s.liked, [f.id]: !s.liked[f.id] } })),
+      wish: () => this.setState(s => ({ wish: { ...s.wish, [f.id]: !s.wish[f.id] } })),
+      openDetail: () => this.setState({ screen: 'detail', activeId: f.id }),
+      openProfile: () => this.setState({ screen: 'profile', activeId: f.id }),
+    }));
+
+    const chipDefs = [
+      ['Onboarding', 'onboard'], ['Feed', 'feed'], ['Discover', 'discover'],
+      ['Catalogue', 'search'], ['Outfit detail', 'detail'], ['Dates', 'booking'], ['Checkout', 'checkout'],
+      ['Rentals', 'rentals'], ['Boards', 'boards'], ['Board', 'board'], ['Lender profile', 'profile'],
+      ['Your closet', 'closet'], ['List a piece', 'list'], ['Messages', 'messages'],
+    ];
+    const chips = chipDefs.map(([label, key]) => ({
+      label, go: () => this.go(key),
+      bg: S.screen === key ? CYAN : 'transparent',
+      fg: S.screen === key ? INK : TEXT,
+      border: S.screen === key ? CYAN : LINE,
+    }));
+
+    const sizes = ['XS', 'S', 'M', 'L'].map(l => ({
+      label: l, pick: () => this.setState({ size: l }),
+      bg: S.size === l ? CYAN : 'transparent',
+      fg: S.size === l ? INK : TEXT,
+      border: S.size === l ? CYAN : LINE,
+    }));
+
+    const occasions = ['Gala', 'Wedding guest', 'Everyday', 'Festival', 'Interview', 'Dinner'].map(l => ({
+      label: l, pick: () => this.setState({ occasion: l }),
+      bg: S.occasion === l ? PINK : 'transparent',
+      fg: S.occasion === l ? '#FFFFFF' : TEXT,
+      border: S.occasion === l ? PINK : LINE,
+    }));
+
+    // September 2026 starts on a Tuesday
+    const booked = [24, 25, 26];
+    const [d0, d1] = S.dates;
+    const cells = [{ blank: true }];
+    for (let d = 1; d <= 30; d++) cells.push({ label: String(d), day: d });
+    const days = cells.map((c, i) => {
+      if (c.blank) return { key: 'b' + i, label: '', bg: 'transparent', fg: 'transparent', cursor: 'default', deco: 'none', pick: () => {} };
+      const past = c.day < 13, isBooked = booked.includes(c.day);
+      const inRange = c.day > d0 && c.day < d1, edge = c.day === d0 || c.day === d1;
+      return {
+        key: 'd' + c.day, label: c.label,
+        bg: edge ? CYAN : inRange ? 'rgba(37,244,238,0.16)' : 'transparent',
+        fg: edge ? INK : (past || isBooked) ? '#4A4A55' : TEXT,
+        cursor: (past || isBooked) ? 'default' : 'pointer',
+        deco: isBooked ? 'line-through' : 'none',
+        pick: (past || isBooked) ? (() => {}) : (() => this.setState({ dates: [c.day, c.day + 3] })),
+      };
+    });
+
+    const nights = Math.max(1, d1 - d0);
+    const ship = S.delivery === 'ship';
+    const shipFee = 14, cleaning = 12, cover = 8;
+    const rentSub = active.price * nights;
+    const total = rentSub + cleaning + cover + (ship ? shipFee : 0);
+
+    const breakdown = [
+      { label: m(active.price) + ' × ' + nights + ' nights', value: m(rentSub) },
+      { label: 'Cleaning', value: m(cleaning) },
+      { label: 'Damage cover', value: m(cover) },
+      { label: ship ? 'Round-trip shipping' : 'Local pickup', value: ship ? m(shipFee) : 'Free' },
+    ];
+
+    const instantOn = this.props.instantBook ?? true;
+    const trust = [
+      { title: 'Damage cover to ' + m(1500), body: 'Included on every booking. Report within 24h of return.' },
+      { title: 'Professional cleaning included', body: 'Cleaned between every renter — you never pay for it twice.' },
+      { title: instantOn ? 'Instant book' : 'Request to book', body: instantOn ? 'ID-verified renters confirm immediately.' : 'Lender replies within 12h on average.' },
+      { title: 'Two-way ratings', body: 'You rate the lender, they rate you. Both are public.' },
+    ];
+
+    const renting = [
+      { slot: 'rota-o1', status: 'Arriving Thu', statusFg: CYAN, title: 'Sequin column gown', who: 'from Priya R.', dates: '18–21 Sep', amount: m(total), amountFg: TEXT, cta: 'Track parcel' },
+      { slot: 'rota-o2', status: 'Return by Mon', statusFg: PINK, title: 'Vintage leather trench', who: 'from Noor B.', dates: '5–9 Sep', amount: m(136), amountFg: TEXT, cta: 'Print return label' },
+      { slot: 'rota-o3', status: 'Completed · rate it', statusFg: MUT, title: 'Pleated midi skirt', who: 'from Leah M.', dates: '22–25 Aug', amount: m(78), amountFg: TEXT, cta: 'Leave a rating' },
+    ];
+    const lending = [
+      { slot: 'rota-l1', status: 'Request · 2h left', statusFg: PINK, title: 'Cropped tweed jacket', who: 'Jess T. wants it', dates: '26–29 Sep', amount: '+' + m(96), amountFg: CYAN, cta: 'Accept request' },
+      { slot: 'rota-l2', status: 'Out with renter', statusFg: CYAN, title: 'Silk maxi, olive', who: 'with Dana P.', dates: '11–15 Sep', amount: '+' + m(104), amountFg: CYAN, cta: 'Confirm return' },
+    ];
+    const orders = (S.rentalTab === 'renting' ? renting : lending).map(o => ({
+      ...o, primary: () => this.go('messages'),
+    }));
+
+    const savedData = [
+      { slot: 'rota-w1', title: 'Bias-cut slip, ivory', price: 24, h: '206px', tag: 'Free this weekend', tagBg: CYAN, tagFg: INK, id: 'f1' },
+      { slot: 'rota-w2', title: 'Sequin column gown', price: 58, h: '258px', tag: 'Booked 18–21', tagBg: 'rgba(11,11,14,0.8)', tagFg: TEXT, id: 'f3' },
+      { slot: 'rota-w3', title: 'Mesh long-sleeve top', price: 14, h: '166px', tag: '1.2 km away', tagBg: 'rgba(11,11,14,0.8)', tagFg: TEXT, id: 'f1' },
+      { slot: 'rota-w4', title: 'Wool overcoat, camel', price: 27, h: '232px', tag: 'Price dropped', tagBg: PINK, tagFg: '#FFFFFF', id: 'f2' },
+      { slot: 'rota-w5', title: 'Beaded mini, jet', price: 41, h: '190px', tag: 'Ships free', tagBg: 'rgba(11,11,14,0.8)', tagFg: TEXT, id: 'f3' },
+      { slot: 'rota-w6', title: 'Satin opera gloves', price: 9, h: '150px', tag: 'Bundle it', tagBg: CYAN, tagFg: INK, id: 'f1' },
+    ];
+    const saved = savedData.map(s => ({ ...s, priceLabel: m(s.price), open: () => this.setState({ screen: 'detail', activeId: s.id }) }));
+
+    const boardData = [
+      { id: 'b1', name: 'Gala season', count: 18, meta: '6 free 18–21 Sep' },
+      { id: 'b2', name: 'Wedding guest', count: 24, meta: '4 ship to you' },
+      { id: 'b3', name: '90s tailoring', count: 11, meta: 'mostly local' },
+      { id: 'b4', name: 'Festival fits', count: 9, meta: 'from ' + m(9) + ' / night' },
+    ];
+    const boards = boardData.map((b, i) => ({
+      ...b,
+      s1: 'rota-bd-' + b.id + '-1', s2: 'rota-bd-' + b.id + '-2',
+      s3: 'rota-bd-' + b.id + '-3', s4: 'rota-bd-' + b.id + '-4',
+      open: () => this.setState({ screen: 'board', board: b.id }),
+    }));
+    const activeBoard = boardData.find(b => b.id === S.board) || boardData[0];
+
+    const ideas = ['Gala season', 'Wedding guest', 'Archive denim', 'Festival', 'Office', 'Night out'].map(l => ({
+      label: l, pick: () => this.setState({ idea: l }),
+      bg: S.idea === l ? TEXT : 'transparent',
+      fg: S.idea === l ? INK : TEXT,
+      border: S.idea === l ? TEXT : LINE,
+    }));
+
+    const pinData = [
+      { id: 'p1', title: 'Sequin column gown', price: 58, h: '268px', handle: '@priya.r', size: 'S–M', to: 'f3' },
+      { id: 'p2', title: 'Bias-cut slip', price: 24, h: '188px', handle: '@amara.k', size: 'S', to: 'f1' },
+      { id: 'p3', title: 'Leather trench', price: 31, h: '222px', handle: '@noor.b', size: 'M', to: 'f2' },
+      { id: 'p4', title: 'Feather-trim mini', price: 47, h: '296px', handle: '@dana.p', size: 'S', to: 'f3' },
+      { id: 'p5', title: 'Velvet blazer', price: 19, h: '172px', handle: '@leah.m', size: 'S', to: 'f2' },
+      { id: 'p6', title: 'Mesh long-sleeve', price: 14, h: '240px', handle: '@jess.t', size: 'XS', to: 'f1' },
+      { id: 'p7', title: 'Wool overcoat', price: 27, h: '206px', handle: '@mira.s', size: 'L', to: 'f2' },
+      { id: 'p8', title: 'Beaded mini', price: 41, h: '278px', handle: '@ola.k', size: 'M', to: 'f3' },
+    ];
+    const pins = pinData.map(p => {
+      const on = !!S.pinSaves[p.id];
+      return {
+        ...p, slot: 'rota-pin-' + p.id, avSlot: 'rota-pin-av-' + p.id, priceLabel: m(p.price),
+        saveLabel: on ? 'Saved' : 'Save',
+        saveBg: on ? TEXT : PINK, saveFg: on ? INK : '#FFFFFF',
+        save: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState(s => ({ pinSaves: { ...s.pinSaves, [p.id]: !s.pinSaves[p.id] } })); },
+        open: () => this.setState({ screen: 'detail', activeId: p.to }),
+      };
+    });
+
+    const categories = ['Dresses', 'Outerwear', 'Tailoring', 'Going out', 'Shoes', 'Bags', 'Vintage'].map(l => ({
+      label: l, slot: 'rota-cat-' + l.toLowerCase().replace(' ', '-'),
+      pick: () => this.setState({ category: l }),
+      ring: S.category === l ? CYAN : 'transparent',
+      fg: S.category === l ? CYAN : MUT,
+    }));
+
+    const sortOptions = ['Recommended', 'Price: low first', 'Newest', 'Closest to me'];
+    const sortLabel = sortOptions[S.sortIdx];
+
+    const resultData = [
+      { slot: 'rota-r1', title: 'Sequin column gown', brand: 'Rasario', price: 58, size: 'S–M', dist: '3.1 km', handle: '@priya.r', favCount: '312', status: 'Free 18–21', id: 'f3' },
+      { slot: 'rota-r2', title: 'Satin slip, oyster', brand: 'Réalisation', price: 22, size: 'S', dist: '1.4 km', handle: '@amara.k', favCount: '184', status: 'Instant book', id: 'f1' },
+      { slot: 'rota-r3', title: 'Beaded mini', brand: 'Self-Portrait', price: 41, size: 'M', dist: '4.8 km', handle: '@ola.k', favCount: '96', status: 'Local pickup', id: 'f3' },
+      { slot: 'rota-r4', title: 'Velvet blazer', brand: 'Ganni', price: 19, size: 'S', dist: 'Ships', handle: '@leah.m', favCount: '71', status: 'Ships free', id: 'f2' },
+      { slot: 'rota-r5', title: 'Feather-trim dress', brand: '16Arlington', price: 47, size: 'S', dist: '2.2 km', handle: '@dana.p', favCount: '228', status: 'Booked Fri', id: 'f3' },
+      { slot: 'rota-r6', title: 'Leather trench', brand: 'Archive find', price: 31, size: 'M', dist: 'Ships', handle: '@noor.b', favCount: '403', status: 'Rented 23×', id: 'f2' },
+    ];
+    const sortedResults = S.sortIdx === 1 ? [...resultData].sort((a, b) => a.price - b.price) : resultData;
+    const results = sortedResults.map(r => {
+      const on = !!S.favs[r.slot];
+      return {
+        ...r, priceLabel: m(r.price), weekLabel: m(r.price * 3),
+        avSlot: 'rota-rav-' + r.slot,
+        favFill: on ? PINK : 'none', favStroke: on ? PINK : TEXT,
+        fav: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState(s => ({ favs: { ...s.favs, [r.slot]: !s.favs[r.slot] } })); },
+        open: () => this.setState({ screen: 'detail', activeId: r.id }),
+      };
+    });
+
+    const grid = [
+      { slot: 'rota-g1', price: 58, id: 'f3' }, { slot: 'rota-g2', price: 34, id: 'f3' },
+      { slot: 'rota-g3', price: 27, id: 'f2' }, { slot: 'rota-g4', price: 19, id: 'f1' },
+      { slot: 'rota-g5', price: 44, id: 'f3' }, { slot: 'rota-g6', price: 22, id: 'f1' },
+    ].map(g => ({ ...g, priceLabel: m(g.price), open: () => this.setState({ screen: 'detail', activeId: g.id }) }));
+
+    const closet = [
+      { slot: 'rota-c1', title: 'Cropped tweed jacket', meta: 'Size S · rented 6×', state: '1 request waiting', stateFg: PINK, price: 32 },
+      { slot: 'rota-c2', title: 'Silk maxi, olive', meta: 'Size M · rented 11×', state: 'Out until 15 Sep', stateFg: CYAN, price: 26 },
+      { slot: 'rota-c3', title: 'Platform boots', meta: 'EU 39 · rented 2×', state: 'Available', stateFg: MUT, price: 15 },
+    ].map(c => ({ ...c, priceLabel: m(c.price) }));
+
+    const threads = [
+      { id: 't1', slot: 'rota-t1', name: 'Priya R.', time: '2m', preview: 'Steamed and ready — want it Thursday evening?', unread: true },
+      { id: 't2', slot: 'rota-t2', name: 'Jess T.', time: '1h', preview: 'Would you do 26–29 Sep for the tweed jacket?', unread: true },
+      { id: 't3', slot: 'rota-t3', name: 'Noor B.', time: 'Yesterday', preview: 'Return scanned in, deposit released — thanks!', unread: false },
+    ].map(t => ({
+      ...t, open: () => this.setState({ thread: t.id }),
+      bg: t.unread ? SURF : 'transparent',
+      dot: t.unread ? PINK : 'transparent',
+    }));
+
+    const bubbleData = [
+      { me: false, text: 'Hi! Gown is free 18–21, just steamed it.' },
+      { me: true, text: 'Perfect. I\'m 5\'6" — will the length drag?' },
+      { me: false, text: 'It puddles slightly on me at 5\'7". Heels fix it. I can add the shawl for free.' },
+      { me: true, text: 'Yes please. Booking now — shipping, not pickup.' },
+      { me: false, text: 'Sent the label. Return mailer is inside the garment bag.' },
+    ];
+    const bubbles = bubbleData.map((b, i) => ({
+      key: i, text: b.text,
+      align: b.me ? 'flex-end' : 'flex-start',
+      bg: b.me ? CYAN : SURF2,
+      fg: b.me ? INK : TEXT,
+      radius: b.me ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+    }));
+
+    const showLabels = this.props.showTabLabels ?? true;
+    const tabGroups = { discover: ['discover', 'search', 'boards', 'board'], closet: ['closet', 'profile'] };
+    const tabs = [['feed', 'Feed'], ['discover', 'Discover'], ['list', 'List'], ['rentals', 'Rentals'], ['closet', 'Closet']]
+      .map(([key, label]) => ({
+        key, label: showLabels ? label : '',
+        color: (S.screen === key || (tabGroups[key] || []).includes(S.screen)) ? CYAN : 'rgba(245,245,247,0.5)',
+        go: () => this.go(key),
+        isFeed: key === 'feed', isDiscover: key === 'discover', isAdd: key === 'list',
+        isRentals: key === 'rentals', isCloset: key === 'closet',
+      }));
+
+    const offerTiers = [0.9, 0.85, 0.75];
+    const offers = offerTiers.map((pct, i) => {
+      const per = Math.round(active.price * pct);
+      return {
+        label: m(per), sub: Math.round((1 - pct) * 100) + '% off / night',
+        pick: () => this.setState({ offerIdx: i }),
+        bg: S.offerIdx === i ? CYAN : 'transparent',
+        fg: S.offerIdx === i ? INK : TEXT,
+        border: S.offerIdx === i ? CYAN : LINE,
+      };
+    });
+    const offerTotal = Math.round(active.price * offerTiers[S.offerIdx]) * nights;
+
+    const stepMeta = [
+      { label: 'Step 1 of 3', title: 'Show it moving', body: 'One vertical video and two photos. The video is what people scroll.' },
+      { label: 'Step 2 of 3', title: 'Details renters ask for', body: 'Brand, true size, and how it fits you — vague listings get returned.' },
+      { label: 'Step 3 of 3', title: 'Price and availability', body: 'We suggest a nightly rate from what similar pieces earn near you.' },
+    ][S.listStep];
+
+    return {
+      chips, feed, sizes, occasions, tabs, trust, orders, saved, results, grid, closet, threads, bubbles, days, breakdown,
+      pins, ideas, categories, boards, offers, sortLabel,
+      ideaActive: S.idea,
+      isDiscover: S.screen === 'discover', isBoards: S.screen === 'boards', isBoard: S.screen === 'board',
+      boardName: activeBoard.name, boardMeta: activeBoard.count + ' saves · ' + activeBoard.meta,
+      cycleSort: () => this.setState(s => ({ sortIdx: (s.sortIdx + 1) % 4 })),
+      offerOpen: S.offer, acceptRate: '70%', offerTotalLabel: m(offerTotal),
+      openOffer: () => this.setState({ offer: true }),
+      closeOffer: () => this.setState({ offer: false }),
+      sendOffer: () => this.setState({ offer: false, screen: 'messages', thread: 't1' }),
+      goDiscover: () => this.go('discover'), goBoards: () => this.go('boards'), goSearch: () => this.go('search'),
+      active: { ...active, priceLabel: m(active.price), retailLabel: m(active.retail) },
+      isOnboard: S.screen === 'onboard', isFeed: S.screen === 'feed', isSearch: S.screen === 'search',
+      isDetail: S.screen === 'detail', isBooking: S.screen === 'booking', isCheckout: S.screen === 'checkout',
+      isRentals: S.screen === 'rentals', isWishlist: S.screen === 'wishlist', isProfile: S.screen === 'profile',
+      isCloset: S.screen === 'closet', isList: S.screen === 'list', isMessages: S.screen === 'messages',
+      showTabs: S.screen !== 'onboard' && !(S.screen === 'messages' && S.thread),
+      threadOpen: S.screen === 'messages' && !!S.thread,
+      threadList: S.screen === 'messages' && !S.thread,
+      filtersOpen: S.filters, confirmed: S.confirmed,
+      selectedSize: S.size, city: 'Ottawa', resultCount: 248, wishCount: 4,
+      nightsLabel: nights + ' nights',
+      totalLabel: m(total), depositLabel: m(150), coverLabel: m(1500), lateLabel: m(20),
+      creditLabel: m(10), maxPriceLabel: m(60), shipFeeLabel: m(shipFee),
+      handoverLabel: ship ? 'ships to me' : 'local pickup',
+      bookCta: instantOn ? 'Check dates' : 'Request dates',
+      earnedLabel: m(412), payoutLabel: m(186), suggestLabel: m(24), compLabel: m(18) + '–' + m(29), clearLabel: m(51),
+      retailInput: m(340),
+      stepLabel: stepMeta.label, stepTitle: stepMeta.title, stepBody: stepMeta.body,
+      listStep1: S.listStep === 0, listStep2: S.listStep === 1, listStep3: S.listStep === 2,
+      listCta: ['Add details', 'Set your price', 'Publish listing'][S.listStep],
+      step1Bg: CYAN, step2Bg: S.listStep >= 1 ? CYAN : '#2A2A33', step3Bg: S.listStep >= 2 ? CYAN : '#2A2A33',
+      listNext: () => S.listStep < 2 ? this.setState({ listStep: S.listStep + 1 }) : this.setState({ screen: 'closet', listStep: 0 }),
+      listBack: () => S.listStep > 0 ? this.setState({ listStep: S.listStep - 1 }) : this.go('closet'),
+      instantTrack: S.instant ? CYAN : '#2A2A33', instantKnob: S.instant ? '23px' : '3px',
+      localTrack: S.local ? CYAN : '#2A2A33', localKnob: S.local ? '23px' : '3px',
+      toggleInstant: () => this.setState(s => ({ instant: !s.instant })),
+      toggleLocal: () => this.setState(s => ({ local: !s.local })),
+      shipBg: ship ? CYAN : 'transparent', shipFg: ship ? INK : TEXT,
+      meetBg: ship ? 'transparent' : CYAN, meetFg: ship ? TEXT : INK,
+      shipBorder: ship ? CYAN : LINE, meetBorder: ship ? LINE : CYAN,
+      shipRing: ship ? CYAN : '#4A4A55', meetRing: ship ? '#4A4A55' : CYAN,
+      shipDot: ship ? CYAN : 'transparent', meetDot: ship ? 'transparent' : CYAN,
+      pickShip: () => this.setState({ delivery: 'ship' }), pickMeet: () => this.setState({ delivery: 'meet' }),
+      rentingBg: S.rentalTab === 'renting' ? CYAN : 'transparent', rentingFg: S.rentalTab === 'renting' ? INK : TEXT,
+      lendingBg: S.rentalTab === 'lending' ? CYAN : 'transparent', lendingFg: S.rentalTab === 'lending' ? INK : TEXT,
+      pickRenting: () => this.setState({ rentalTab: 'renting' }), pickLending: () => this.setState({ rentalTab: 'lending' }),
+      activeWishFill: S.wish[active.id] ? CYAN : 'none',
+      activeWishStroke: S.wish[active.id] ? CYAN : TEXT,
+      toggleWishActive: () => this.setState(s => ({ wish: { ...s.wish, [active.id]: !s.wish[active.id] } })),
+      followLabel: S.follow ? 'Following' : 'Follow',
+      followBg: S.follow ? 'transparent' : CYAN, followFg: S.follow ? TEXT : INK,
+      followBorder: S.follow ? LINE : CYAN,
+      toggleFollow: () => this.setState(s => ({ follow: !s.follow })),
+      stats: [{ value: '4.96', label: 'Rating' }, { value: '68', label: 'Rentals' }, { value: '2.1k', label: 'Followers' }],
+      badges: ['ID verified', 'Ships same day', 'Top 5% lender', 'Cleaning included'],
+      openFilters: () => this.setState({ filters: true }), closeFilters: () => this.setState({ filters: false }),
+      closeThread: () => this.setState({ thread: null }),
+      confirm: () => this.setState({ confirmed: true }),
+      goFeed: () => this.go('feed'), goDetail: () => this.go('detail'), goBooking: () => this.go('booking'),
+      goCheckout: () => this.go('checkout'), goRentals: () => this.go('rentals'), goProfile: () => this.go('profile'),
+      goMessages: () => this.go('messages'), goList: () => this.go('list'), goCloset: () => this.go('closet'),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
