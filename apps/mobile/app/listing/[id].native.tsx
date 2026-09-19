@@ -1,4 +1,4 @@
-import { Video, ResizeMode } from 'expo-av';
+import { ListingVideo } from '../../components/ListingVideo';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -42,20 +42,11 @@ export default function ListingDetail() {
           {listing.media.map((m, idx) => (
             <View key={idx} style={{ width: W, height: W * 1.15, backgroundColor: colors.surf2 }}>
               {m.kind === 'video' && Platform.OS !== 'web' ? (
-                <Video
-                  source={{ uri: m.url }}
-                  style={StyleSheet.absoluteFillObject}
-                  resizeMode={ResizeMode.COVER}
-                  useNativeControls
-                  shouldPlay={false}
-                  isMuted={false}
-                  posterSource={m.poster ? { uri: m.poster } : undefined}
-                  usePoster={!!m.poster}
-                />
+                <ListingVideo uri={m.url} style={StyleSheet.absoluteFill} />
               ) : (
                 <Image
                   source={{ uri: m.kind === 'video' ? m.poster || m.url : m.url }}
-                  style={StyleSheet.absoluteFillObject}
+                  style={StyleSheet.absoluteFill}
                 />
               )}
               {m.kind === 'video' ? (
