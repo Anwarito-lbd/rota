@@ -1,39 +1,23 @@
-import { Video, ResizeMode } from 'expo-av';
 import { Link } from 'expo-router';
-import React, { useRef } from 'react';
-import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Listing } from '@rota/shared';
 import { colors } from '../constants/theme';
 import { Badge, Price } from './ui';
 
-const fill = StyleSheet.absoluteFillObject;
+const fill = StyleSheet.absoluteFill;
 
 export function ListingCard({ listing, large }: { listing: Listing; large?: boolean }) {
   const video = listing.media.find((m) => m.kind === 'video');
   const image = listing.media.find((m) => m.kind === 'image');
-  const ref = useRef<Video>(null);
-  // expo-av Video style plumbing breaks on react-native-web (CSSStyleDeclaration [0])
-  const useNativeVideo = Platform.OS !== 'web' && !!video;
+  // Cards previously used expo-av with shouldPlay={false}+poster; keep poster Image (same UX).
   const posterUri = video?.poster || image?.url;
 
   return (
     <Link href={`/listing/${listing.id}`} asChild>
       <Pressable style={[styles.card, large ? styles.large : undefined]}>
         <View style={styles.media}>
-          {useNativeVideo ? (
-            <Video
-              ref={ref}
-              source={{ uri: video!.url }}
-              style={fill}
-              resizeMode={ResizeMode.COVER}
-              shouldPlay={false}
-              isMuted
-              usePoster
-              posterSource={posterUri ? { uri: posterUri } : undefined}
-            />
-          ) : (
-            <Image source={{ uri: posterUri || image?.url }} style={fill} />
-          )}
+          <Image source={{ uri: posterUri || image?.url }} style={fill} />
           {video ? (
             <View style={styles.playPill}>
               <Text style={styles.playText}>▶ Vidéo</Text>

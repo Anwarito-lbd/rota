@@ -7,19 +7,13 @@
     "icon": "./assets/icon.png",
     "scheme": "rota",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": false,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0C0A0B"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.rota.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "Pour filmer une pièce à louer ou photographier le retour.",
+        "NSCameraUsageDescription": "Pour filmer une pi\u00e8ce \u00e0 louer ou photographier le retour.",
         "NSPhotoLibraryUsageDescription": "Pour choisir des photos de votre closet.",
-        "NSLocationWhenInUseUsageDescription": "Pour montrer les pièces près de vous à Paris."
+        "NSLocationWhenInUseUsageDescription": "Pour montrer les pi\u00e8ces pr\u00e8s de vous \u00e0 Paris."
       }
     },
     "android": {
@@ -36,7 +30,17 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-video",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0C0A0B"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
