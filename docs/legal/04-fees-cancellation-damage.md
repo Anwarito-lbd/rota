@@ -3,7 +3,7 @@
 > **Statut :** règles **produit / ops verrouillées** (closetops) sous forme de politique draft.  
 > **Pas un avis juridique.**  
 > Flags **à vérifier avec un avocat** obligatoires sur : langage caution, disclosure des frais, annulation, plafonds de responsabilité dommages, conservation ID.  
-> Complète les CGU (`01`) — les montants exacts de commission / grille nettoyage fine restent partiellement **[PLACEHOLDER]**.
+> Complète les CGU (`01`) — commission **bilatérale 10 % / 10 %** verrouillée produit (bêta) ; grille nettoyage fine reste partiellement **[PLACEHOLDER]**.
 
 ---
 
@@ -19,17 +19,20 @@
 
 ## 2. Grille des frais plateforme
 
-### 2.1 Commission Rota
-- Commission sur le **loyer** : **[PLACEHOLDER %]** (ex. X % locataire et/ou Y % prêteur — modèle exact à figer produit).
-- Affichage **avant confirmation** du total : loyer + frais service + mention caution/hold.  
+### 2.1 Commission Rota (bêta Closets fondateurs — verrouillé produit)
+- **Bilatéral 10 %** sur le **loyer** (hors livraison / caution) :
+  - **Locataire** : paie **loyer + 10 %** (frais de service acheteur).
+  - **Prêteur** : reçoit **loyer − 10 %** (frais de service prêteur déduit du payout).
+  - **Plateforme** : conserve les **deux** 10 % (ex. loyer 10 € → acheteur 11 €, prêteur 9 €, plateforme 2 €).
+- Affichage **avant confirmation** du total : loyer + frais service locataire + livraison + nettoyage (si) + mention caution/hold ; transparence payout prêteur (loyer − 10 %).  
   → **Disclosure des frais : à vérifier avec un avocat** (info précontractuelle consommateur).
 
 ### 2.2 Frais annexes possibles
 | Type | Règle MVP | Note |
 |------|-----------|------|
-| Frais de service affichés | Inclus dans le total checkout | **[PLACEHOLDER]** détail |
+| Frais de service affichés | +10 % locataire sur loyer ; −10 % prêteur sur payout | Bêta — revue avocat |
 | Frais de paiement Stripe | Absorbe Rota **ou** refacturé — **[PLACEHOLDER]** | Transparence |
-| Ship (si activé) | Port payé selon flow **[PLACEHOLDER]** | |
+| Ship (si activé) | Prototype **€9** si ship et pas « livraison offerte » / meet | Offerte si badge / meet |
 | Nettoyage (claim) | **Forfait** par type de pièce (grille §6) | Pas au réel arbitraire |
 | Réparation (claim) | Plafond §6 | |
 | Retard | §5 | Cap = caution |

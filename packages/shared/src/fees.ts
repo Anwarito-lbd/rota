@@ -6,13 +6,16 @@ export type DepositTier = 'A' | 'B' | 'C' | 'D';
 
 /**
  * Prototype fee schedule — Founding Closet beta.
- * - Service fee: 10% of loyer, renter-side only (no host commission in MVP UI).
+ * - Two-sided 10%: buyer pays loyer + 10%; lender receives loyer − 10%.
+ * - Platform keeps ~20% of loyer (buyer fee + lender fee) before delivery.
  * - Shipping: €9 if ship and not free-ship / meet.
  * - Deposit: tiers A–D; mid default €150 when retail unknown.
  */
 export const FEES = {
-  /** Renter-side service fee as fraction of loyer (Founding Closet beta). */
+  /** Buyer (locataire) service fee as fraction of loyer (surcharge). */
   renterServiceRate: 0.1,
+  /** Lender (prêteur) service fee as fraction of loyer (deducted from payout). */
+  lenderServiceRate: 0.1,
   shipping: 9,
   /** Mid default when retail unknown / fallback. */
   deposit: 150,
@@ -34,17 +37,31 @@ export type CheckoutQuoteInput = {
 
 export type CheckoutQuote = {
   days: number;
+  /** Gross rental fee (pricePerDay × days). */
   loyer: number;
+  /** Buyer surcharge: 10% of loyer. */
+  serviceFeeBuyer: number;
+  /** Lender deduction: 10% of loyer. */
+  serviceFeeLender: number;
+  /**
+   * @deprecated Prefer serviceFeeBuyer — kept for older call sites.
+   * Same as serviceFeeBuyer.
+   */
   serviceFee: number;
   shipping: number;
   shippingLabel: '€9' | 'Offerte';
   shippingFree: boolean;
   cleaning: number;
   showCleaning: boolean;
+  /** Caution hold amount (not charged now). */
+  depositHold: number;
+  /** @deprecated Prefer depositHold — same value. */
   deposit: number;
   depositTier: DepositTier;
-  /** Amount charged now (loyer + service + ship + cleaning). Deposit is hold only. */
+  /** Amount charged now to buyer (loyer + buyer fee + ship + cleaning). Deposit is hold only. */
   totalDueNow: number;
+  /** Net payout to lender (loyer − lender fee). Cleaning paid separately if applicable. */
+  ownerPayout: number;
 };
 
 export function rentalDays(startDate: string, endDate: string): number {
@@ -90,29 +107,38 @@ export function depositForRetail(retail: number | null | undefined, loyer: numbe
   return { deposit: Math.round(0.9 * V), tier: 'D' };
 }
 
+function roundMoney(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
 export function quoteCheckout(input: CheckoutQuoteInput): CheckoutQuote {
   const days = rentalDays(input.startDate, input.endDate);
   const loyer = input.pricePerDay * days;
-  const serviceFee = Math.round(loyer * FEES.renterServiceRate * 100) / 100;
+  const serviceFeeBuyer = roundMoney(loyer * FEES.renterServiceRate);
+  const serviceFeeLender = roundMoney(loyer * FEES.lenderServiceRate);
+  const ownerPayout = roundMoney(loyer - serviceFeeLender);
   const free = isShippingFree(input.delivery, input.badge);
   const shipping = free || input.delivery === 'meet' ? 0 : FEES.shipping;
   const showCleaning = !!input.cleaningByLender && (input.cleaningFee || 0) > 0;
   const cleaning = showCleaning ? Number(input.cleaningFee) || 0 : 0;
   const { deposit, tier } = depositForRetail(input.retail, loyer);
-  const totalDueNow =
-    Math.round((loyer + serviceFee + shipping + cleaning) * 100) / 100;
+  const totalDueNow = roundMoney(loyer + serviceFeeBuyer + shipping + cleaning);
 
   return {
     days,
     loyer,
-    serviceFee,
+    serviceFeeBuyer,
+    serviceFeeLender,
+    serviceFee: serviceFeeBuyer,
     shipping,
     shippingLabel: shipping > 0 ? '€9' : 'Offerte',
     shippingFree: shipping === 0,
     cleaning,
     showCleaning,
+    depositHold: deposit,
     deposit,
     depositTier: tier,
     totalDueNow,
+    ownerPayout,
   };
 }

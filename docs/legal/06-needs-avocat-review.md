@@ -129,7 +129,8 @@
 - [ ] Emails legal / support / privacy / DPO  
 - [ ] Hébergeur UE  
 - [ ] KYC provider  
-- [ ] **Commission %** exacte (qui paie : renter / lender / split)  
+- [x] **Commission %** : bilatéral **10 % locataire + 10 % prêteur** (bêta Closets fondateurs) — revue avocat disclosure toujours ouverte  
+
 - [ ] Grille **nettoyage** € par type de pièce  
 - [ ] Barème **annulation** % par fenêtre  
 - [ ] Formule **daily rate** pour retards  
