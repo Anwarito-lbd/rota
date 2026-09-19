@@ -53,8 +53,8 @@ export default function ListPiece() {
       <Label>Prix / jour (€)</Label>
       <Field keyboardType="numeric" value={price} onChangeText={setPrice} />
       <Text style={styles.hint}>
-        Le prix / jour = le loyer que vous gagnez (MVP : pas de commission prêteur). Caution à la
-        charge du locataire ; payout après retour OK, pas au handover.
+        Le prix / jour = le loyer listé. Vous recevez loyer − 10 % (frais service prêteur, bêta).
+        Caution à la charge du locataire ; payout après retour OK, pas au handover.
       </Text>
       <Label>Taille</Label>
       <Field value={size} onChangeText={setSize} />

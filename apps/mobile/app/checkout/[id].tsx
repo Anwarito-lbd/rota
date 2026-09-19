@@ -68,6 +68,7 @@ export default function Checkout() {
 
   const lines = useMemo(() => {
     if (!quote) return [];
+    const pct = Math.round(FEES.renterServiceRate * 100);
     const rows: { k: string; v: string; note?: string }[] = [
       {
         k: `Loyer (${quote.days} j × prix/jour)`,
@@ -75,8 +76,8 @@ export default function Checkout() {
       },
       {
         k: 'Frais de service',
-        v: eur(quote.serviceFee),
-        note: `${Math.round(FEES.renterServiceRate * 100)} % du loyer · côté locataire (bêta)`,
+        v: `+ ${eur(quote.serviceFeeBuyer)}`,
+        note: `${pct} % du loyer · côté locataire (bêta)`,
       },
       {
         k: 'Livraison',
@@ -160,16 +161,21 @@ export default function Checkout() {
               <Text style={styles.total}>{eur(quote.totalDueNow)}</Text>
             </View>
 
+            <Text style={[styles.lineNote, { marginTop: 10 }]}>
+              Le prêteur recevra {eur(quote.ownerPayout)} (loyer −{' '}
+              {Math.round(FEES.lenderServiceRate * 100)} %)
+            </Text>
+
             <View style={[styles.row, { marginTop: 10 }]}>
               <View style={{ flex: 1, paddingRight: 8 }}>
                 <Text style={styles.lineK}>Caution (pré-autorisation / hold)</Text>
                 <Text style={styles.lineNote}>
                   Non débitée maintenant · palier {quote.depositTier}
-                  {quote.deposit === FEES.deposit ? ' · défaut mid' : ''}
+                  {quote.depositHold === FEES.deposit ? ' · défaut mid' : ''}
                 </Text>
                 <Text style={styles.insurance}>Assurance non incluse</Text>
               </View>
-              <Text style={styles.hold}>{eur(quote.deposit)}</Text>
+              <Text style={styles.hold}>{eur(quote.depositHold)}</Text>
             </View>
           </>
         )}

@@ -201,7 +201,7 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
   fees: {
     slug: 'fees',
     title: 'Frais & caution',
-    subtitle: 'Règles produit verrouillées (paliers A–D) — frais service 10 % locataire (bêta)',
+    subtitle: 'Règles produit verrouillées (paliers A–D) — frais 10 % × 2 (locataire + prêteur, bêta)',
     source: 'docs/legal/04-fees-cancellation-damage.md',
     sections: [
       {
@@ -215,14 +215,14 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
       {
         heading: 'Frais de service (bêta Closets fondateurs)',
         body: [
-          'Frais de service côté locataire : 10 % du loyer (Founding Closet / bêta).',
-          'Pas de commission prêteur affichée en MVP : le prix / jour = loyer que le prêteur gagne (sous réserve Stripe / escrow).',
-          'Affichage avant paiement : loyer + frais de service + livraison + nettoyage (si applicable) + caution en hold.',
+          'Modèle bilatéral 10 % (bêta) : le locataire paie loyer + 10 % ; le prêteur reçoit loyer − 10 %.',
+          'Exemple : pièce à 10 €/jour, 1 jour → locataire paie 11 € (hors livraison / caution) ; prêteur reçoit 9 € ; plateforme 2 €.',
+          'Prix / jour = loyer listé (pas le net prêteur). Affichage avant paiement : loyer + frais service locataire + livraison + nettoyage (si applicable) + caution en hold.',
           'Assurance : non incluse.',
         ],
         callout: {
           tone: 'draft',
-          text: '10 % frais de service locataire (bêta Closets fondateurs) — règles brouillon soumises à revue avocat ; pas des conditions juridiques finales.',
+          text: 'Frais bilatéraux 10 % + 10 % (bêta Closets fondateurs) — règles brouillon soumises à revue avocat ; pas des conditions juridiques finales.',
         },
       },
       {

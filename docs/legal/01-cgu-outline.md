@@ -108,7 +108,7 @@
 - Affichage TTC / frais : **à vérifier avec un avocat** (info précontractuelle consommateur, art. L.111-1 et s. C. conso — **ne pas inventer le texte**).
 
 ### 7.2 Commission plateforme
-- Rota prélève une **commission** sur la location (**[PLACEHOLDER %]** à confirmer produit).
+- Rota prélève une **commission bilatérale 10 % / 10 %** sur le loyer (bêta Closets fondateurs) : locataire paie loyer + 10 % ; prêteur reçoit loyer − 10 %.
 - Grille détaillée : voir `04-fees-cancellation-damage.md`.
 - **Disclosure des frais** : **à vérifier avec un avocat** (clarté affichage avant paiement).
 

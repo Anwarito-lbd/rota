@@ -21,8 +21,8 @@ export default function Promote() {
       <Title>Promouvoir</Title>
       <Sub>{data.message}</Sub>
       <Text style={styles.ownerNote}>
-        Prix / jour = loyer que vous gagnez (pas de commission prêteur en MVP). Caution côté
-        locataire ; payout après retour OK, pas au handover.
+        Prix / jour = loyer listé ; vous recevez loyer − 10 % (frais service prêteur, bêta). Caution
+        côté locataire ; payout après retour OK, pas au handover.
       </Text>
       {user?.foundingCloset || data.foundingCloset ? (
         <Badge text="★ Closet fondateur" tone="clay" />
