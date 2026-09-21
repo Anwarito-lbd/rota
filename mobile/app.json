@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Rota",
+    "slug": "rota",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#121011",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -24,7 +24,30 @@
     "plugins": [
       "expo-image",
       "expo-video",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Rota utilise l’appareil photo pour filmer vos annonces et photographier les pièces au retour.",
+          "microphonePermission": "Rota utilise le micro pour enregistrer le son de vos vidéos d’annonce.",
+          "recordAudioAndroid": true,
+          "barcodeScannerEnabled": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Rota accède uniquement aux photos et vidéos que vous choisissez pour vos annonces et votre profil.",
+          "cameraPermission": "Rota utilise l’appareil photo pour filmer vos annonces et photographier les pièces au retour.",
+          "microphonePermission": "Rota utilise le micro pour enregistrer le son de vos vidéos d’annonce."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Rota utilise votre position pour montrer les pièces proches et suggérer des points de remise publics."
+        }
+      ]
     ]
   }
 }

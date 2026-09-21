@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { permissions, rules } from '../data/catalog';
+import { usePermissions, type PermStatus } from '../lib/permissions';
 import { emailValid, makeOtp, passwordChecks, passwordValid, usernameError } from '../state/auth';
 import { useStore } from '../state/store';
 import { FONT, OVER_INK } from '../theme/tokens';
@@ -484,9 +485,17 @@ function RulesGate() {
   );
 }
 
+const PERM_LABEL: Record<PermStatus, string> = {
+  granted: 'Activé',
+  denied: 'Activer',
+  undetermined: 'Activer',
+  blocked: 'Réglages',
+};
+
 function Perms() {
-  const { state, set, go } = useStore();
+  const { go } = useStore();
   const { c, fs } = useTheme();
+  const { statuses, request } = usePermissions();
 
   return (
     <View style={{ flex: 1 }}>
@@ -504,19 +513,22 @@ function Perms() {
 
         <View style={{ marginTop: 20, gap: 10 }}>
           {permissions.map((p) => {
-            const on = state.permOn[p.key];
+            const status = statuses[p.key];
+            const on = status === 'granted';
             return (
               <Card key={p.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 13 }}>
                 <View style={{ flex: 1 }}>
                   <Txt weight="bold">{p.title}</Txt>
                   <Txt size={13} color={c.ink2} style={{ marginTop: 4 }}>
-                    {p.body}
+                    {status === 'blocked'
+                      ? 'Refusé sur ce téléphone. Touchez « Réglages » pour l’autoriser.'
+                      : p.body}
                   </Txt>
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityState={{ selected: on }}
-                  onPress={() => set((s) => ({ permOn: { ...s.permOn, [p.key]: !s.permOn[p.key] } }))}
+                  accessibilityState={{ selected: on, disabled: on }}
+                  onPress={() => !on && request(p.key)}
                   style={{
                     minHeight: 44,
                     paddingHorizontal: 16,
@@ -528,7 +540,7 @@ function Perms() {
                   }}
                 >
                   <Txt size={14} weight="bold" color={on ? c.onclay : c.ink} style={{ fontSize: fs(14) }}>
-                    {on ? 'Activé' : 'Activer'}
+                    {PERM_LABEL[status]}
                   </Txt>
                 </Pressable>
               </Card>

@@ -46,7 +46,7 @@ export type Delivery = 'ship' | 'meet';
 export type FeedTab = 'near' | 'foryou' | 'follow';
 export type RentalTab = 'renting' | 'lending';
 export type OfferStatus = 'pending' | 'accepted' | 'declined';
-export type PermKey = 'camera' | 'photos' | 'location' | 'notif';
+export type PermKey = 'camera' | 'microphone' | 'photos' | 'location';
 
 /** Cash is never an option — every rental is captured in-app. */
 export type PayMethod = 'applepay' | 'googlepay' | 'paypal' | 'card' | 'wallet';

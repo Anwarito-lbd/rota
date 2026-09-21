@@ -186,26 +186,26 @@ export const rules: Rule[] = [
   },
 ];
 
-export const permissions: { key: 'camera' | 'photos' | 'location' | 'notif'; title: string; body: string }[] = [
+export const permissions: { key: 'camera' | 'microphone' | 'photos' | 'location'; title: string; body: string }[] = [
   {
     key: 'camera',
-    title: 'Camera',
-    body: 'Only when you film a listing video or photograph a piece at return.',
+    title: 'Appareil photo',
+    body: 'Pour filmer la vidéo d’une annonce ou photographier une pièce au retour.',
+  },
+  {
+    key: 'microphone',
+    title: 'Micro',
+    body: 'Pour le son de vos vidéos d’annonce. Jamais en arrière-plan.',
   },
   {
     key: 'photos',
     title: 'Photos',
-    body: 'To pick outfit photos from your library. We only read what you select.',
+    body: 'Pour choisir des photos dans votre galerie. Seules celles que vous sélectionnez sont lues.',
   },
   {
     key: 'location',
-    title: 'Location',
-    body: 'To show pieces near you and suggest public handover spots. Never in the background.',
-  },
-  {
-    key: 'notif',
-    title: 'Notifications',
-    body: 'Booking confirmations, handover reminders and return deadlines.',
+    title: 'Position',
+    body: 'Pour montrer les pièces proches et suggérer des points de remise publics. Jamais en arrière-plan.',
   },
 ];
 

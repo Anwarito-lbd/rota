@@ -1,7 +1,18 @@
+import { Camera } from 'expo-camera';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  ActionSheetIOS,
+  Alert,
+  Linking,
+  Platform,
+  Pressable,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { useStore } from '../state/store';
 import { FONT, OVER_INK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
@@ -69,14 +80,9 @@ export function MediaSlot({
   const chrome = tone === 'media' ? 'rgba(246,241,233,0.28)' : c.line2;
   const caption = tone === 'media' ? 'rgba(246,241,233,0.55)' : c.ink3;
 
-  const pick = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: video ? ['images', 'videos'] : ['images'],
-      quality: 0.85,
-      videoMaxDuration: 60,
-    });
+  const mediaTypes: ImagePicker.MediaType[] = video ? ['images', 'videos'] : ['images'];
+
+  const keep = (result: ImagePicker.ImagePickerResult) => {
     const asset = result.canceled ? undefined : result.assets[0];
     if (!asset) return;
     setMedia(id, {
@@ -84,6 +90,47 @@ export function MediaSlot({
       kind: asset.type === 'video' ? 'video' : 'image',
       name: asset.fileName ?? id,
     });
+  };
+
+  const refused = (what: string) =>
+    Alert.alert(`Accès ${what} refusé`, `Autorisez l’accès ${what} dans les réglages du téléphone pour continuer.`, [
+      { text: 'Plus tard', style: 'cancel' },
+      { text: 'Ouvrir les réglages', onPress: () => Linking.openSettings() },
+    ]);
+
+  const fromCamera = async () => {
+    const camera = await ImagePicker.requestCameraPermissionsAsync();
+    if (!camera.granted) return refused("à l'appareil photo");
+    if (video) {
+      const mic = await Camera.requestMicrophonePermissionsAsync();
+      if (!mic.granted) return refused('au micro');
+    }
+    keep(await ImagePicker.launchCameraAsync({ mediaTypes, quality: 0.85, videoMaxDuration: 60 }));
+  };
+
+  const fromLibrary = async () => {
+    const library = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!library.granted) return refused('aux photos');
+    keep(await ImagePicker.launchImageLibraryAsync({ mediaTypes, quality: 0.85, videoMaxDuration: 60 }));
+  };
+
+  const pick = () => {
+    const shoot = video ? 'Filmer ou photographier' : 'Prendre une photo';
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: [shoot, 'Choisir dans la galerie', 'Annuler'], cancelButtonIndex: 2 },
+        (i) => {
+          if (i === 0) fromCamera();
+          if (i === 1) fromLibrary();
+        },
+      );
+      return;
+    }
+    Alert.alert(placeholder ?? 'Ajouter un média', undefined, [
+      { text: shoot, onPress: fromCamera },
+      { text: 'Choisir dans la galerie', onPress: fromLibrary },
+      { text: 'Annuler', style: 'cancel' },
+    ]);
   };
 
   return (

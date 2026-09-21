@@ -12,7 +12,7 @@ const initialState: AppState = {
   screen: 'onboard',
   obStep: 0,
   agreed: false,
-  permOn: { camera: false, photos: false, location: false, notif: false },
+  permOn: { camera: false, microphone: false, photos: false, location: false },
   signedIn: false,
   feedTab: 'foryou',
 
