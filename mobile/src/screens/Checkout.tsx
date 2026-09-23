@@ -1,16 +1,29 @@
 import { Pressable, View } from 'react-native';
-import { FEES, payMethods } from '../data/catalog';
+import { payMethods } from '../data/catalog';
+import { useListing } from '../data/listings';
+import { useT } from '../i18n';
+import { FEES } from '../lib/fees';
 import { useBooking } from '../state/selectors';
 import { useStore } from '../state/store';
 import { useTheme } from '../theme/useTheme';
 import { AppleIcon } from '../ui/icons';
-import { Amount, BackButton, Card, Display, FooterBar, PrimaryButton, Radio, Screen, Txt } from '../ui/kit';
+import {
+  Amount,
+  BackButton,
+  Card,
+  Display,
+  FooterBar,
+  GhostButton,
+  PrimaryButton,
+  Radio,
+  Screen,
+  Txt,
+} from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
 
 function Confirmation() {
   const { go, m } = useStore();
   const { c } = useTheme();
-  const { active } = useBooking();
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36 }}>
@@ -32,14 +45,10 @@ function Confirmation() {
         C'est réservé.
       </Display>
       <Txt size={15} center color={c.ink2} style={{ marginTop: 12 }}>
-        {active.name} a 24 h pour confirmer la remise. On vous rappellera de poster une vidéo — elle vous donne{' '}
-        {m(FEES.videoCredit)} sur la prochaine location.
+        La prêteuse a 24 h pour confirmer la remise. Vous recevrez un message dès sa réponse. Poster une vidéo après la
+        location vous donne {m(10)} de crédit.
       </Txt>
-      <PrimaryButton
-        label="Voir mes locations"
-        onPress={() => go('rentals')}
-        style={{ marginTop: 26, alignSelf: 'stretch' }}
-      />
+      <PrimaryButton label="Retour au feed" onPress={() => go('feed')} style={{ marginTop: 26, alignSelf: 'stretch' }} />
     </View>
   );
 }
@@ -47,9 +56,22 @@ function Confirmation() {
 export function Checkout() {
   const { state, set, go, m } = useStore();
   const { c } = useTheme();
-  const { active, days, ship, total, deposit } = useBooking();
+  const { t } = useT();
+  const listing = useListing(state.activeId);
+  const { days, ship, total, deposit } = useBooking(listing);
 
   if (state.confirmed) return <Confirmation />;
+
+  if (!listing) {
+    return (
+      <Screen>
+        <Txt color={c.ink2}>Cette annonce n'est plus disponible.</Txt>
+        <GhostButton label="Retour au feed" onPress={() => go('feed')} style={{ marginTop: 16 }} />
+      </Screen>
+    );
+  }
+
+  const size = listing.sizes.includes(state.size) ? state.size : listing.sizes[0];
 
   return (
     <View style={{ flex: 1 }}>
@@ -61,12 +83,18 @@ export function Checkout() {
 
         <Card style={{ marginTop: 20, flexDirection: 'row', gap: 12 }}>
           <View style={{ width: 76, height: 96, borderRadius: 10, overflow: 'hidden' }}>
-            <MediaSlot id={`checkout-${active.id}`} shape="rounded" radius={10} remoteUri={active.photo} />
+            <MediaSlot
+              id={`checkout-${listing.id}`}
+              shape="rounded"
+              radius={10}
+              remoteUri={listing.photos[0] ?? undefined}
+            />
           </View>
           <View style={{ flex: 1 }}>
-            <Txt weight="bold">{active.title}</Txt>
+            <Txt weight="bold">{listing.title}</Txt>
             <Txt size={13} color={c.ink2} style={{ marginTop: 4 }}>
-              Taille {state.size} · {days} jours
+              {size ? `${t('common.size')} ${size} · ` : ''}
+              {days} jours
             </Txt>
             <Txt size={13} color={c.ink2}>
               {state.dates[0]}–{state.dates[1]} sept. · {ship ? 'livraison' : 'main propre'}
@@ -120,12 +148,7 @@ export function Checkout() {
           })}
         </View>
 
-        <Pressable onPress={() => go('payments')} style={{ minHeight: 44, justifyContent: 'center', marginTop: 8 }}>
-          <Txt size={13} weight="bold" color={c.clay}>
-            Gérer mes moyens de paiement ›
-          </Txt>
-        </Pressable>
-        <Txt size={12} color={c.ink3}>
+        <Txt size={12} color={c.ink3} style={{ marginTop: 10 }}>
           Le paiement en espèces n'est pas accepté : hors application, ni la protection dommages ni la caution ne
           s'appliquent.
         </Txt>
@@ -135,38 +158,18 @@ export function Checkout() {
             Ce qui est compris
           </Txt>
           <Txt size={13} color={c.ink2} style={{ marginTop: 8 }}>
-            Protection dommages jusqu'à {m(FEES.coverCap)}
-            {active.cleaning.byLender
-              ? ` et nettoyage par ${active.name} (${m(active.cleaning.fee)})`
+            Protection dommages jusqu'à {m(1500)}
+            {listing.cleaning.byLender
+              ? ` et nettoyage par la prêteuse (${m(listing.cleaning.fee)})`
               : ' ; la pièce est rendue propre par vos soins'}
-            . Une autorisation de {m(deposit)} est placée sur votre moyen de paiement et libérée 48 h après le scan
-            du retour. Retard : {m(FEES.latePerDay)} par jour.
+            . Une autorisation de {m(deposit)} est placée sur votre moyen de paiement et libérée 48 h après le retour.
+            Retard : {m(FEES.latePerDay)} par jour.
           </Txt>
-          <Pressable
-            onPress={() => go('fees')}
-            style={{
-              marginTop: 12,
-              paddingTop: 12,
-              borderTopWidth: 1,
-              borderTopColor: c.line,
-              minHeight: 44,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Txt size={13} color={c.ink2}>
-              Frais, annulation et remboursements
-            </Txt>
-            <Txt size={13} weight="bold" color={c.clay}>
-              Voir ›
-            </Txt>
-          </Pressable>
         </Card>
 
         <Txt size={12} color={c.ink3} style={{ marginTop: 12 }}>
           En payant, vous acceptez les conditions de location et la politique d'annulation. Rota est une place de marché
-          : le contrat de location vous lie à {active.name}.
+          : le contrat de location vous lie à @{listing.owner.username}.
         </Txt>
       </Screen>
 

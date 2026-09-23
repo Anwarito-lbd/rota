@@ -86,6 +86,7 @@ const initialState: AppState = {
 
   theme: null,
   textLg: false,
+  lang: 'fr',
 
   report: false,
   reportReason: 0,

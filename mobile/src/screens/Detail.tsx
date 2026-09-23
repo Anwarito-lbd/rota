@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FEES, SIZES, itemReviews, photoFor, ratingBars } from '../data/catalog';
+import { useListing } from '../data/listings';
+import { useT } from '../i18n';
+import { FEES } from '../lib/fees';
 import { OFFER_TIERS, useBooking } from '../state/selectors';
 import { useStore } from '../state/store';
 import { OVER_INK, OVER_SCRIM } from '../theme/tokens';
@@ -50,21 +52,36 @@ function RoundOverlayButton({
 }
 
 export function Detail() {
-  const { state, set, go, config, m, toggleFlag } = useStore();
+  const { state, set, go, m, toggleFlag } = useStore();
   const { c } = useTheme();
+  const { t } = useT();
   const insets = useSafeAreaInsets();
-  const { active, days, nego, deposit } = useBooking();
-  const wished = !!state.wish[active.id];
-  const certified = active.certified || !!state.certifies[active.handle];
+  const listing = useListing(state.activeId);
+  const { days, deposit } = useBooking(listing);
+
+  if (!listing) {
+    return (
+      <View style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+        <Txt center color={c.ink2}>
+          Cette annonce n'est plus disponible.
+        </Txt>
+        <GhostButton label="Retour au feed" onPress={() => go('feed')} style={{ marginTop: 16 }} />
+      </View>
+    );
+  }
+
+  const wished = !!state.wish[listing.id];
+  const manySizes = listing.sizes.length > 1;
+  const selectedSize = manySizes && listing.sizes.includes(state.size) ? state.size : listing.sizes[0];
 
   const trust = [
     {
-      title: `Dommages couverts jusqu'à ${m(FEES.coverCap)}`,
+      title: `Dommages couverts jusqu'à ${m(1500)}`,
       body: 'Inclus dans chaque location. À signaler dans les 24 h après le retour.',
     },
-    active.cleaning.byLender
+    listing.cleaning.byLender
       ? {
-          title: `Nettoyage par la prêteuse · ${m(active.cleaning.fee)}`,
+          title: `Nettoyage par la prêteuse · ${m(listing.cleaning.fee)}`,
           body: 'Elle ne souhaite pas que la pièce soit lavée : le nettoyage est fait par ses soins et facturé une fois.',
         }
       : {
@@ -73,21 +90,11 @@ export function Detail() {
         },
     {
       title:
-        active.authenticity === 'receipt'
-          ? 'Authenticité vérifiée · facture'
-          : active.authenticity === 'tag'
-            ? 'Authenticité vérifiée · étiquette'
-            : 'Authenticité non vérifiée',
+        listing.authenticity === 'verified' ? 'Authenticité vérifiée' : 'Authenticité non vérifiée',
       body:
-        active.authenticity === null
-          ? "La prêteuse n'a pas encore fourni de preuve d'achat. Demandez-la avant de réserver."
-          : 'Notre équipe a contrôlé la preuve fournie : facture, étiquette et numéro de série.',
-    },
-    {
-      title: config.instantBook ? 'Réservation immédiate' : 'Demande de réservation',
-      body: config.instantBook
-        ? 'Les locataires à l’identité vérifiée confirment tout de suite.'
-        : 'La prêteuse répond en 12 h en moyenne.',
+        listing.authenticity === 'verified'
+          ? 'Notre équipe a contrôlé la preuve fournie par la prêteuse.'
+          : "La preuve d'achat n'a pas encore été validée. Demandez-la avant de réserver.",
     },
   ];
 
@@ -95,7 +102,13 @@ export function Detail() {
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 150 }} showsVerticalScrollIndicator={false}>
         <View style={{ height: 430, backgroundColor: c.surf2 }}>
-          <MediaSlot id={`detail-${active.id}`} shape="rect" tone="media" placeholder={active.title} />
+          <MediaSlot
+            id={`detail-${listing.id}`}
+            shape="rect"
+            tone="media"
+            remoteUri={listing.photos[0] ?? listing.video ?? undefined}
+            placeholder={listing.title}
+          />
           <View
             style={{
               position: 'absolute',
@@ -106,13 +119,13 @@ export function Detail() {
               justifyContent: 'space-between',
             }}
           >
-            <RoundOverlayButton onPress={() => go('feed')} label="Retour">
+            <RoundOverlayButton onPress={() => go('feed')} label={t('common.back')}>
               <Txt size={20} color={OVER_INK}>
                 ‹
               </Txt>
             </RoundOverlayButton>
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <RoundOverlayButton onPress={() => toggleFlag('wish', active.id)} label="Enregistrer">
+              <RoundOverlayButton onPress={() => toggleFlag('wish', listing.id)} label="Enregistrer">
                 <BookmarkIcon size={17} fill={wished ? c.clay : 'none'} color={wished ? c.clay : OVER_INK} />
               </RoundOverlayButton>
               <RoundOverlayButton onPress={() => set({ report: true, reportSent: false })} label="Signaler">
@@ -123,50 +136,59 @@ export function Detail() {
         </View>
 
         <View style={{ paddingHorizontal: 18, paddingTop: 20 }}>
-          <Txt size={11} weight="bold" upper color={c.clay}>
-            {active.occasion} · {active.badge}
-          </Txt>
+          {listing.occasion ? (
+            <Txt size={11} weight="bold" upper color={c.clay}>
+              {listing.occasion}
+            </Txt>
+          ) : null}
           <Display size={34} style={{ marginTop: 8 }}>
-            {active.title}
+            {listing.title}
           </Display>
           <Txt size={15} color={c.ink2} style={{ marginTop: 6 }}>
-            {active.brand} · valeur neuve {m(active.retail)}
+            {[listing.brand, listing.retail ? `valeur neuve ${m(listing.retail)}` : null]
+              .filter(Boolean)
+              .join(' · ')}
           </Txt>
 
-          <View
-            style={{
-              marginTop: 10,
-              alignSelf: 'flex-start',
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 7,
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderRadius: 999,
-              backgroundColor: nego.nego ? c.claySoft : 'transparent',
-              borderWidth: 1,
-              borderColor: nego.nego ? c.clay : c.line2,
-            }}
-          >
-            <View style={{ width: 7, height: 7, borderRadius: 99, backgroundColor: nego.nego ? c.clay : c.ink3 }} />
-            <Txt size={13} weight="bold" color={nego.nego ? c.clay : c.ink2}>
-              {nego.nego ? `Propositions acceptées · min ${m(nego.min)} / jour` : 'Prix fixe · pas de négociation'}
-            </Txt>
-          </View>
+          {listing.acceptOffers ? (
+            <View
+              style={{
+                marginTop: 10,
+                alignSelf: 'flex-start',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 7,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 999,
+                backgroundColor: c.claySoft,
+                borderWidth: 1,
+                borderColor: c.clay,
+              }}
+            >
+              <View style={{ width: 7, height: 7, borderRadius: 99, backgroundColor: c.clay }} />
+              <Txt size={13} weight="bold" color={c.clay}>
+                {listing.minOffer
+                  ? `Propositions acceptées · min ${m(listing.minOffer)} ${t('common.perDay')}`
+                  : 'Propositions acceptées'}
+              </Txt>
+            </View>
+          ) : null}
 
           <Card onPress={() => go('profile')} style={{ marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View style={{ width: 48, height: 48, borderRadius: 999, padding: 2, backgroundColor: c.clay }}>
               <View style={{ flex: 1, borderRadius: 999, overflow: 'hidden' }}>
-                <MediaSlot id={`lender-${active.id}`} shape="circle" />
+                <MediaSlot id={`lender-${listing.id}`} shape="circle" remoteUri={listing.owner.avatar ?? undefined} />
               </View>
             </View>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Txt weight="bold">{active.name}</Txt>
-                {certified ? <CertifiedMark /> : null}
+                <Txt weight="bold">@{listing.owner.username}</Txt>
+                {listing.owner.certified ? <CertifiedMark /> : null}
               </View>
               <Txt size={13} color={c.ink2}>
-                {active.rating} ★ · 68 locations · identité vérifiée
+                {listing.owner.identityVerified ? 'Identité vérifiée' : 'Identité non vérifiée'}
+                {listing.city ? ` · ${listing.city}` : ''}
               </Txt>
             </View>
             <Txt size={18} color={c.ink3}>
@@ -175,166 +197,77 @@ export function Detail() {
           </Card>
 
           <Txt size={12} weight="semi" upper color={c.ink3} style={{ marginTop: 24 }}>
-            Taille et tombé
+            {manySizes ? t('detail.sizesOffered') : t('detail.sizeOffered')}
           </Txt>
-          <View style={{ marginTop: 10, flexDirection: 'row', gap: 8 }}>
-            {SIZES.map((s) => (
-              <View key={s} style={{ flex: 1 }}>
-                <Chip label={s} on={state.size === s} onPress={() => set({ size: s })} />
-              </View>
-            ))}
-          </View>
-
-          <Card style={{ marginTop: 14 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Txt size={13} color={c.ink2}>
-                Taille petit
-              </Txt>
-              <Txt size={13} color={c.ink2}>
-                Taille juste
-              </Txt>
-              <Txt size={13} color={c.ink2}>
-                Taille grand
-              </Txt>
+          {manySizes ? (
+            <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {listing.sizes.map((s) => (
+                <Chip key={s} label={s} on={selectedSize === s} onPress={() => set({ size: s })} />
+              ))}
             </View>
-            <View style={{ marginTop: 12, height: 4, borderRadius: 99, backgroundColor: c.surf2 }}>
-              <View
-                style={{
-                  position: 'absolute',
-                  left: '41%',
-                  top: -7,
-                  width: 18,
-                  height: 18,
-                  borderRadius: 99,
-                  backgroundColor: c.clay,
-                }}
-              />
-            </View>
-            <Txt size={14} color={c.ink2} style={{ marginTop: 14 }}>
-              {active.name.split(' ')[0]} mesure 1,70 m et porte du {active.size}. Poitrine 86 cm · taille 68 cm ·
-              longueur 142 cm. Stretch minimal.
+          ) : (
+            <Txt size={16} weight="bold" style={{ marginTop: 8 }}>
+              {listing.sizes[0] ?? '—'}
             </Txt>
-          </Card>
+          )}
 
-          <Txt size={12} weight="semi" upper color={c.ink3} style={{ marginTop: 24 }}>
-            Portée par des locataires
-          </Txt>
-          <View style={{ marginTop: 10, flexDirection: 'row', gap: 8 }}>
-            {[1, 2, 3].map((n) => (
-              <View key={n} style={{ flex: 1, height: 120, borderRadius: 12, overflow: 'hidden' }}>
-                <MediaSlot
-                  id={`fit-${n}`}
-                  shape="rounded"
-                  radius={12}
-                  remoteUri={photoFor(`fit-${active.id}-${n}`)}
-                  placeholder="Photo portée"
-                />
+          {listing.photos.length > 1 ? (
+            <>
+              <Txt size={12} weight="semi" upper color={c.ink3} style={{ marginTop: 24 }}>
+                Photos
+              </Txt>
+              <View style={{ marginTop: 10, flexDirection: 'row', gap: 8 }}>
+                {listing.photos.slice(1, 4).map((uri, i) => (
+                  <View key={uri} style={{ flex: 1, height: 120, borderRadius: 12, overflow: 'hidden' }}>
+                    <MediaSlot id={`photo-${listing.id}-${i}`} shape="rounded" radius={12} remoteUri={uri} />
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
+            </>
+          ) : null}
 
           <View style={{ marginTop: 24, gap: 8 }}>
-            {trust.map((t) => (
-              <Card key={t.title} style={{ flexDirection: 'row', gap: 10 }}>
+            {trust.map((item) => (
+              <Card key={item.title} style={{ flexDirection: 'row', gap: 10 }}>
                 <View style={{ width: 8, height: 8, marginTop: 7, borderRadius: 99, backgroundColor: c.clay }} />
                 <View style={{ flex: 1 }}>
                   <Txt size={14} weight="bold">
-                    {t.title}
+                    {item.title}
                   </Txt>
                   <Txt size={13} color={c.ink2} style={{ marginTop: 3 }}>
-                    {t.body}
+                    {item.body}
                   </Txt>
                 </View>
               </Card>
             ))}
           </View>
 
-          <Txt size={12} weight="semi" upper color={c.ink3} style={{ marginTop: 24 }}>
-            Règles de la prêteuse
-          </Txt>
-          <Card style={{ marginTop: 10 }}>
-            <View style={{ gap: 9 }}>
-              {active.rules.map((rule) => (
-                <View key={rule} style={{ flexDirection: 'row', gap: 10 }}>
-                  <View style={{ width: 6, height: 6, marginTop: 8, borderRadius: 99, backgroundColor: c.plum }} />
-                  <Txt size={14} style={{ flex: 1 }}>
-                    {rule}
-                  </Txt>
+          {listing.rules.length ? (
+            <>
+              <Txt size={12} weight="semi" upper color={c.ink3} style={{ marginTop: 24 }}>
+                {t('detail.rules')}
+              </Txt>
+              <Card style={{ marginTop: 10 }}>
+                <View style={{ gap: 9 }}>
+                  {listing.rules.map((rule) => (
+                    <View key={rule} style={{ flexDirection: 'row', gap: 10 }}>
+                      <View style={{ width: 6, height: 6, marginTop: 8, borderRadius: 99, backgroundColor: c.plum }} />
+                      <Txt size={14} style={{ flex: 1 }}>
+                        {rule}
+                      </Txt>
+                    </View>
+                  ))}
                 </View>
-              ))}
-            </View>
-            <Txt size={13} color={c.ink3} style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: c.line }}>
-              Vous les acceptez au moment de la réservation. Une règle non respectée peut donner lieu à un signalement.
-            </Txt>
-          </Card>
+              </Card>
+            </>
+          ) : null}
 
-          <Pressable onPress={() => go('fees')} style={{ marginTop: 12 }}>
+          <View style={{ marginTop: 12 }}>
             <Note tone="clay">
-              {active.cleaning.byLender ? `Nettoyage ${m(active.cleaning.fee)}` : 'Nettoyage à votre charge'} ·
-              protection {m(FEES.coverCap)} · livraison {m(FEES.shipping)} · caution {m(deposit)}. Tout est affiché
-              avant paiement.
+              {listing.cleaning.byLender ? `Nettoyage ${m(listing.cleaning.fee)}` : 'Nettoyage à votre charge'} ·
+              livraison {m(FEES.shipping)} · caution {m(deposit)}. Tout est affiché avant paiement.
             </Note>
-          </Pressable>
-
-          <Txt size={12} weight="semi" upper color={c.ink3} style={{ marginTop: 24 }}>
-            Avis après location
-          </Txt>
-          <Card style={{ marginTop: 10 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <Amount size={34} color={c.clay}>
-                4,9
-              </Amount>
-              <View style={{ flex: 1 }}>
-                <Txt size={14} weight="bold">
-                  ★★★★★
-                </Txt>
-                <Txt size={13} color={c.ink2}>
-                  24 avis de locataires vérifiés
-                </Txt>
-              </View>
-            </View>
-            <View style={{ marginTop: 14, gap: 9 }}>
-              {ratingBars.map((b) => (
-                <View key={b.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <Txt size={13} color={c.ink2} style={{ width: '42%' }}>
-                    {b.label}
-                  </Txt>
-                  <View style={{ flex: 1, height: 5, borderRadius: 99, backgroundColor: c.surf2 }}>
-                    <View style={{ width: b.w as `${number}%`, height: 5, borderRadius: 99, backgroundColor: c.clay }} />
-                  </View>
-                  <Amount size={13}>{b.value}</Amount>
-                </View>
-              ))}
-            </View>
-          </Card>
-
-          <View style={{ marginTop: 10, gap: 8 }}>
-            {itemReviews.map((r) => (
-              <Card key={r.slot}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <View style={{ width: 34, height: 34, borderRadius: 999, overflow: 'hidden' }}>
-                    <MediaSlot id={`irv-${r.slot}`} shape="circle" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Txt size={14} weight="bold">
-                      {r.name}
-                    </Txt>
-                    <Txt size={12} color={c.ink3}>
-                      {r.meta}
-                    </Txt>
-                  </View>
-                  <Txt size={13} color={c.clay}>
-                    {r.stars}
-                  </Txt>
-                </View>
-                <Txt size={14} color={c.ink2} style={{ marginTop: 9 }}>
-                  {r.body}
-                </Txt>
-              </Card>
-            ))}
           </View>
-
-          <GhostButton label="Voir les 24 avis" onPress={() => go('reviews')} style={{ marginTop: 10 }} />
         </View>
       </ScrollView>
 
@@ -356,19 +289,15 @@ export function Detail() {
         }}
       >
         <View>
-          <Amount size={22}>{m(active.price)}</Amount>
+          <Amount size={22}>{m(listing.price)}</Amount>
           <Txt size={12} color={c.ink3}>
-            par jour
+            par {t('common.day')}
           </Txt>
         </View>
-        {nego.nego ? (
-          <GhostButton label="Proposer" tone="clay" onPress={() => set({ offer: true })} style={{ minHeight: 54 }} />
+        {listing.acceptOffers ? (
+          <GhostButton label={t('detail.offer')} tone="clay" onPress={() => set({ offer: true })} style={{ minHeight: 54 }} />
         ) : null}
-        <PrimaryButton
-          label={config.instantBook ? 'Voir les dates' : 'Demander ces dates'}
-          onPress={() => go('booking')}
-          style={{ flex: 1 }}
-        />
+        <PrimaryButton label={t('detail.viewDates')} onPress={() => go('booking')} style={{ flex: 1 }} />
       </View>
 
       <OfferSheet days={days} />
@@ -379,15 +308,16 @@ export function Detail() {
 function OfferSheet({ days }: { days: number }) {
   const { state, set, m } = useStore();
   const { c } = useTheme();
-  const { active, nego } = useBooking();
+  const listing = useListing(state.activeId);
   const [idx, setIdx] = useState(state.offerIdx);
-  const perDay = Math.round(active.price * OFFER_TIERS[idx]);
+  if (!listing) return null;
+  const perDay = Math.round(listing.price * OFFER_TIERS[idx]);
 
   return (
     <Sheet visible={state.offer} onClose={() => set({ offer: false })}>
       <Display size={28}>Faire une proposition</Display>
       <Txt size={14} color={c.ink2} style={{ marginTop: 8 }}>
-        {active.name} a 12 h pour accepter. Elle demande {m(active.price)} / jour pour {days} jours.
+        @{listing.owner.username} a 12 h pour accepter. Elle demande {m(listing.price)} / jour pour {days} jours.
       </Txt>
 
       <View style={{ marginTop: 18, flexDirection: 'row', gap: 8 }}>
@@ -413,7 +343,7 @@ function OfferSheet({ days }: { days: number }) {
               }}
             >
               <Amount size={17} color={on ? c.onclay : c.ink}>
-                {m(Math.round(active.price * pct))}
+                {m(Math.round(listing.price * pct))}
               </Amount>
               <Txt size={11} color={on ? c.onclay : c.ink2} style={{ marginTop: 3 }}>
                 {Math.round((1 - pct) * 100)} % / jour
@@ -423,23 +353,10 @@ function OfferSheet({ days }: { days: number }) {
         })}
       </View>
 
-      <View style={{ marginTop: 14, padding: 14, borderRadius: 14, backgroundColor: c.surf2, gap: 8 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
-          <Txt size={13} color={c.ink2} style={{ flex: 1 }}>
-            Minimum accepté par {active.name}
-          </Txt>
-          <Amount size={13}>{`${m(nego.min)} / jour`}</Amount>
-        </View>
-        <Txt size={13} color={c.ink3}>
-          Les propositions sur 3 jours ou plus sont acceptées dans environ 70 % des cas. Nettoyage et protection restent
-          inclus.
-        </Txt>
-      </View>
-
       <PrimaryButton
         label={`Envoyer · ${m(perDay * days)}`}
         tone="plum"
-        onPress={() => set({ offer: false, screen: 'messages', thread: 't1', offerStatus: 'pending' })}
+        onPress={() => set({ offer: false })}
         style={{ marginTop: 18 }}
       />
     </Sheet>

@@ -41,6 +41,7 @@ export type Screen =
 export type ObStep = 0 | 1 | 2 | 'auth' | 'otp' | 'twofa';
 
 export type Theme = 'dark' | 'light';
+export type Lang = 'fr' | 'en' | 'es';
 export type AuthMode = 'signup' | 'login';
 export type Delivery = 'ship' | 'meet';
 export type FeedTab = 'near' | 'foryou' | 'follow';
@@ -150,6 +151,7 @@ export interface AppState {
 
   theme: Theme | null;
   textLg: boolean;
+  lang: Lang;
 
   report: boolean;
   reportReason: number;

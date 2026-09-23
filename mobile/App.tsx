@@ -14,11 +14,17 @@ import { useEffect, type ReactElement } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/lib/auth';
+import { ListingsProvider } from './src/data/listings';
 import { Booking } from './src/screens/Booking';
 import { Checkout } from './src/screens/Checkout';
+import { Closet } from './src/screens/Closet';
 import { Detail } from './src/screens/Detail';
+import { Discover } from './src/screens/Discover';
 import { Feed } from './src/screens/Feed';
+import { ListPiece } from './src/screens/ListPiece';
+import { Messages } from './src/screens/Messages';
 import { Onboarding } from './src/screens/Onboarding';
+import { Settings } from './src/screens/Settings';
 import { StoreProvider, useStore } from './src/state/store';
 import type { Screen as ScreenKey } from './src/state/types';
 import { useTheme } from './src/theme/useTheme';
@@ -46,6 +52,11 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   detail: Detail,
   booking: Booking,
   checkout: Checkout,
+  discover: Discover,
+  list: ListPiece,
+  messages: Messages,
+  closet: Closet,
+  settings: Settings,
 };
 
 function Shell() {
@@ -104,7 +115,9 @@ export default function App() {
     <SafeAreaProvider>
       <StoreProvider>
         <AuthProvider>
-          <Shell />
+          <ListingsProvider>
+            <Shell />
+          </ListingsProvider>
         </AuthProvider>
       </StoreProvider>
     </SafeAreaProvider>

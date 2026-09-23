@@ -1,4 +1,4 @@
-import { negotiation, pieces, type Piece } from '../data/catalog';
+import type { Listing } from '../data/listings';
 import { FEES, quoteCheckout, type CheckoutQuote } from '../lib/fees';
 import { useStore } from './store';
 
@@ -6,7 +6,6 @@ import { useStore } from './store';
 const isoDay = (day: number) => `2026-09-${String(day).padStart(2, '0')}`;
 
 export interface Booking {
-  active: Piece;
   /** Billed days, counted inclusively (18 → 21 is four days). */
   days: number;
   ship: boolean;
@@ -17,29 +16,26 @@ export interface Booking {
   deposit: number;
   total: number;
   breakdown: { label: string; value: string }[];
-  nego: { nego: boolean; min: number };
 }
 
-/** Everything the booking, checkout and detail screens derive from state. */
-export function useBooking(): Booking {
+/** Money for one listing over the dates currently selected. */
+export function useBooking(listing: Listing | null): Booking {
   const { state, m } = useStore();
-  const active = pieces.find((p) => p.id === state.activeId) ?? pieces[2];
   const [start, end] = state.dates;
   const ship = state.delivery === 'ship';
 
   const quote = quoteCheckout({
-    pricePerDay: active.price,
+    pricePerDay: listing?.price ?? 0,
     startDate: isoDay(start),
     endDate: isoDay(end),
     delivery: state.delivery,
-    badge: active.badge,
-    cleaningByLender: active.cleaning.byLender,
-    cleaningFee: active.cleaning.fee,
-    retail: active.retail,
+    cleaningByLender: listing?.cleaning.byLender,
+    cleaningFee: listing?.cleaning.fee,
+    retail: listing?.retail,
   });
 
   const breakdown = [
-    { label: `${m(active.price)} × ${quote.days} jours`, value: m(quote.loyer) },
+    { label: `${m(listing?.price ?? 0)} × ${quote.days} ${quote.days > 1 ? 'jours' : 'jour'}`, value: m(quote.loyer) },
     { label: 'Frais de service Rota', value: m(quote.serviceFeeBuyer) },
     {
       label: quote.showCleaning ? 'Nettoyage par la prêteuse' : 'Nettoyage',
@@ -52,14 +48,12 @@ export function useBooking(): Booking {
   ];
 
   return {
-    active,
     days: quote.days,
     ship,
     quote,
     cleaningFee: quote.cleaning,
     deposit: quote.depositHold,
     total: quote.totalDueNow,
-    nego: negotiation[active.id] ?? negotiation.f3,
     breakdown,
   };
 }
