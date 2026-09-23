@@ -1,51 +1,62 @@
 # Rota
 
-Peer-to-peer **outfit rental** (not resale) — Paris-first, French-first.  
+Peer-to-peer **outfit rental** (not resale) — Paris-first, French-first.
 Feel: TikTok × Pinterest × Vinted — discover a look, tap the pieces, rent them.
 
 ## Repo layout
 
 ```
-apps/mobile   Expo SDK 52 (iOS App Store path via EAS)
-apps/api      Express + SQLite API
-packages/shared   Shared types + Paris seed catalog (images + 3 videos)
-docs/         App Store, roadmap, legal drafts (FR)
+mobile/       The app — Expo SDK 57, runs in Expo Go, App Store path via EAS
+supabase/     Database schema: profiles, listings, favorites, storage, RLS
+src/          Web prototype (Vite + React) used as the design reference
+design/       The original Claude Design canvas export
+docs/         App Store checklist, roadmap, FR legal drafts
 ```
 
 ## Quick start
 
-Requires **Node.js 22.13+** (uses built-in `node:sqlite` — no native `better-sqlite3` / Visual Studio on Windows).
+Requires **Node.js 22+**.
 
 ```bash
+cd mobile
 npm install
-npm run seed
-npm run api                 # http://localhost:8787
-cd apps/mobile && npx expo start
+npx expo start --tunnel
 ```
 
-Demo login: `demo@rota.app` / `rota1234`
+Scan the QR code with **Expo Go** (phone and computer signed in to the same
+Expo account). `--tunnel` works on any network; drop it when both devices share
+a Wi-Fi.
 
-Optional env (see `.env.example`):
+The web prototype still runs from the repo root with `npm run dev`.
 
-- `EXPO_PUBLIC_API_URL` — API base (default `http://localhost:8787`)
-- `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` / `STRIPE_SECRET_KEY` — Stripe test stubs
+## Backend
 
-## What’s in the MVP
+Accounts, listings and media live in **Supabase**; account e-mails are sent
+through **Resend** from `no-reply@therotaapp.com`.
 
-- Auth (email/password + magic-link stub)
-- Feed / discover / listing detail (images; videos on native, poster on web)
-- Book dates → checkout stub (€150 deposit; shipping on renter unless free)
-- Rentals, closet, list a piece, promote / Founding Closet referral
-- `docs/APP_STORE.md` — EAS / App Store checklist (do not submit until ready)
-- `docs/legal/` — FR CGU/privacy/fees drafts for avocat review (not final advice)
+1. Run `supabase/schema.sql` in the Supabase SQL editor.
+2. Copy `mobile/.env.example` to `mobile/.env` and fill in the project URL and
+   the **publishable** key. `.env` is never committed.
+
+## What's in the app
+
+- Accounts: unique usernames, password rules, e-mail OTP, two-factor sign-in
+- Identity verification and account certification, authenticity proof on listings
+- Feed, discover, search, listing detail, dates, checkout with real payment
+  methods (Apple Pay, Google Pay, PayPal, card, wallet — never cash)
+- Lender rules accepted before payment, cleaning fee only when the lender cleans
+- Two-sided 10% service fee and value-based deposit tiers (`mobile/src/lib/fees.ts`)
+- Real device permissions: camera, microphone, photos, location
 
 ## App Store
 
 See [docs/APP_STORE.md](docs/APP_STORE.md). Bundle id: `com.rota.app`.
 
-## Collaborators
+## History
 
-Invite pending / accepted: see [docs/COLLABORATORS.md](docs/COLLABORATORS.md).
+This repo merges two efforts: the earlier Expo Router MVP (`apps/`, `packages/`,
+still reachable in the history and on branch `feat/expo-mvp`) and the design
+canvas port that is now `mobile/`.
 
 ## License
 
