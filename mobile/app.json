@@ -5,11 +5,14 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "scheme": "rota",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.rota.app"
     },
     "android": {
+      "package": "com.rota.app",
       "adaptiveIcon": {
         "backgroundColor": "#121011",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -25,6 +28,15 @@
       "expo-image",
       "expo-video",
       "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0C0A0B"
+        }
+      ],
       [
         "expo-camera",
         {
