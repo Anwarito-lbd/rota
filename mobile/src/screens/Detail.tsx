@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FEES, SIZES, itemReviews, ratingBars } from '../data/catalog';
+import { FEES, SIZES, itemReviews, photoFor, ratingBars } from '../data/catalog';
 import { OFFER_TIERS, useBooking } from '../state/selectors';
 import { useStore } from '../state/store';
 import { OVER_INK, OVER_SCRIM } from '../theme/tokens';
@@ -53,7 +53,7 @@ export function Detail() {
   const { state, set, go, config, m, toggleFlag } = useStore();
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
-  const { active, nights, nego } = useBooking();
+  const { active, days, nego, deposit } = useBooking();
   const wished = !!state.wish[active.id];
   const certified = active.certified || !!state.certifies[active.handle];
 
@@ -222,7 +222,13 @@ export function Detail() {
           <View style={{ marginTop: 10, flexDirection: 'row', gap: 8 }}>
             {[1, 2, 3].map((n) => (
               <View key={n} style={{ flex: 1, height: 120, borderRadius: 12, overflow: 'hidden' }}>
-                <MediaSlot id={`fit-${n}`} shape="rounded" radius={12} placeholder="Photo portée" />
+                <MediaSlot
+                  id={`fit-${n}`}
+                  shape="rounded"
+                  radius={12}
+                  remoteUri={photoFor(`fit-${active.id}-${n}`)}
+                  placeholder="Photo portée"
+                />
               </View>
             ))}
           </View>
@@ -265,7 +271,7 @@ export function Detail() {
           <Pressable onPress={() => go('fees')} style={{ marginTop: 12 }}>
             <Note tone="clay">
               {active.cleaning.byLender ? `Nettoyage ${m(active.cleaning.fee)}` : 'Nettoyage à votre charge'} ·
-              protection {m(FEES.coverCap)} · livraison {m(FEES.shipping)} · caution {m(FEES.deposit)}. Tout est affiché
+              protection {m(FEES.coverCap)} · livraison {m(FEES.shipping)} · caution {m(deposit)}. Tout est affiché
               avant paiement.
             </Note>
           </Pressable>
@@ -365,12 +371,12 @@ export function Detail() {
         />
       </View>
 
-      <OfferSheet nights={nights} />
+      <OfferSheet days={days} />
     </View>
   );
 }
 
-function OfferSheet({ nights }: { nights: number }) {
+function OfferSheet({ days }: { days: number }) {
   const { state, set, m } = useStore();
   const { c } = useTheme();
   const { active, nego } = useBooking();
@@ -381,7 +387,7 @@ function OfferSheet({ nights }: { nights: number }) {
     <Sheet visible={state.offer} onClose={() => set({ offer: false })}>
       <Display size={28}>Faire une proposition</Display>
       <Txt size={14} color={c.ink2} style={{ marginTop: 8 }}>
-        {active.name} a 12 h pour accepter. Elle demande {m(active.price)} / jour pour {nights} jours.
+        {active.name} a 12 h pour accepter. Elle demande {m(active.price)} / jour pour {days} jours.
       </Txt>
 
       <View style={{ marginTop: 18, flexDirection: 'row', gap: 8 }}>
@@ -431,7 +437,7 @@ function OfferSheet({ nights }: { nights: number }) {
       </View>
 
       <PrimaryButton
-        label={`Envoyer · ${m(perDay * nights)}`}
+        label={`Envoyer · ${m(perDay * days)}`}
         tone="plum"
         onPress={() => set({ offer: false, screen: 'messages', thread: 't1', offerStatus: 'pending' })}
         style={{ marginTop: 18 }}

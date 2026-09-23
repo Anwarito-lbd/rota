@@ -113,6 +113,7 @@ export function Feed() {
                     shape="rect"
                     tone="media"
                     fallbackId={item.id === 'f1' ? 'list-video' : undefined}
+                    remoteUri={item.video ?? item.photo}
                     placeholder="Vidéo du look"
                   />
                 </View>
@@ -131,7 +132,7 @@ export function Feed() {
                     style={{ width: 52, height: 52, borderRadius: 999, padding: 2, backgroundColor: '#E8865F' }}
                   >
                     <View style={{ flex: 1, borderRadius: 999, overflow: 'hidden', borderWidth: 2, borderColor: '#0C0A0B' }}>
-                      <MediaSlot id={`av-${item.id}`} shape="circle" tone="media" />
+                      <MediaSlot id={`av-${item.id}`} shape="circle" tone="media" remoteUri={item.avatar} />
                     </View>
                   </Pressable>
 

@@ -109,7 +109,7 @@ function HandoverOption({
 export function Booking() {
   const { state, set, go, m } = useStore();
   const { c } = useTheme();
-  const { active, nights, breakdown, total, cleaningFee } = useBooking();
+  const { active, days, breakdown, total, cleaningFee, deposit } = useBooking();
 
   return (
     <View style={{ flex: 1 }}>
@@ -226,14 +226,15 @@ export function Booking() {
             </Amount>
           </View>
           <Txt size={12} color={c.ink3} style={{ marginTop: 8 }}>
-            Caution de {m(FEES.deposit)} bloquée, libérée au retour. Annulation gratuite jusqu'à 7 jours avant.
+            Caution de {m(deposit)} bloquée (jamais prélevée), libérée au retour. Annulation gratuite jusqu'à 7 jours
+            avant.
           </Txt>
         </Card>
       </Screen>
 
       <FooterBar>
         <PrimaryButton
-          label={state.rulesAccepted ? `Continuer · ${nights} jours` : 'Acceptez les règles pour continuer'}
+          label={state.rulesAccepted ? `Continuer · ${days} jours` : 'Acceptez les règles pour continuer'}
           disabled={!state.rulesAccepted}
           onPress={() => go('checkout')}
         />

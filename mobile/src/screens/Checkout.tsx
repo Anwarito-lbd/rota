@@ -47,7 +47,7 @@ function Confirmation() {
 export function Checkout() {
   const { state, set, go, m } = useStore();
   const { c } = useTheme();
-  const { active, nights, ship, total } = useBooking();
+  const { active, days, ship, total, deposit } = useBooking();
 
   if (state.confirmed) return <Confirmation />;
 
@@ -61,12 +61,12 @@ export function Checkout() {
 
         <Card style={{ marginTop: 20, flexDirection: 'row', gap: 12 }}>
           <View style={{ width: 76, height: 96, borderRadius: 10, overflow: 'hidden' }}>
-            <MediaSlot id={`checkout-${active.id}`} shape="rounded" radius={10} />
+            <MediaSlot id={`checkout-${active.id}`} shape="rounded" radius={10} remoteUri={active.photo} />
           </View>
           <View style={{ flex: 1 }}>
             <Txt weight="bold">{active.title}</Txt>
             <Txt size={13} color={c.ink2} style={{ marginTop: 4 }}>
-              Taille {state.size} · {nights} jours
+              Taille {state.size} · {days} jours
             </Txt>
             <Txt size={13} color={c.ink2}>
               {state.dates[0]}–{state.dates[1]} sept. · {ship ? 'livraison' : 'main propre'}
@@ -139,7 +139,7 @@ export function Checkout() {
             {active.cleaning.byLender
               ? ` et nettoyage par ${active.name} (${m(active.cleaning.fee)})`
               : ' ; la pièce est rendue propre par vos soins'}
-            . Une autorisation de {m(FEES.deposit)} est placée sur votre moyen de paiement et libérée 48 h après le scan
+            . Une autorisation de {m(deposit)} est placée sur votre moyen de paiement et libérée 48 h après le scan
             du retour. Retard : {m(FEES.latePerDay)} par jour.
           </Txt>
           <Pressable

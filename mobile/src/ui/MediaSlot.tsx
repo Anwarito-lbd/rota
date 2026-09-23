@@ -30,6 +30,8 @@ interface Props {
   tone?: 'auto' | 'media';
   /** Show this slot's media when the primary one is still empty. */
   fallbackId?: string;
+  /** Catalogue photo or video shown until someone uploads their own. */
+  remoteUri?: string;
   editable?: boolean;
   /** Allow videos as well as photos. */
   video?: boolean;
@@ -67,13 +69,19 @@ export function MediaSlot({
   placeholder,
   tone = 'auto',
   fallbackId,
+  remoteUri,
   editable = false,
   video = false,
   style,
 }: Props) {
   const { state, setMedia } = useStore();
   const { c } = useTheme();
-  const item = state.media[id] ?? (fallbackId ? state.media[fallbackId] : undefined);
+  const uploaded = state.media[id] ?? (fallbackId ? state.media[fallbackId] : undefined);
+  const item =
+    uploaded ??
+    (remoteUri
+      ? { uri: remoteUri, kind: /\.(mp4|mov|m4v)(\?|$)/i.test(remoteUri) ? ('video' as const) : ('image' as const), name: id }
+      : undefined);
 
   const borderRadius = shape === 'circle' ? 999 : shape === 'rect' ? 0 : radius;
   const empty = tone === 'media' ? tintFor(id) : c.surf2;
@@ -187,7 +195,7 @@ export function MediaSlot({
         </>
       )}
 
-      {editable && item ? (
+      {editable && uploaded ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Retirer le média"

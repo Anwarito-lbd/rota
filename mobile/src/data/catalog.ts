@@ -3,6 +3,42 @@
  * real API can replace this module wholesale without touching the screens.
  */
 
+import { FEES as MONEY } from '../lib/fees';
+
+/** Unsplash still, sized for the device. */
+export const img = (id: string, w = 800) =>
+  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`;
+
+/** Public sample clips used until lenders upload their own videos. */
+export const SAMPLE_VIDEOS = [
+  'https://media.w3.org/2010/05/sintel/trailer_hd.mp4',
+  'https://www.w3schools.com/html/mov_bbb.mp4',
+  'https://download.samplelib.com/mp4/sample-5s.mp4',
+] as const;
+
+/** Stills reused across the grids, boards and search results. */
+export const PHOTO_POOL = [
+  img('photo-1595777457583-95e059d581b8'),
+  img('photo-1566174053879-31528523f8ae'),
+  img('photo-1551028719-00167b16eac5'),
+  img('photo-1591369822096-ffd140ec948f'),
+  img('photo-1572804013309-59a88b7e92f1'),
+  img('photo-1483985988355-763728e1935b'),
+  img('photo-1539533018447-63fcce2678e3'),
+  img('photo-1490481651871-ab68de25d43d'),
+  img('photo-1541099649105-f69ad21f3246'),
+  img('photo-1584917865442-de89df76afd3'),
+  img('photo-1515372039744-b8f02a3ae446'),
+  img('photo-1521223890158-f9f7c3d5d504'),
+];
+
+/** Stable pick from the pool, so a given slot always shows the same photo. */
+export function photoFor(key: string) {
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return PHOTO_POOL[h % PHOTO_POOL.length];
+}
+
 export interface Piece {
   id: string;
   title: string;
@@ -31,6 +67,9 @@ export interface Piece {
   cleaning: { byLender: boolean; fee: number };
   /** House rules the renter has to accept before paying. */
   rules: string[];
+  photo: string;
+  video?: string;
+  avatar: string;
 }
 
 export const pieces: Piece[] = [
@@ -58,6 +97,9 @@ export const pieces: Piece[] = [
       'Pas de parfum ni de cigarette sur le tissu',
       'Retour dans la housse fournie',
     ],
+    photo: img('photo-1595777457583-95e059d581b8'),
+    video: SAMPLE_VIDEOS[0],
+    avatar: img('photo-1524504388940-b1c1722653e1', 200),
   },
   {
     id: 'f2',
@@ -79,6 +121,8 @@ export const pieces: Piece[] = [
     authenticity: 'tag',
     cleaning: { byLender: true, fee: 14 },
     rules: ['Ne pas laver : cuir nettoyé par mes soins', 'Pas de pluie prolongée'],
+    photo: img('photo-1551028719-00167b16eac5'),
+    avatar: img('photo-1494790108377-be9c29b29330', 200),
   },
   {
     id: 'f3',
@@ -104,6 +148,9 @@ export const pieces: Piece[] = [
       'Pas de maquillage sur le col',
       'Retour sous 48 h après la date de fin',
     ],
+    photo: img('photo-1566174053879-31528523f8ae'),
+    video: SAMPLE_VIDEOS[1],
+    avatar: img('photo-1517841905240-472988babdf9', 200),
   },
 ];
 
@@ -149,15 +196,18 @@ export const SORT_OPTIONS = ['Recommandé', 'Prix croissant', 'Nouveautés', 'Au
 /** Days already taken on the active piece's calendar. */
 export const BOOKED_DAYS = [24, 25, 26];
 
+/**
+ * One fee source. The money maths live in lib/fees (two-sided 10% service fee,
+ * deposit tiers by item value); the rest is copy shown around the app.
+ */
 export const FEES = {
-  shipping: 9,
+  ...MONEY,
   /** Suggested cleaning fee when a lender chooses to clean the piece herself. */
   cleaningSuggested: 12,
-  cover: 8,
-  deposit: 150,
+  /** Damage cover ceiling, per rental. */
   coverCap: 1500,
-  latePerDay: 20,
-  commission: 0.12,
+  /** What the lender loses to the platform, as a fraction of the rent. */
+  commission: MONEY.lenderServiceRate,
   /** Credit offered for posting a post-rental video. */
   videoCredit: 10,
 };
