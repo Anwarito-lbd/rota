@@ -310,20 +310,24 @@ function AuthForm() {
   );
 }
 
+/** Supabase can be set to 6, 7 or 8 digits — accept whatever it sends. */
+const CODE_MIN = 6;
+const CODE_MAX = 8;
+
 function CodeField({ value, onChangeText, label }: { value: string; onChangeText: (v: string) => void; label: string }) {
   const { c, amount } = useTheme();
   return (
     <TextInput
       value={value}
-      onChangeText={(v) => onChangeText(v.replace(/\D/g, '').slice(0, 6))}
+      onChangeText={(v) => onChangeText(v.replace(/\D/g, '').slice(0, CODE_MAX))}
       keyboardType="number-pad"
-      maxLength={6}
+      maxLength={CODE_MAX}
       accessibilityLabel={label}
       placeholder="000000"
       placeholderTextColor={c.ink3}
       textContentType="oneTimeCode"
       style={[
-        amount(28),
+        amount(value.length > 6 ? 24 : 28),
         {
           marginTop: 20,
           paddingVertical: 16,
@@ -333,7 +337,7 @@ function CodeField({ value, onChangeText, label }: { value: string; onChangeText
           backgroundColor: c.surf,
           color: c.ink,
           textAlign: 'center',
-          letterSpacing: 10,
+          letterSpacing: value.length > 6 ? 6 : 10,
         },
       ]}
     />
@@ -376,12 +380,12 @@ function EmailOtp() {
           Vérifiez votre e-mail
         </Display>
         <Txt size={15} color={c.ink2} style={{ marginTop: 10 }}>
-          Nous avons envoyé un code à 6 chiffres à {state.email || 'votre adresse'}. Il expire dans 10 minutes.
+          Nous avons envoyé un code à {state.email || 'votre adresse'}. Il expire dans 1 heure.
         </Txt>
 
         <CodeField
           value={state.otpInput}
-          label="Code à 6 chiffres"
+          label="Code reçu par e-mail"
           onChangeText={(v) => {
             setError(null);
             set({ otpInput: v, otpErr: false });
@@ -409,7 +413,7 @@ function EmailOtp() {
         <PrimaryButton
           label={busy ? 'Vérification…' : 'Vérifier mon e-mail'}
           onPress={confirm}
-          disabled={busy || state.otpInput.length !== 6}
+          disabled={busy || state.otpInput.length < CODE_MIN}
         />
       </FooterBar>
     </View>
