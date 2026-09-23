@@ -115,6 +115,11 @@ export interface AppState {
   delivery: Delivery;
   dates: [number, number];
   rulesAccepted: boolean;
+  depositAuthorized: boolean;
+  safetyAccepted: boolean;
+  pickupEvidenceReady: boolean;
+  returnEvidenceReady: boolean;
+  payoutStatus: 'held' | 'released' | 'claim';
   rentalTab: RentalTab;
   thread: string | null;
 

@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { supabase } from '../lib/supabase';
+import { SEED_LISTINGS, SEED_USERS } from './seed';
 
 /** A listing as the screens need it: owner joined, storage paths resolved. */
 export interface Listing {
@@ -37,6 +38,8 @@ export interface Listing {
     certified: boolean;
     identityVerified: boolean;
   };
+  /** Editorial starter content, never presented as an independent member. */
+  isEditorial: boolean;
 }
 
 interface OwnerRow {
@@ -110,8 +113,40 @@ function toListing(row: ListingRow): Listing {
       certified: owner?.certified ?? false,
       identityVerified: owner?.identity_status === 'verified',
     },
+    isEditorial: false,
   };
 }
+
+const EDITORIAL_OWNER = {
+  username: 'rota.editorial',
+  avatar: SEED_USERS[0].avatarUrl ?? null,
+  certified: true,
+  identityVerified: true,
+};
+
+const editorialListings: Listing[] = SEED_LISTINGS.map((item) => ({
+  id: `editorial-${item.id}`,
+  ownerId: item.ownerId,
+  title: item.title,
+  brand: item.brand,
+  category: item.category,
+  sizes: [item.size],
+  occasion: item.occasion,
+  price: item.pricePerDay,
+  retail: item.retail,
+  city: item.city,
+  rules: item.rules,
+  cleaning: { byLender: item.cleaningByLender, fee: item.cleaningFee },
+  acceptOffers: false,
+  minOffer: null,
+  instantBook: item.instantBook,
+  authenticity: item.authenticity === 'receipt' || item.authenticity === 'tag' ? 'pending' : 'none',
+  photos: item.media.filter((media) => media.kind === 'image').map((media) => media.url),
+  video: item.media.find((media) => media.kind === 'video')?.url ?? null,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  owner: EDITORIAL_OWNER,
+  isEditorial: true,
+}));
 
 interface ListingsValue {
   listings: Listing[];
@@ -132,6 +167,7 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!supabase) {
+      setListings(editorialListings);
       setLoading(false);
       return;
     }
@@ -147,7 +183,8 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
         if (queryError) setError(queryError.message);
         else {
           setError(null);
-          setListings(((data ?? []) as unknown as ListingRow[]).map(toListing));
+          const liveListings = ((data ?? []) as unknown as ListingRow[]).map(toListing);
+          setListings(liveListings.length > 0 ? liveListings : editorialListings);
         }
         setLoading(false);
       });

@@ -27,13 +27,13 @@ Ship Rota (peer-to-peer outfit rental, Paris-first) on the Apple App Store via *
 
 ## EAS Build (do not submit yet)
 
-Project config lives in `apps/mobile/eas.json` and `apps/mobile/app.json`.
+Project config lives in `mobile/eas.json` and `mobile/app.json`.
 
 ```bash
-cd apps/mobile
+cd mobile
 npm i -g eas-cli
 eas login
-# Replace placeholder projectId in app.json extra.eas.projectId after `eas init`
+# Run `eas init` to link this app to the owner's Expo project; never commit tokens.
 eas build:configure
 eas build --platform ios --profile preview
 # Later:
@@ -59,7 +59,11 @@ Do **not** submit to the App Store until:
 - [ ] Stripe test mode verified end-to-end
 - [ ] CGU + privacy URLs live
 - [ ] Support URL + marketing URL set in App Store Connect
+- [ ] Account deletion works and is reachable in-app
+- [ ] Publisher identity, marketplace terms, deposit/claim wording, KYC retention, and cancellation policy reviewed by French counsel
+- [ ] No undisclosed fabricated users, reviews, bookings, or demand signals in production
+- [ ] Editorial/demo listings are visibly labeled and cannot be mistaken for independent members
 
 ## Privacy copy (draft)
 
-Rota uses account email for authentication, optional location to suggest nearby Paris pieces and public meetup spots, camera/photos only when you add listing media, and Stripe to process rental payments in-app (no cash).
+Rota uses account email for authentication, optional location to suggest nearby Paris pieces and public meetup spots, camera/photos only when you add listing media or return evidence, identity documents only for configured high-value verification, and Stripe to process rental payments and temporary deposit authorizations in-app (no cash). No advertising or cross-app tracking is included in the MVP.

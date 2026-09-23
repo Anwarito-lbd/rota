@@ -48,6 +48,7 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
         body: [
           'Rota est une plateforme numérique d’intermédiation mettant en relation des prêteurs et des locataires pour la location temporaire de vêtements / outfits (pas de revente).',
           'Rota n’est pas le loueur des pièces : le contrat de location se forme entre utilisateurs via la plateforme — qualification à vérifier avec un avocat.',
+          'Les profils et annonces portant la mention « Sélection éditoriale Rota » sont des contenus de démonstration gérés par Rota : ils ne représentent pas des utilisateurs indépendants et ne constituent pas une preuve de demande réelle.',
         ],
       },
       {
@@ -140,6 +141,7 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
           'KYC (stub) : pièce d’identité, selfie, statut — Tier C/D ou premier booking high-value. Conservation : à vérifier avec un avocat.',
           'Paiements (Stripe) : montants, statuts escrow/hold ; Rota ne stocke pas le PAN complet ni le CVC.',
           'Listings & photos (y compris pick-up / retour), messages in-app, device / logs / analytics, support & claims.',
+          'Pour limiter les vols et les dégradations, Rota peut demander une pré-autorisation de caution, des preuves photo à la remise et au retour, et une vérification d’identité pour les pièces à valeur élevée. Ces traitements et versements différés doivent être configurés et validés avant production.',
         ],
       },
       {

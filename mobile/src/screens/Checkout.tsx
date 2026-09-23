@@ -3,6 +3,7 @@ import { payMethods } from '../data/catalog';
 import { useListing } from '../data/listings';
 import { useT } from '../i18n';
 import { FEES } from '../lib/fees';
+import { backendConfigured, useAuth } from '../lib/auth';
 import { useBooking } from '../state/selectors';
 import { useStore } from '../state/store';
 import { useTheme } from '../theme/useTheme';
@@ -57,8 +58,16 @@ export function Checkout() {
   const { state, set, go, m } = useStore();
   const { c } = useTheme();
   const { t } = useT();
+  const { profile } = useAuth();
   const listing = useListing(state.activeId);
-  const { days, ship, total, deposit } = useBooking(listing);
+  const { days, ship, total, deposit, quote } = useBooking(listing);
+  const identityRequired = quote.depositTier === 'C' || quote.depositTier === 'D';
+  const identityVerified = profile?.identityStatus === 'verified';
+  const canPay =
+    backendConfigured &&
+    state.depositAuthorized &&
+    state.safetyAccepted &&
+    (!identityRequired || identityVerified);
 
   if (state.confirmed) return <Confirmation />;
 
@@ -167,14 +176,75 @@ export function Checkout() {
           </Txt>
         </Card>
 
+        <Card style={{ marginTop: 14 }} accent={state.depositAuthorized}>
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: state.depositAuthorized }}
+            onPress={() => set({ depositAuthorized: !state.depositAuthorized })}
+            style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}
+          >
+            <Radio on={state.depositAuthorized} />
+            <View style={{ flex: 1 }}>
+              <Txt weight="bold">Autoriser la pré-autorisation de caution</Txt>
+              <Txt size={13} color={c.ink2} style={{ marginTop: 4 }}>
+                {m(deposit)} est bloqué temporairement sur votre carte. Ce montant n'est pas prélevé et ne peut être
+                utilisé qu'après examen d'un litige documenté.
+              </Txt>
+            </View>
+          </Pressable>
+        </Card>
+
+        <Card style={{ marginTop: 10 }} accent={state.safetyAccepted}>
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: state.safetyAccepted }}
+            onPress={() => set({ safetyAccepted: !state.safetyAccepted })}
+            style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}
+          >
+            <Radio on={state.safetyAccepted} />
+            <View style={{ flex: 1 }}>
+              <Txt weight="bold">Accepter le protocole de remise et de retour</Txt>
+              <Txt size={13} color={c.ink2} style={{ marginTop: 4 }}>
+                Les deux parties photographient la pièce à la remise et au retour. Aucun versement au prêteur n'est
+                libéré avant le retour validé ou la résolution d'un claim.
+              </Txt>
+            </View>
+          </Pressable>
+        </Card>
+
+        {identityRequired ? (
+          <Card style={{ marginTop: 10 }} accent={identityVerified}>
+            <Txt weight="bold">Vérification d'identité requise</Txt>
+            <Txt size={13} color={c.ink2} style={{ marginTop: 4 }}>
+              Cette pièce nécessite une vérification d'identité avant toute réservation. Statut actuel :{' '}
+              {identityVerified ? 'vérifié' : 'à compléter'}.
+            </Txt>
+            {!identityVerified ? (
+              <GhostButton label="Ouvrir les réglages" onPress={() => go('settings')} style={{ marginTop: 10 }} />
+            ) : null}
+          </Card>
+        ) : null}
+
+        {!backendConfigured ? (
+          <Txt size={12} color={c.plum} style={{ marginTop: 12 }}>
+            Paiement désactivé : configurez Supabase et Stripe avant toute réservation réelle ou soumission en
+            production.
+          </Txt>
+        ) : null}
+
         <Txt size={12} color={c.ink3} style={{ marginTop: 12 }}>
           En payant, vous acceptez les conditions de location et la politique d'annulation. Rota est une place de marché
-          : le contrat de location vous lie à @{listing.owner.username}.
+          : le contrat de location vous lie à @{listing.owner.username}. Les protections et montants affichés sont
+          soumis aux conditions finales validées par un avocat.
         </Txt>
       </Screen>
 
       <FooterBar>
-        <PrimaryButton label={`Payer ${m(total)}`} onPress={() => set({ confirmed: true })} />
+        <PrimaryButton
+          label={canPay ? `Payer ${m(total)}` : 'Complétez les protections pour continuer'}
+          disabled={!canPay}
+          onPress={() => set({ confirmed: true, payoutStatus: 'held' })}
+        />
       </FooterBar>
     </View>
   );

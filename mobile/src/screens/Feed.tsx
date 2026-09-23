@@ -148,10 +148,15 @@ function FeedCard({ item, height }: { item: Listing; height: number }) {
           style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}
         >
           <Txt size={15} weight="semi" color={OVER_INK}>
-            @{item.owner.username}
+            {item.isEditorial ? 'Sélection Rota' : `@${item.owner.username}`}
           </Txt>
           {item.owner.certified ? <CertifiedMark size={16} /> : null}
         </Pressable>
+        {item.isEditorial ? (
+          <Txt size={12} color="rgba(246,241,233,0.75)" style={{ marginTop: 2 }}>
+            Profil éditorial · annonce de démonstration
+          </Txt>
+        ) : null}
 
         <Display size={31} color={OVER_INK} style={{ marginTop: 5 }}>
           {item.title}

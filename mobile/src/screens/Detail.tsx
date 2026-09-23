@@ -187,7 +187,11 @@ export function Detail() {
                 {listing.owner.certified ? <CertifiedMark /> : null}
               </View>
               <Txt size={13} color={c.ink2}>
-                {listing.owner.identityVerified ? 'Identité vérifiée' : 'Identité non vérifiée'}
+                {listing.isEditorial
+                  ? 'Sélection éditoriale Rota · contenu de démonstration'
+                  : listing.owner.identityVerified
+                    ? 'Identité vérifiée'
+                    : 'Identité non vérifiée'}
                 {listing.city ? ` · ${listing.city}` : ''}
               </Txt>
             </View>
