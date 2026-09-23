@@ -1,9 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { permissions, rules } from '../data/catalog';
+import { useAuth } from '../lib/auth';
 import { usePermissions, type PermStatus } from '../lib/permissions';
-import { emailValid, makeOtp, passwordChecks, passwordValid, usernameError } from '../state/auth';
+import { emailValid, passwordChecks, passwordValid, usernameError } from '../state/auth';
 import { useStore } from '../state/store';
 import { FONT, OVER_INK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
@@ -209,9 +211,13 @@ function ErrorBanner({ children }: { children: string }) {
 function AuthForm() {
   const { state, set } = useStore();
   const { c } = useTheme();
+  const { signUp, signIn } = useAuth();
+  const [busy, setBusy] = useState(false);
   const signup = state.authMode !== 'login';
 
-  const submit = () => {
+  const submit = async () => {
+    if (busy) return;
+
     if (signup) {
       const nameErr = usernameError(state.username);
       if (nameErr) return set({ authErr: nameErr });
@@ -219,14 +225,19 @@ function AuthForm() {
       if (!passwordValid(state.pw)) {
         return set({ authErr: 'Le mot de passe ne remplit pas encore toutes les conditions.' });
       }
-      return set({ obStep: 'otp', otpSent: makeOtp(), otpInput: '', otpErr: false, authErr: null });
+      setBusy(true);
+      const error = await signUp({ username: state.username, email: state.email, password: state.pw });
+      setBusy(false);
+      if (error) return set({ authErr: error });
+      return set({ obStep: 'otp', otpInput: '', otpErr: false, authErr: null });
     }
-    if (!state.username.trim() || !state.pw) {
-      return set({ authErr: 'Entrez votre nom d’utilisateur et votre mot de passe.' });
-    }
-    if (state.twoFactorOn) {
-      return set({ obStep: 'twofa', twoFactorInput: '', twoFactorErr: false, authErr: null });
-    }
+
+    if (!emailValid(state.email)) return set({ authErr: 'Entrez l’e-mail de votre compte.' });
+    if (!state.pw) return set({ authErr: 'Entrez votre mot de passe.' });
+    setBusy(true);
+    const error = await signIn({ email: state.email, password: state.pw });
+    setBusy(false);
+    if (error) return set({ authErr: error });
     return set({ signedIn: true, screen: 'feed', authErr: null });
   };
 
@@ -244,22 +255,22 @@ function AuthForm() {
         </Txt>
 
         <View style={{ marginTop: 22, gap: 10 }}>
-          <Field
-            label={signup ? "Nom d'utilisateur" : "Nom d'utilisateur ou e-mail"}
-            value={state.username}
-            placeholder="camille.rota"
-            hint={signup ? 'Minuscules, chiffres, point ou tiret bas · 3 à 20 caractères' : undefined}
-            onChangeText={(v) => set({ username: v.toLowerCase(), authErr: null })}
-          />
           {signup ? (
             <Field
-              label="E-mail"
-              value={state.email}
-              placeholder="vous@exemple.fr"
-              keyboardType="email-address"
-              onChangeText={(v) => set({ email: v, authErr: null })}
+              label="Nom d'utilisateur"
+              value={state.username}
+              placeholder="camille.rota"
+              hint="Minuscules, chiffres, point ou tiret bas · 3 à 20 caractères"
+              onChangeText={(v) => set({ username: v.toLowerCase(), authErr: null })}
             />
           ) : null}
+          <Field
+            label="E-mail"
+            value={state.email}
+            placeholder="vous@exemple.fr"
+            keyboardType="email-address"
+            onChangeText={(v) => set({ email: v, authErr: null })}
+          />
           <View>
             <Field
               label="Mot de passe"
@@ -289,7 +300,11 @@ function AuthForm() {
       </Screen>
 
       <FooterBar>
-        <PrimaryButton label={signup ? 'Créer le compte' : 'Se connecter'} onPress={submit} />
+        <PrimaryButton
+          label={busy ? 'Un instant…' : signup ? 'Créer le compte' : 'Se connecter'}
+          disabled={busy}
+          onPress={submit}
+        />
       </FooterBar>
     </View>
   );
@@ -328,10 +343,29 @@ function CodeField({ value, onChangeText, label }: { value: string; onChangeText
 function EmailOtp() {
   const { state, set } = useStore();
   const { c } = useTheme();
+  const { confirmEmail, resendCode } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [resent, setResent] = useState(false);
 
-  const confirm = () => {
-    if (state.otpInput !== state.otpSent) return set({ otpErr: true });
+  const confirm = async () => {
+    if (busy) return;
+    setBusy(true);
+    const failure = await confirmEmail({ email: state.email, code: state.otpInput });
+    setBusy(false);
+    if (failure) {
+      setError(failure);
+      return set({ otpErr: true });
+    }
     set({ signedIn: true, emailVerified: true, otpErr: false, obStep: 1 });
+  };
+
+  const resend = async () => {
+    setError(null);
+    setResent(false);
+    const failure = await resendCode(state.email);
+    if (failure) setError(failure);
+    else setResent(true);
   };
 
   return (
@@ -345,32 +379,38 @@ function EmailOtp() {
           Nous avons envoyé un code à 6 chiffres à {state.email || 'votre adresse'}. Il expire dans 10 minutes.
         </Txt>
 
-        <CodeField value={state.otpInput} label="Code à 6 chiffres" onChangeText={(v) => set({ otpInput: v, otpErr: false })} />
+        <CodeField
+          value={state.otpInput}
+          label="Code à 6 chiffres"
+          onChangeText={(v) => {
+            setError(null);
+            set({ otpInput: v, otpErr: false });
+          }}
+        />
 
-        {state.otpErr ? <ErrorBanner>Code incorrect. Vérifiez vos e-mails ou demandez un nouveau code.</ErrorBanner> : null}
+        {error ? <ErrorBanner>{error}</ErrorBanner> : null}
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => set({ otpSent: makeOtp(), otpInput: '', otpErr: false })}
+          onPress={resend}
           style={{ minHeight: 44, justifyContent: 'center', marginTop: 10 }}
         >
           <Txt size={14} weight="bold" color={c.clay}>
-            Renvoyer le code
+            {resent ? 'Nouveau code envoyé ✓' : 'Renvoyer le code'}
           </Txt>
         </Pressable>
 
-        <View style={{ marginTop: 10, padding: 14, borderRadius: 14, backgroundColor: c.surf2, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 4 }}>
-          <Txt size={13} color={c.ink2}>
-            Démo : aucun e-mail n'est envoyé. Votre code est
-          </Txt>
-          <Amount size={15} color={c.clay}>
-            {state.otpSent}
-          </Amount>
-        </View>
+        <Txt size={13} color={c.ink3} style={{ marginTop: 6 }}>
+          Pensez à regarder dans les spams. L'e-mail vient de no-reply@therotaapp.com.
+        </Txt>
       </Screen>
 
       <FooterBar>
-        <PrimaryButton label="Vérifier mon e-mail" onPress={confirm} disabled={state.otpInput.length !== 6} />
+        <PrimaryButton
+          label={busy ? 'Vérification…' : 'Vérifier mon e-mail'}
+          onPress={confirm}
+          disabled={busy || state.otpInput.length !== 6}
+        />
       </FooterBar>
     </View>
   );

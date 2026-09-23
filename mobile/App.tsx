@@ -10,9 +10,10 @@ import {
   InstrumentSerif_400Regular_Italic,
 } from '@expo-google-fonts/instrument-serif';
 import { StatusBar } from 'expo-status-bar';
-import type { ReactElement } from 'react';
+import { useEffect, type ReactElement } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AuthProvider, useAuth } from './src/lib/auth';
 import { Booking } from './src/screens/Booking';
 import { Checkout } from './src/screens/Checkout';
 import { Detail } from './src/screens/Detail';
@@ -48,8 +49,25 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
 };
 
 function Shell() {
-  const { state } = useStore();
+  const { state, set } = useStore();
   const { c, dark } = useTheme();
+  const { loading, session } = useAuth();
+
+  // A stored session means the phone is already signed in: skip onboarding.
+  useEffect(() => {
+    if (session && state.screen === 'onboard' && state.obStep === 0) {
+      set({ signedIn: true, emailVerified: true, screen: 'feed' });
+    }
+  }, [session, state.screen, state.obStep, set]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={c.clay} />
+      </View>
+    );
+  }
+
   const Current = SCREENS[state.screen] ?? ComingSoon;
   const showTabs = state.screen !== 'onboard' && !(state.screen === 'messages' && state.thread);
 
@@ -85,7 +103,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StoreProvider>
-        <Shell />
+        <AuthProvider>
+          <Shell />
+        </AuthProvider>
       </StoreProvider>
     </SafeAreaProvider>
   );
