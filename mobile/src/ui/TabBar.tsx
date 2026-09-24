@@ -66,7 +66,7 @@ export function TabBar() {
     >
       {TABS.map(({ key, label, Icon }) => {
         const active = state.screen === key || (TAB_GROUPS[key] ?? []).includes(state.screen);
-        const color = active ? c.clay : c.ink3;
+        const color = active ? c.accent : c.ink3;
         return (
           <Pressable
             key={key}

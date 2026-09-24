@@ -24,7 +24,7 @@ export function Closet() {
   return (
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-        <View style={{ width: 74, height: 74, borderRadius: 999, padding: 2, backgroundColor: c.clay }}>
+        <View style={{ width: 74, height: 74, borderRadius: 999, padding: 2, backgroundColor: c.accent }}>
           <View style={{ flex: 1, borderRadius: 999, overflow: 'hidden', borderWidth: 2, borderColor: c.bg }}>
             <MediaSlot id="me-avatar" shape="circle" editable remoteUri={profile?.avatarUrl ?? undefined} placeholder="Photo" />
           </View>
@@ -55,7 +55,7 @@ export function Closet() {
           {checks.map((check) => (
             <View
               key={check.label}
-              style={{ flex: 1, height: 4, borderRadius: 99, backgroundColor: check.done ? c.clay : c.surf2 }}
+              style={{ flex: 1, height: 4, borderRadius: 99, backgroundColor: check.done ? c.accent : c.surf2 }}
             />
           ))}
         </View>
@@ -77,7 +77,7 @@ export function Closet() {
       </Txt>
 
       {loading ? (
-        <ActivityIndicator color={c.clay} style={{ marginTop: 20 }} />
+        <ActivityIndicator color={c.accent} style={{ marginTop: 20 }} />
       ) : listings.length === 0 ? (
         <Txt size={14} color={c.ink2} style={{ marginTop: 10 }}>
           {t('closet.noPieces')}

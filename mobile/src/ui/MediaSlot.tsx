@@ -85,8 +85,8 @@ export function MediaSlot({
 
   const borderRadius = shape === 'circle' ? 999 : shape === 'rect' ? 0 : radius;
   const empty = tone === 'media' ? tintFor(id) : c.surf2;
-  const chrome = tone === 'media' ? 'rgba(246,241,233,0.28)' : c.line2;
-  const caption = tone === 'media' ? 'rgba(246,241,233,0.55)' : c.ink3;
+  const chrome = tone === 'media' ? 'rgba(247,242,248,0.28)' : c.line2;
+  const caption = tone === 'media' ? 'rgba(247,242,248,0.55)' : c.ink3;
 
   const mediaTypes: ImagePicker.MediaType[] = video ? ['images', 'videos'] : ['images'];
 
@@ -186,7 +186,7 @@ export function MediaSlot({
                 {placeholder}
               </Txt>
               {editable ? (
-                <Txt size={11} center weight="bold" color={c.clay} style={{ marginTop: 4 }}>
+                <Txt size={11} center weight="bold" color={c.accent} style={{ marginTop: 4 }}>
                   Ajouter
                 </Txt>
               ) : null}
@@ -207,7 +207,7 @@ export function MediaSlot({
             width: 28,
             height: 28,
             borderRadius: 999,
-            backgroundColor: 'rgba(12,10,11,0.75)',
+            backgroundColor: 'rgba(12,10,13,0.75)',
             alignItems: 'center',
             justifyContent: 'center',
           }}

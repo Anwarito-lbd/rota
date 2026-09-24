@@ -74,7 +74,7 @@ function Shell() {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={c.clay} />
+        <ActivityIndicator color={c.accent} />
       </View>
     );
   }
@@ -105,8 +105,8 @@ export default function App() {
 
   if (!fontsLoaded) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#121011', alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color="#E8865F" />
+      <View style={{ flex: 1, backgroundColor: '#121013', alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color="#E2A9F1" />
       </View>
     );
   }

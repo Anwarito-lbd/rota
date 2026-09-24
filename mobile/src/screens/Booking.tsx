@@ -52,13 +52,13 @@ function Calendar() {
                 borderRadius: 10,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: edge ? c.clay : inRange ? c.claySoft : 'transparent',
+                backgroundColor: edge ? c.accent : inRange ? c.accentSoft : 'transparent',
               }}
             >
               <Txt
                 size={14}
                 weight="semi"
-                color={edge ? c.onclay : past ? c.ink3 : c.ink}
+                color={edge ? c.onAccent : past ? c.ink3 : c.ink}
                 style={{ fontSize: fs(14) }}
               >
                 {day}
@@ -237,7 +237,7 @@ export function Booking() {
             <Txt size={13} weight="semi" upper color={c.ink3}>
               Total
             </Txt>
-            <Amount size={26} color={c.clay}>
+            <Amount size={26} color={c.accent}>
               {m(total)}
             </Amount>
           </View>

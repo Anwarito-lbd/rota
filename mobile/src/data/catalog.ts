@@ -323,17 +323,17 @@ export interface SavedLook {
   price: number;
   h: string;
   tag: string;
-  tagTone: 'clay' | 'plum' | 'dark';
+  tagTone: 'accent' | 'plum' | 'dark';
   id: string;
 }
 
 export const savedLooks: SavedLook[] = [
-  { slot: 'w1', title: 'Nuisette en biais, ivoire', price: 24, h: '206px', tag: 'Libre ce week-end', tagTone: 'clay', id: 'f1' },
+  { slot: 'w1', title: 'Nuisette en biais, ivoire', price: 24, h: '206px', tag: 'Libre ce week-end', tagTone: 'accent', id: 'f1' },
   { slot: 'w2', title: 'Robe colonne à sequins', price: 58, h: '258px', tag: 'Réservée 18–21', tagTone: 'dark', id: 'f3' },
   { slot: 'w3', title: 'Top résille manches longues', price: 14, h: '166px', tag: 'À 1,2 km', tagTone: 'dark', id: 'f1' },
   { slot: 'w4', title: 'Manteau en laine, camel', price: 27, h: '232px', tag: 'Prix baissé', tagTone: 'plum', id: 'f2' },
   { slot: 'w5', title: 'Mini robe perlée, jais', price: 41, h: '190px', tag: 'Livraison offerte', tagTone: 'dark', id: 'f3' },
-  { slot: 'w6', title: "Gants d'opéra en satin", price: 9, h: '150px', tag: 'À combiner', tagTone: 'clay', id: 'f1' },
+  { slot: 'w6', title: "Gants d'opéra en satin", price: 9, h: '150px', tag: 'À combiner', tagTone: 'accent', id: 'f1' },
 ];
 
 export interface Thread {
@@ -376,7 +376,7 @@ export const marketData: Record<string, MarketBand> = {
 
 export const closetPieces = [
   { slot: 'c1', title: 'Veste en tweed courte', meta: 'Taille S · louée 6×', state: '1 demande en attente', tone: 'plum' as const, price: 32 },
-  { slot: 'c2', title: 'Maxi robe en soie, olive', meta: 'Taille M · louée 11×', state: "Sortie jusqu'au 15 sept.", tone: 'clay' as const, price: 26 },
+  { slot: 'c2', title: 'Maxi robe en soie, olive', meta: 'Taille M · louée 11×', state: "Sortie jusqu'au 15 sept.", tone: 'accent' as const, price: 26 },
   { slot: 'c3', title: 'Bottines plateforme', meta: '39 · louées 2×', state: 'Disponible', tone: 'mute' as const, price: 15 },
 ];
 

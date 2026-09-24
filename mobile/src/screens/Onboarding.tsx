@@ -47,14 +47,14 @@ function SocialButton({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 9,
-        backgroundColor: filled ? OVER_INK : 'rgba(246,241,233,0.08)',
+        backgroundColor: filled ? OVER_INK : 'rgba(247,242,248,0.08)',
         borderWidth: filled ? 0 : 1,
-        borderColor: 'rgba(246,241,233,0.3)',
+        borderColor: 'rgba(247,242,248,0.3)',
         opacity: pressed ? 0.85 : 1,
       })}
     >
       {icon}
-      <Txt size={17} weight="semi" color={filled ? '#14100E' : OVER_INK} style={{ fontSize: fs(17) }}>
+      <Txt size={17} weight="semi" color={filled ? '#2A1033' : OVER_INK} style={{ fontSize: fs(17) }}>
         {label}
       </Txt>
     </Pressable>
@@ -67,12 +67,12 @@ function Welcome() {
   const social = () => set({ signedIn: true, emailVerified: true, obStep: 1, authErr: null });
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0C0A0B' }}>
+    <View style={{ flex: 1, backgroundColor: '#0C0A0D' }}>
       <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
         <MediaSlot id="ob-hero" shape="rect" tone="media" placeholder="Photo d'accueil" />
       </View>
       <LinearGradient
-        colors={['rgba(12,10,11,0.5)', 'rgba(12,10,11,0.05)', 'rgba(12,10,11,0.92)', '#0C0A0B']}
+        colors={['rgba(12,10,13,0.5)', 'rgba(12,10,13,0.05)', 'rgba(12,10,13,0.92)', '#0C0A0D']}
         locations={[0, 0.3, 0.74, 1]}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
@@ -83,10 +83,10 @@ function Welcome() {
             paddingHorizontal: 11,
             paddingVertical: 7,
             borderRadius: 8,
-            backgroundColor: '#E8865F',
+            backgroundColor: '#E2A9F1',
           }}
         >
-          <Txt size={11} weight="bold" upper color="#1B1009">
+          <Txt size={11} weight="bold" upper color="#2A1033">
             Paris · location entre particuliers
           </Txt>
         </View>
@@ -94,7 +94,7 @@ function Welcome() {
         <Display size={48} color={OVER_INK} style={{ marginTop: 16 }}>
           Wear it once.
         </Display>
-        <Display size={48} color="#E8865F" italic>
+        <Display size={48} color="#E2A9F1" italic>
           Pass it on.
         </Display>
 
@@ -120,7 +120,7 @@ function Welcome() {
           <Txt size={14} color="#D6CEC5">
             Vous avez déjà un compte ?
           </Txt>
-          <Txt size={14} weight="bold" color="#E8865F">
+          <Txt size={14} weight="bold" color="#E2A9F1">
             Se connecter
           </Txt>
         </Pressable>
@@ -155,7 +155,7 @@ function PasswordMeter({ pw }: { pw: string }) {
               flex: 1,
               height: 4,
               borderRadius: 99,
-              backgroundColor: i < score ? (score === 4 ? c.clay : c.plum) : c.surf2,
+              backgroundColor: i < score ? (score === 4 ? c.accent : c.plum) : c.surf2,
             }}
           />
         ))}
@@ -170,11 +170,11 @@ function PasswordMeter({ pw }: { pw: string }) {
                 borderRadius: 99,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: checks[key] ? c.clay : c.surf2,
+                backgroundColor: checks[key] ? c.accent : c.surf2,
               }}
             >
               {checks[key] ? (
-                <Txt size={9} weight="bold" color={c.onclay}>
+                <Txt size={9} weight="bold" color={c.onAccent}>
                   ✓
                 </Txt>
               ) : null}
@@ -293,7 +293,7 @@ function AuthForm() {
           <Txt size={14} color={c.ink2}>
             {signup ? 'Vous avez déjà un compte ?' : 'Pas encore de compte ?'}
           </Txt>
-          <Txt size={14} weight="bold" color={c.clay}>
+          <Txt size={14} weight="bold" color={c.accent}>
             {signup ? 'Se connecter' : "S'inscrire"}
           </Txt>
         </Pressable>
@@ -399,7 +399,7 @@ function EmailOtp() {
           onPress={resend}
           style={{ minHeight: 44, justifyContent: 'center', marginTop: 10 }}
         >
-          <Txt size={14} weight="bold" color={c.clay}>
+          <Txt size={14} weight="bold" color={c.accent}>
             {resent ? 'Nouveau code envoyé ✓' : 'Renvoyer le code'}
           </Txt>
         </Pressable>
@@ -469,7 +469,7 @@ function RulesGate() {
   return (
     <View style={{ flex: 1 }}>
       <Screen bottomInset={140}>
-        <Txt size={12} weight="semi" upper color={c.clay}>
+        <Txt size={12} weight="semi" upper color={c.accent}>
           Étape 1 sur 2
         </Txt>
         <Display size={36} style={{ marginTop: 8 }}>
@@ -544,7 +544,7 @@ function Perms() {
   return (
     <View style={{ flex: 1 }}>
       <Screen bottomInset={140}>
-        <Txt size={12} weight="semi" upper color={c.clay}>
+        <Txt size={12} weight="semi" upper color={c.accent}>
           Étape 2 sur 2
         </Txt>
         <Display size={36} style={{ marginTop: 8 }}>
@@ -579,11 +579,11 @@ function Perms() {
                     justifyContent: 'center',
                     borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: on ? c.clay : c.line2,
-                    backgroundColor: on ? c.clay : 'transparent',
+                    borderColor: on ? c.accent : c.line2,
+                    backgroundColor: on ? c.accent : 'transparent',
                   }}
                 >
-                  <Txt size={14} weight="bold" color={on ? c.onclay : c.ink} style={{ fontSize: fs(14) }}>
+                  <Txt size={14} weight="bold" color={on ? c.onAccent : c.ink} style={{ fontSize: fs(14) }}>
                     {PERM_LABEL[status]}
                   </Txt>
                 </Pressable>

@@ -57,7 +57,7 @@ export function Settings() {
         <Row
           label={t('settings.email')}
           detail={session?.user.email_confirmed_at ? t('settings.verified') : t('settings.toVerify')}
-          detailColor={session?.user.email_confirmed_at ? c.clay : c.plum}
+          detailColor={session?.user.email_confirmed_at ? c.accent : c.plum}
         />
         <Row label={t('closet.identity')} detail={identityLabel} last />
       </Group>

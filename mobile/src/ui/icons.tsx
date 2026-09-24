@@ -6,7 +6,7 @@ interface IconProps {
   fill?: string;
 }
 
-export const AppleIcon = ({ size = 16, color = '#14100E' }: IconProps) => (
+export const AppleIcon = ({ size = 16, color = '#2A1033' }: IconProps) => (
   <Svg width={size} height={size * 1.2} viewBox="0 0 15 18">
     <Path
       fill={color}
@@ -15,7 +15,7 @@ export const AppleIcon = ({ size = 16, color = '#14100E' }: IconProps) => (
   </Svg>
 );
 
-export const HeartIcon = ({ size = 28, fill = 'none', color = '#F6F1E9' }: IconProps) => (
+export const HeartIcon = ({ size = 28, fill = 'none', color = '#F7F2F8' }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24">
     <Path
       d="M12 20.5s-7.5-4.7-7.5-9.8a4.3 4.3 0 0 1 7.5-2.8 4.3 4.3 0 0 1 7.5 2.8c0 5.1-7.5 9.8-7.5 9.8z"
@@ -26,13 +26,13 @@ export const HeartIcon = ({ size = 28, fill = 'none', color = '#F6F1E9' }: IconP
   </Svg>
 );
 
-export const BookmarkIcon = ({ size = 26, fill = 'none', color = '#F6F1E9' }: IconProps) => (
+export const BookmarkIcon = ({ size = 26, fill = 'none', color = '#F7F2F8' }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24">
     <Path d="M6 3.5h12v17l-6-4.3-6 4.3z" fill={fill} stroke={color} strokeWidth={1.6} />
   </Svg>
 );
 
-export const StarIcon = ({ size = 25, fill = '#F6F1E9', color = 'none' }: IconProps) => (
+export const StarIcon = ({ size = 25, fill = '#F7F2F8', color = 'none' }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24">
     <Path
       d="M12 3.5l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.8l6-.8z"
@@ -43,7 +43,7 @@ export const StarIcon = ({ size = 25, fill = '#F6F1E9', color = 'none' }: IconPr
   </Svg>
 );
 
-export const DotsIcon = ({ size = 22, color = '#F6F1E9' }: IconProps) => (
+export const DotsIcon = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24">
     <Circle cx="12" cy="5" r="2" fill={color} />
     <Circle cx="12" cy="12" r="2" fill={color} />
@@ -51,34 +51,34 @@ export const DotsIcon = ({ size = 22, color = '#F6F1E9' }: IconProps) => (
   </Svg>
 );
 
-export const SearchIcon = ({ size = 16, color = '#968C81' }: IconProps) => (
+export const SearchIcon = ({ size = 16, color = '#978CA0' }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24">
     <Circle cx="11" cy="11" r="7" stroke={color} strokeWidth={2} fill="none" />
     <Path d="M16.5 16.5 21 21" stroke={color} strokeWidth={2} />
   </Svg>
 );
 
-export const FilterIcon = ({ size = 18, color = '#1B1009' }: IconProps) => (
+export const FilterIcon = ({ size = 18, color = '#2A1033' }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24">
     <Path d="M3 6h18M6 12h12M10 18h4" stroke={color} strokeWidth={2} fill="none" />
   </Svg>
 );
 
-export const BellIcon = ({ size = 18, color = '#F6F1E9' }: IconProps) => (
+export const BellIcon = ({ size = 18, color = '#F7F2F8' }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24">
     <Path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z" stroke={color} strokeWidth={1.8} fill="none" />
     <Path d="M10.5 19a2 2 0 0 0 3 0" stroke={color} strokeWidth={1.8} fill="none" />
   </Svg>
 );
 
-export const BagIcon = ({ size = 30, color = '#968C81' }: IconProps) => (
+export const BagIcon = ({ size = 30, color = '#978CA0' }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24">
     <Path d="M4 8h16l-1.2 12H5.2z" stroke={color} strokeWidth={1.6} fill="none" />
     <Path d="M9 8V6a3 3 0 0 1 6 0v2" stroke={color} strokeWidth={1.6} fill="none" />
   </Svg>
 );
 
-export const PersonPlusIcon = ({ size = 32, color = 'rgba(246,241,233,0.5)' }: IconProps) => (
+export const PersonPlusIcon = ({ size = 32, color = 'rgba(247,242,248,0.5)' }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24">
     <Circle cx="9" cy="8" r="3.4" stroke={color} strokeWidth={1.6} fill="none" />
     <Path d="M3 20c0-3.3 2.7-5.2 6-5.2s6 1.9 6 5.2" stroke={color} strokeWidth={1.6} fill="none" />
@@ -86,7 +86,7 @@ export const PersonPlusIcon = ({ size = 32, color = 'rgba(246,241,233,0.5)' }: I
   </Svg>
 );
 
-export const ChevronDown = ({ size = 12, color = '#E8865F' }: IconProps) => (
+export const ChevronDown = ({ size = 12, color = '#E2A9F1' }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24">
     <Path d="M6 9l6 6 6-6" stroke={color} strokeWidth={2.4} fill="none" />
   </Svg>

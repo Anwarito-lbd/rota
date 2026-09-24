@@ -1,39 +1,41 @@
+/* Brand: Rota lavender #E2A9F1, from the hanger logo. */
 :root,
 [data-theme='dark'] {
-  --bg: #121011;
-  --surf: #1b1817;
-  --surf2: #242020;
-  --sink: #0c0a0b;
-  --ink: #f6f1e9;
-  --ink2: #b9b0a6;
-  --ink3: #968c81;
-  --line: rgba(246, 241, 233, 0.13);
-  --line2: rgba(246, 241, 233, 0.26);
-  --clay: #e8865f;
-  --onclay: #1b1009;
-  --claySoft: rgba(232, 134, 95, 0.16);
-  --plum: #d79bb4;
-  --onplum: #22131c;
-  --plumSoft: rgba(215, 155, 180, 0.16);
+  --bg: #121013;
+  --surf: #1b181d;
+  --surf2: #251f29;
+  --sink: #0c0a0d;
+  --ink: #f7f2f8;
+  --ink2: #bcb2c2;
+  --ink3: #978ca0;
+  --line: rgba(247, 242, 248, 0.13);
+  --line2: rgba(247, 242, 248, 0.26);
+  --clay: #e2a9f1;
+  --onclay: #2a1033;
+  --claySoft: rgba(226, 169, 241, 0.16);
+  --plum: #f2a0c4;
+  --onplum: #2a1320;
+  --plumSoft: rgba(242, 160, 196, 0.16);
   --ts: 1;
 }
 
 [data-theme='light'] {
-  --bg: #f7f3ec;
-  --surf: #fffdf8;
-  --surf2: #ede6da;
+  --bg: #f8f4fa;
+  --surf: #ffffff;
+  --surf2: #efe7f4;
   --sink: #ffffff;
-  --ink: #1a1714;
-  --ink2: #584f47;
-  --ink3: #6e6559;
-  --line: rgba(26, 23, 20, 0.12);
-  --line2: rgba(26, 23, 20, 0.26);
-  --clay: #a64b2a;
-  --onclay: #fff7f2;
-  --claySoft: rgba(166, 75, 42, 0.1);
-  --plum: #7e3b58;
+  --ink: #1a1420;
+  --ink2: #564c5e;
+  --ink3: #6e6478;
+  --line: rgba(26, 20, 32, 0.12);
+  --line2: rgba(26, 20, 32, 0.26);
+  /* The pale lavender cannot carry text on a light ground: same hue, deeper. */
+  --clay: #8e3fb0;
+  --onclay: #fff6fe;
+  --claySoft: rgba(226, 169, 241, 0.22);
+  --plum: #a83b6e;
   --onplum: #fff4f8;
-  --plumSoft: rgba(126, 59, 88, 0.1);
+  --plumSoft: rgba(168, 59, 110, 0.1);
 }
 
 [data-text='lg'] {
@@ -57,7 +59,7 @@ body,
 
 body {
   margin: 0;
-  background: #121011;
+  background: #121013;
   font-family: Archivo, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }

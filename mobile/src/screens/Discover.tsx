@@ -34,7 +34,7 @@ export function Discover() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={c.clay} style={{ marginTop: 40 }} />
+        <ActivityIndicator color={c.accent} style={{ marginTop: 40 }} />
       ) : listings.length === 0 ? (
         <View style={{ marginTop: 60, alignItems: 'center', paddingHorizontal: 20 }}>
           <Display size={28} style={{ textAlign: 'center' }}>
@@ -71,7 +71,7 @@ export function Discover() {
                 {item.title}
               </Txt>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Amount size={13} color={c.clay}>
+                <Amount size={13} color={c.accent}>
                   {m(item.price)}
                 </Amount>
                 <Txt size={12} color={c.ink3}>

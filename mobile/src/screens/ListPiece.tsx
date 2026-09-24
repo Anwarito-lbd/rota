@@ -140,12 +140,12 @@ export function ListPiece() {
             width: 64,
             height: 64,
             borderRadius: 999,
-            backgroundColor: c.clay,
+            backgroundColor: c.accent,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Txt size={26} weight="bold" color={c.onclay}>
+          <Txt size={26} weight="bold" color={c.onAccent}>
             ✓
           </Txt>
         </View>
@@ -295,7 +295,7 @@ export function ListPiece() {
                 {t('list.price')}
               </Txt>
               <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <Amount size={40} color={c.clay} style={{ flex: 1 }}>
+                <Amount size={40} color={c.accent} style={{ flex: 1 }}>
                   {m(price)}
                 </Amount>
                 <Pressable
@@ -408,7 +408,7 @@ export function ListPiece() {
                 </View>
                 <GhostButton
                   label={t('common.add')}
-                  tone="clay"
+                  tone="accent"
                   onPress={() => {
                     const rule = ruleDraft.trim();
                     if (!rule) return;

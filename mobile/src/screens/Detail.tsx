@@ -126,7 +126,7 @@ export function Detail() {
             </RoundOverlayButton>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <RoundOverlayButton onPress={() => toggleFlag('wish', listing.id)} label="Enregistrer">
-                <BookmarkIcon size={17} fill={wished ? c.clay : 'none'} color={wished ? c.clay : OVER_INK} />
+                <BookmarkIcon size={17} fill={wished ? c.accent : 'none'} color={wished ? c.accent : OVER_INK} />
               </RoundOverlayButton>
               <RoundOverlayButton onPress={() => set({ report: true, reportSent: false })} label="Signaler">
                 <DotsIcon size={18} />
@@ -137,7 +137,7 @@ export function Detail() {
 
         <View style={{ paddingHorizontal: 18, paddingTop: 20 }}>
           {listing.occasion ? (
-            <Txt size={11} weight="bold" upper color={c.clay}>
+            <Txt size={11} weight="bold" upper color={c.accent}>
               {listing.occasion}
             </Txt>
           ) : null}
@@ -161,13 +161,13 @@ export function Detail() {
                 paddingHorizontal: 12,
                 paddingVertical: 8,
                 borderRadius: 999,
-                backgroundColor: c.claySoft,
+                backgroundColor: c.accentSoft,
                 borderWidth: 1,
-                borderColor: c.clay,
+                borderColor: c.accent,
               }}
             >
-              <View style={{ width: 7, height: 7, borderRadius: 99, backgroundColor: c.clay }} />
-              <Txt size={13} weight="bold" color={c.clay}>
+              <View style={{ width: 7, height: 7, borderRadius: 99, backgroundColor: c.accent }} />
+              <Txt size={13} weight="bold" color={c.accent}>
                 {listing.minOffer
                   ? `Propositions acceptées · min ${m(listing.minOffer)} ${t('common.perDay')}`
                   : 'Propositions acceptées'}
@@ -176,7 +176,7 @@ export function Detail() {
           ) : null}
 
           <Card onPress={() => go('profile')} style={{ marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={{ width: 48, height: 48, borderRadius: 999, padding: 2, backgroundColor: c.clay }}>
+            <View style={{ width: 48, height: 48, borderRadius: 999, padding: 2, backgroundColor: c.accent }}>
               <View style={{ flex: 1, borderRadius: 999, overflow: 'hidden' }}>
                 <MediaSlot id={`lender-${listing.id}`} shape="circle" remoteUri={listing.owner.avatar ?? undefined} />
               </View>
@@ -229,7 +229,7 @@ export function Detail() {
           <View style={{ marginTop: 24, gap: 8 }}>
             {trust.map((item) => (
               <Card key={item.title} style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={{ width: 8, height: 8, marginTop: 7, borderRadius: 99, backgroundColor: c.clay }} />
+                <View style={{ width: 8, height: 8, marginTop: 7, borderRadius: 99, backgroundColor: c.accent }} />
                 <View style={{ flex: 1 }}>
                   <Txt size={14} weight="bold">
                     {item.title}
@@ -263,7 +263,7 @@ export function Detail() {
           ) : null}
 
           <View style={{ marginTop: 12 }}>
-            <Note tone="clay">
+            <Note tone="accent">
               {listing.cleaning.byLender ? `Nettoyage ${m(listing.cleaning.fee)}` : 'Nettoyage à votre charge'} ·
               livraison {m(FEES.shipping)} · caution {m(deposit)}. Tout est affiché avant paiement.
             </Note>
@@ -295,7 +295,7 @@ export function Detail() {
           </Txt>
         </View>
         {listing.acceptOffers ? (
-          <GhostButton label={t('detail.offer')} tone="clay" onPress={() => set({ offer: true })} style={{ minHeight: 54 }} />
+          <GhostButton label={t('detail.offer')} tone="accent" onPress={() => set({ offer: true })} style={{ minHeight: 54 }} />
         ) : null}
         <PrimaryButton label={t('detail.viewDates')} onPress={() => go('booking')} style={{ flex: 1 }} />
       </View>
@@ -338,14 +338,14 @@ function OfferSheet({ days }: { days: number }) {
                 borderRadius: 14,
                 alignItems: 'center',
                 borderWidth: 1,
-                borderColor: on ? c.clay : c.line2,
-                backgroundColor: on ? c.clay : 'transparent',
+                borderColor: on ? c.accent : c.line2,
+                backgroundColor: on ? c.accent : 'transparent',
               }}
             >
-              <Amount size={17} color={on ? c.onclay : c.ink}>
+              <Amount size={17} color={on ? c.onAccent : c.ink}>
                 {m(Math.round(listing.price * pct))}
               </Amount>
-              <Txt size={11} color={on ? c.onclay : c.ink2} style={{ marginTop: 3 }}>
+              <Txt size={11} color={on ? c.onAccent : c.ink2} style={{ marginTop: 3 }}>
                 {Math.round((1 - pct) * 100)} % / jour
               </Txt>
             </Pressable>

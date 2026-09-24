@@ -160,7 +160,7 @@ export function Card({
           borderRadius: 16,
           backgroundColor: c.surf,
           borderWidth: 1,
-          borderColor: accent ? c.clay : c.line,
+          borderColor: accent ? c.accent : c.line,
         },
         style,
       ]}
@@ -181,18 +181,18 @@ export function PrimaryButton({
   label,
   onPress,
   disabled,
-  tone = 'clay',
+  tone = 'accent',
   style,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
-  tone?: 'clay' | 'plum';
+  tone?: 'accent' | 'plum';
   style?: StyleProp<ViewStyle>;
 }) {
   const { c, fs } = useTheme();
-  const bg = disabled ? c.surf2 : tone === 'plum' ? c.plum : c.clay;
-  const fg = disabled ? c.ink3 : tone === 'plum' ? c.onplum : c.onclay;
+  const bg = disabled ? c.surf2 : tone === 'plum' ? c.plum : c.accent;
+  const fg = disabled ? c.ink3 : tone === 'plum' ? c.onplum : c.onAccent;
   return (
     <Pressable
       accessibilityRole="button"
@@ -223,11 +223,11 @@ export function GhostButton({
 }: {
   label: string;
   onPress: () => void;
-  tone?: 'ink' | 'plum' | 'clay';
+  tone?: 'ink' | 'plum' | 'accent';
   style?: StyleProp<ViewStyle>;
 }) {
   const { c, fs } = useTheme();
-  const color = tone === 'plum' ? c.plum : tone === 'clay' ? c.clay : c.ink;
+  const color = tone === 'plum' ? c.plum : tone === 'accent' ? c.accent : c.ink;
   return (
     <Pressable
       accessibilityRole="button"
@@ -237,7 +237,7 @@ export function GhostButton({
           minHeight: 50,
           borderRadius: 14,
           borderWidth: 1,
-          borderColor: tone === 'plum' ? c.plum : tone === 'clay' ? c.clay : c.line2,
+          borderColor: tone === 'plum' ? c.plum : tone === 'accent' ? c.accent : c.line2,
           alignItems: 'center',
           justifyContent: 'center',
           opacity: pressed ? 0.7 : 1,
@@ -255,16 +255,16 @@ export function Chip({
   label,
   on,
   onPress,
-  tone = 'clay',
+  tone = 'accent',
 }: {
   label: string;
   on: boolean;
   onPress: () => void;
-  tone?: 'clay' | 'plum' | 'ink';
+  tone?: 'accent' | 'plum' | 'ink';
 }) {
   const { c, fs } = useTheme();
-  const fill = tone === 'plum' ? c.plum : tone === 'ink' ? c.ink : c.clay;
-  const onFill = tone === 'plum' ? c.onplum : tone === 'ink' ? c.bg : c.onclay;
+  const fill = tone === 'plum' ? c.plum : tone === 'ink' ? c.ink : c.accent;
+  const onFill = tone === 'plum' ? c.onplum : tone === 'ink' ? c.bg : c.onAccent;
   return (
     <Pressable
       accessibilityRole="button"
@@ -297,7 +297,7 @@ export function Toggle({ on, onPress, label }: { on: boolean; onPress: () => voi
         width: 50,
         height: 30,
         borderRadius: 99,
-        backgroundColor: on ? c.clay : c.surf2,
+        backgroundColor: on ? c.accent : c.surf2,
         justifyContent: 'center',
       }}
     >
@@ -426,14 +426,14 @@ export function Group({ children }: { children: ReactNode }) {
   );
 }
 
-export function Note({ children, tone = 'surf2' }: { children: ReactNode; tone?: 'surf2' | 'clay' }) {
+export function Note({ children, tone = 'surf2' }: { children: ReactNode; tone?: 'surf2' | 'accent' }) {
   const { c } = useTheme();
   return (
     <View
       style={{
         padding: 14,
         borderRadius: 14,
-        backgroundColor: tone === 'clay' ? c.claySoft : c.surf2,
+        backgroundColor: tone === 'accent' ? c.accentSoft : c.surf2,
       }}
     >
       <Txt size={13} color={c.ink2}>
@@ -450,7 +450,7 @@ export function Steps({ current, count = 3 }: { current: number; count?: number 
       {Array.from({ length: count }, (_, i) => (
         <View
           key={i}
-          style={{ flex: 1, height: 4, borderRadius: 99, backgroundColor: i <= current ? c.clay : c.surf2 }}
+          style={{ flex: 1, height: 4, borderRadius: 99, backgroundColor: i <= current ? c.accent : c.surf2 }}
         />
       ))}
     </View>
@@ -567,8 +567,8 @@ export function Radio({ on }: { on: boolean }) {
         height: 20,
         borderRadius: 99,
         borderWidth: 2,
-        borderColor: on ? c.clay : c.line2,
-        backgroundColor: on ? c.clay : 'transparent',
+        borderColor: on ? c.accent : c.line2,
+        backgroundColor: on ? c.accent : 'transparent',
       }}
     />
   );
@@ -583,13 +583,13 @@ export function Check({ on }: { on: boolean }) {
         height: 24,
         borderRadius: 7,
         borderWidth: 2,
-        borderColor: on ? c.clay : c.line2,
-        backgroundColor: on ? c.clay : 'transparent',
+        borderColor: on ? c.accent : c.line2,
+        backgroundColor: on ? c.accent : 'transparent',
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      {on ? <Text style={{ color: c.onclay, fontSize: 13, fontFamily: FONT.sansBold }}>✓</Text> : null}
+      {on ? <Text style={{ color: c.onAccent, fontSize: 13, fontFamily: FONT.sansBold }}>✓</Text> : null}
     </View>
   );
 }
@@ -602,12 +602,12 @@ export function CertifiedMark({ size = 18 }: { size?: number }) {
         width: size,
         height: size,
         borderRadius: 999,
-        backgroundColor: c.clay,
+        backgroundColor: c.accent,
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <Text style={{ color: c.onclay, fontSize: size * 0.6, fontFamily: FONT.sansBold }}>✓</Text>
+      <Text style={{ color: c.onAccent, fontSize: size * 0.6, fontFamily: FONT.sansBold }}>✓</Text>
     </View>
   );
 }

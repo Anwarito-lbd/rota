@@ -32,12 +32,12 @@ function Confirmation() {
           width: 64,
           height: 64,
           borderRadius: 999,
-          backgroundColor: c.clay,
+          backgroundColor: c.accent,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Txt size={26} weight="bold" color={c.onclay}>
+        <Txt size={26} weight="bold" color={c.onAccent}>
           ✓
         </Txt>
       </View>
@@ -99,7 +99,7 @@ export function Checkout() {
             <Txt size={13} color={c.ink2}>
               {state.dates[0]}–{state.dates[1]} sept. · {ship ? 'livraison' : 'main propre'}
             </Txt>
-            <Amount size={15} color={c.clay} style={{ marginTop: 8 }}>
+            <Amount size={15} color={c.accent} style={{ marginTop: 8 }}>
               {m(total)}
             </Amount>
           </View>
@@ -131,7 +131,7 @@ export function Checkout() {
                   paddingHorizontal: 16,
                   borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: on ? c.clay : c.line,
+                  borderColor: on ? c.accent : c.line,
                   backgroundColor: on ? c.surf : 'transparent',
                 }}
               >

@@ -14,7 +14,7 @@
     "android": {
       "package": "com.rota.app",
       "adaptiveIcon": {
-        "backgroundColor": "#121011",
+        "backgroundColor": "#E2A9F1",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -32,9 +32,9 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
-          "imageWidth": 200,
+          "imageWidth": 220,
           "resizeMode": "contain",
-          "backgroundColor": "#0C0A0B"
+          "backgroundColor": "#E2A9F1"
         }
       ],
       [

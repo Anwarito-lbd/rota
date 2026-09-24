@@ -8,54 +8,61 @@ export interface Palette {
   ink3: string;
   line: string;
   line2: string;
-  clay: string;
-  onclay: string;
-  claySoft: string;
+  /** Rota lavender — the brand colour, from the hanger logo. */
+  accent: string;
+  /** Ink that sits on the accent. */
+  onAccent: string;
+  accentSoft: string;
+  /** Secondary tone for alerts, unread marks and destructive actions. */
   plum: string;
   onplum: string;
   plumSoft: string;
 }
 
+export const BRAND_LAVENDER = '#E2A9F1';
+
 export const darkPalette: Palette = {
-  bg: '#121011',
-  surf: '#1B1817',
-  surf2: '#242020',
-  sink: '#0C0A0B',
-  ink: '#F6F1E9',
-  ink2: '#B9B0A6',
-  ink3: '#968C81',
-  line: 'rgba(246,241,233,0.13)',
-  line2: 'rgba(246,241,233,0.26)',
-  clay: '#E8865F',
-  onclay: '#1B1009',
-  claySoft: 'rgba(232,134,95,0.16)',
-  plum: '#D79BB4',
-  onplum: '#22131C',
-  plumSoft: 'rgba(215,155,180,0.16)',
+  bg: '#121013',
+  surf: '#1B181D',
+  surf2: '#251F29',
+  sink: '#0C0A0D',
+  ink: '#F7F2F8',
+  ink2: '#BCB2C2',
+  ink3: '#978CA0',
+  line: 'rgba(247,242,248,0.13)',
+  line2: 'rgba(247,242,248,0.26)',
+  accent: BRAND_LAVENDER,
+  onAccent: '#2A1033',
+  accentSoft: 'rgba(226,169,241,0.16)',
+  plum: '#F2A0C4',
+  onplum: '#2A1320',
+  plumSoft: 'rgba(242,160,196,0.16)',
 };
 
 export const lightPalette: Palette = {
-  bg: '#F7F3EC',
-  surf: '#FFFDF8',
-  surf2: '#EDE6DA',
+  bg: '#F8F4FA',
+  surf: '#FFFFFF',
+  surf2: '#EFE7F4',
   sink: '#FFFFFF',
-  ink: '#1A1714',
-  ink2: '#584F47',
-  ink3: '#6E6559',
-  line: 'rgba(26,23,20,0.12)',
-  line2: 'rgba(26,23,20,0.26)',
-  clay: '#A64B2A',
-  onclay: '#FFF7F2',
-  claySoft: 'rgba(166,75,42,0.10)',
-  plum: '#7E3B58',
+  ink: '#1A1420',
+  ink2: '#564C5E',
+  ink3: '#6E6478',
+  line: 'rgba(26,20,32,0.12)',
+  line2: 'rgba(26,20,32,0.26)',
+  // The brand lavender is too pale for text on a light ground, so the light
+  // theme uses a deeper shade of the same hue and keeps the pale one for fills.
+  accent: '#8E3FB0',
+  onAccent: '#FFF6FE',
+  accentSoft: 'rgba(226,169,241,0.22)',
+  plum: '#A83B6E',
   onplum: '#FFF4F8',
-  plumSoft: 'rgba(126,59,88,0.10)',
+  plumSoft: 'rgba(168,59,110,0.10)',
 };
 
 /** Ink used over photography, where the theme background never applies. */
-export const OVER_INK = '#F6F1E9';
-export const OVER_INK_SOFT = 'rgba(246,241,233,0.75)';
-export const OVER_SCRIM = 'rgba(12,10,11,0.66)';
+export const OVER_INK = '#F7F2F8';
+export const OVER_INK_SOFT = 'rgba(247,242,248,0.75)';
+export const OVER_SCRIM = 'rgba(12,10,13,0.66)';
 
 /**
  * React Native picks a font file, not a weight — each weight is its own family.
@@ -71,15 +78,15 @@ export const FONT = {
 
 /** Gradient stops for the feed scrim and the bottom action fades. */
 export const FEED_SCRIM = [
-  'rgba(12,10,11,0.62)',
-  'rgba(12,10,11,0)',
-  'rgba(12,10,11,0)',
-  'rgba(12,10,11,0.92)',
+  'rgba(12,10,13,0.62)',
+  'rgba(12,10,13,0)',
+  'rgba(12,10,13,0)',
+  'rgba(12,10,13,0.92)',
 ] as const;
 
 export const HERO_SCRIM = [
-  'rgba(12,10,11,0.5)',
-  'rgba(12,10,11,0.05)',
-  'rgba(12,10,11,0.92)',
-  '#0C0A0B',
+  'rgba(12,10,13,0.5)',
+  'rgba(12,10,13,0.05)',
+  'rgba(12,10,13,0.92)',
+  '#0C0A0D',
 ] as const;
