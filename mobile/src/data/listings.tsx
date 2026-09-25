@@ -20,7 +20,14 @@ export interface Listing {
   sizes: string[];
   occasion: string | null;
   price: number;
+  /** What the owner typed as the piece's value — a suggestion, nothing more. */
   retail: number | null;
+  /**
+   * Rota's Approved Replacement Value. It caps the renter's liability and is
+   * never writable by a member. Null until migration 002 has run.
+   */
+  approvedValue: number | null;
+  valueStatus: 'auto' | 'pending_review' | 'approved' | 'rejected';
   city: string | null;
   rules: string[];
   cleaning: { byLender: boolean; fee: number };
@@ -57,6 +64,9 @@ interface ListingRow {
   occasion: string | null;
   price_per_day: number;
   retail_value: number | null;
+  suggested_value?: number | null;
+  approved_value?: number | null;
+  value_status?: string | null;
   city: string | null;
   rules: string[] | null;
   cleaning_by_lender: boolean;
@@ -94,6 +104,8 @@ function toListing(row: ListingRow): Listing {
     occasion: row.occasion,
     price: row.price_per_day,
     retail: row.retail_value,
+    approvedValue: row.approved_value ?? null,
+    valueStatus: (row.value_status as Listing['valueStatus']) ?? 'auto',
     city: row.city,
     rules: row.rules ?? [],
     cleaning: { byLender: row.cleaning_by_lender, fee: row.cleaning_fee },

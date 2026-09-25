@@ -1,7 +1,7 @@
 import { Pressable, View } from 'react-native';
 import { useListing } from '../data/listings';
 import { useT } from '../i18n';
-import { FEES } from '../lib/fees';
+import { usePolicy } from '../lib/policy';
 import { useBooking } from '../state/selectors';
 import { useStore } from '../state/store';
 import { useTheme } from '../theme/useTheme';
@@ -103,8 +103,9 @@ export function Booking() {
   const { state, set, go, m } = useStore();
   const { c } = useTheme();
   const { t } = useT();
+  const policy = usePolicy();
   const listing = useListing(state.activeId);
-  const { days, breakdown, total, cleaningFee, deposit } = useBooking(listing);
+  const { days, breakdown, total, cleaningFee, quote } = useBooking(listing);
 
   if (!listing) {
     return (
@@ -158,7 +159,7 @@ export function Booking() {
             onPress={() => set({ delivery: 'ship' })}
             title="Livraison · prépayée aller-retour"
             body="Étiquette retour incluse dans le colis"
-            price={m(FEES.shipping)}
+            price={m(policy.shippingFee)}
           />
           <HandoverOption
             selected={state.delivery === 'meet'}
@@ -242,8 +243,10 @@ export function Booking() {
             </Amount>
           </View>
           <Txt size={12} color={c.ink3} style={{ marginTop: 8 }}>
-            Caution de {m(deposit)} bloquée (jamais prélevée), libérée au retour. Annulation gratuite jusqu'à 7 jours
-            avant.
+            {quote.hold.required
+              ? `${t('protect.holdOn')} ${m(quote.hold.amount)}. ${t('protect.holdWhy')}`
+              : t('protect.noDeposit')}{' '}
+            {t('protect.cancel')}
           </Txt>
         </Card>
       </Screen>

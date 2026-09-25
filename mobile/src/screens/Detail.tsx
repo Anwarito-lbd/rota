@@ -57,7 +57,7 @@ export function Detail() {
   const { t } = useT();
   const insets = useSafeAreaInsets();
   const listing = useListing(state.activeId);
-  const { days, deposit } = useBooking(listing);
+  const { days, quote } = useBooking(listing);
 
   if (!listing) {
     return (
@@ -76,8 +76,16 @@ export function Detail() {
 
   const trust = [
     {
-      title: `Dommages couverts jusqu'à ${m(1500)}`,
-      body: 'Inclus dans chaque location. À signaler dans les 24 h après le retour.',
+      title: quote.hold.required
+        ? `${t('protect.holdOn')} ${m(quote.hold.amount)}`
+        : t('protect.noDepositShort'),
+      body: quote.hold.required ? t('protect.holdWhy') : t('protect.noDeposit'),
+    },
+    {
+      title: `${t('protect.maxLiability')} · ${
+        quote.maxLiability > 0 ? m(quote.maxLiability) : t('protect.valuePending')
+      }`,
+      body: t('protect.maxLiabilityBody'),
     },
     listing.cleaning.byLender
       ? {
@@ -265,7 +273,9 @@ export function Detail() {
           <View style={{ marginTop: 12 }}>
             <Note tone="accent">
               {listing.cleaning.byLender ? `Nettoyage ${m(listing.cleaning.fee)}` : 'Nettoyage à votre charge'} ·
-              livraison {m(FEES.shipping)} · caution {m(deposit)}. Tout est affiché avant paiement.
+              livraison {m(FEES.shipping)} ·{' '}
+              {quote.hold.required ? `caution ${m(quote.hold.amount)}` : t('protect.noDepositShort').toLowerCase()}.
+              Tout est affiché avant paiement.
             </Note>
           </View>
         </View>

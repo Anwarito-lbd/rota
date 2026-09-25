@@ -51,7 +51,9 @@ const initialState: AppState = {
   delivery: 'ship',
   dates: [18, 21],
   rulesAccepted: false,
+  payConsent: false,
   rentalTab: 'renting',
+  activeRentalId: null,
   thread: null,
 
   listStep: 0,

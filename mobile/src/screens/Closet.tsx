@@ -67,6 +67,7 @@ export function Closet() {
       <PrimaryButton label={t('closet.addPiece')} onPress={() => go('list')} style={{ marginTop: 12 }} />
 
       <Group>
+        <Row label={t('rentals.title')} onPress={() => go('rentals')} />
         <Row label={t('closet.settings')} onPress={() => go('settings')} />
         <Row label={t('settings.guidelines')} onPress={() => go('guidelines')} />
         <Row label={t('settings.fees')} onPress={() => go('fees')} last />

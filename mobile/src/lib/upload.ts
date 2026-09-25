@@ -25,14 +25,17 @@ function describe(uri: string, kind: MediaItem['kind']) {
  * live under the owner's user id, which is what the storage policies allow.
  */
 export async function uploadMedia(
-  bucket: 'listing-media' | 'avatars' | 'private-docs',
+  bucket: 'listing-media' | 'avatars' | 'private-docs' | 'rental-evidence',
   userId: string,
   item: MediaItem,
+  /** Second path segment, e.g. the rental id for condition evidence. */
+  subfolder?: string,
 ): Promise<string> {
   if (!supabase) throw new Error('Le serveur n’est pas configuré.');
 
   const { extension, contentType } = describe(item.uri, item.kind);
-  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
+  const prefix = subfolder ? `${userId}/${subfolder}` : userId;
+  const path = `${prefix}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
 
   // React Native has no File API: fetch the local file and send the bytes.
   const response = await fetch(item.uri);

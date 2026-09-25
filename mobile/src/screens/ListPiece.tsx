@@ -91,7 +91,8 @@ export function ListPiece() {
       const proofPath = proofItem ? await uploadMedia('private-docs', userId, proofItem) : null;
 
       const client = (await import('../lib/supabase')).supabase!;
-      const row = {
+      const suggested = retail ? Number(retail.replace(/\D/g, '')) || null : null;
+      const row: Record<string, unknown> = {
         owner_id: userId,
         title: title.trim(),
         brand: brand.trim() || null,
@@ -100,7 +101,10 @@ export function ListPiece() {
         sizes,
         occasion,
         price_per_day: price,
-        retail_value: retail ? Number(retail.replace(/\D/g, '')) || null : null,
+        retail_value: suggested,
+        // A suggestion only: Rota approves the value that caps a renter's
+        // liability, and members cannot write approved_value.
+        suggested_value: suggested,
         cleaning_by_lender: lenderCleans,
         cleaning_fee: lenderCleans ? cleaningFee : 0,
         rules,
@@ -113,13 +117,15 @@ export function ListPiece() {
         authenticity_path: proofPath,
       };
 
-      let { error: insertError } = await client.from('listings').insert(row);
-
-      // The sizes column arrives with migration 001; without it, fall back to
-      // the single size so publishing still works.
-      if (insertError && /sizes/i.test(insertError.message)) {
-        const { sizes: _dropped, ...withoutSizes } = row;
-        ({ error: insertError } = await client.from('listings').insert(withoutSizes));
+      // `sizes` arrives with migration 001 and `suggested_value` with 002.
+      // Until they are run, drop the unknown column and publish anyway.
+      let payload = row;
+      let insertError = (await client.from('listings').insert(payload)).error;
+      for (const column of ['suggested_value', 'sizes']) {
+        if (!insertError || !insertError.message.includes(column)) continue;
+        const { [column]: _dropped, ...rest } = payload;
+        payload = rest;
+        insertError = (await client.from('listings').insert(payload)).error;
       }
 
       if (insertError) throw new Error(insertError.message);
@@ -227,6 +233,7 @@ export function ListPiece() {
               onChangeText={setRetail}
               placeholder="340"
               keyboardType="number-pad"
+              hint={t('list.valueHint')}
             />
 
             <Card>

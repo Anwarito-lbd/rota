@@ -14,9 +14,11 @@ import { useEffect, type ReactElement } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/lib/auth';
+import { PolicyProvider } from './src/lib/policy';
 import { ListingsProvider } from './src/data/listings';
 import { Booking } from './src/screens/Booking';
 import { Checkout } from './src/screens/Checkout';
+import { Claim } from './src/screens/Claim';
 import { Closet } from './src/screens/Closet';
 import { Detail } from './src/screens/Detail';
 import { Discover } from './src/screens/Discover';
@@ -24,6 +26,8 @@ import { Feed } from './src/screens/Feed';
 import { ListPiece } from './src/screens/ListPiece';
 import { Messages } from './src/screens/Messages';
 import { Onboarding } from './src/screens/Onboarding';
+import { RentalDetail } from './src/screens/RentalDetail';
+import { Rentals } from './src/screens/Rentals';
 import { Settings } from './src/screens/Settings';
 import { StoreProvider, useStore } from './src/state/store';
 import type { Screen as ScreenKey } from './src/state/types';
@@ -57,6 +61,9 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   messages: Messages,
   closet: Closet,
   settings: Settings,
+  rentals: Rentals,
+  rental: RentalDetail,
+  claim: Claim,
 };
 
 function Shell() {
@@ -115,9 +122,11 @@ export default function App() {
     <SafeAreaProvider>
       <StoreProvider>
         <AuthProvider>
-          <ListingsProvider>
-            <Shell />
-          </ListingsProvider>
+          <PolicyProvider>
+            <ListingsProvider>
+              <Shell />
+            </ListingsProvider>
+          </PolicyProvider>
         </AuthProvider>
       </StoreProvider>
     </SafeAreaProvider>

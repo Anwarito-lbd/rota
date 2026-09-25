@@ -7,6 +7,7 @@ export type Screen =
   | 'booking'
   | 'checkout'
   | 'rentals'
+  | 'rental'
   | 'boards'
   | 'board'
   | 'profile'
@@ -115,7 +116,11 @@ export interface AppState {
   delivery: Delivery;
   dates: [number, number];
   rulesAccepted: boolean;
+  /** Explicit consent to keep the payment method for off-session charges. */
+  payConsent: boolean;
   rentalTab: RentalTab;
+  /** The rental opened on the rental / claim screens. */
+  activeRentalId: string | null;
   thread: string | null;
 
   listStep: number;

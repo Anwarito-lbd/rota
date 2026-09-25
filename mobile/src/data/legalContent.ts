@@ -24,6 +24,18 @@ export type LegalDoc = {
 export const LEGAL_BANNER =
   'Brouillons — en attente de revue par un avocat français. Pas un avis juridique. Ne pas lancer / encaisser de cautions réelles avant validation (voir docs/legal/06).';
 
+/**
+ * PÉRIMÉ vs le produit. Les sections « caution — paliers A–D » ci-dessous
+ * décrivent l’ancien modèle : une caution pour chaque location. Le produit
+ * applique désormais la stratégie Trust & Protection (P0) : location sans
+ * caution par défaut, empreinte uniquement sur décision de risque, et
+ * responsabilité plafonnée par la valeur approuvée (voir lib/policy.ts et
+ * supabase/migrations/002_trust_protection.sql). Ces brouillons doivent être
+ * réécrits avec l’avocat avant toute publication.
+ */
+export const LEGAL_OUTDATED_NOTICE =
+  'Ces brouillons décrivent l’ancien modèle de caution systématique. Le produit applique la stratégie Trust & Protection : sans caution par défaut.';
+
 export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
   mentions: {
     slug: 'mentions',
