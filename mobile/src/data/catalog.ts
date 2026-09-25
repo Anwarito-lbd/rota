@@ -472,22 +472,6 @@ export const listSteps = [
   },
 ];
 
-import type { PayMethod } from '../state/types';
-
-export const payMethods: { key: PayMethod; label: string; detail: string }[] = [
-  { key: 'applepay', label: 'Apple Pay', detail: 'Face ID · carte par défaut' },
-  { key: 'googlepay', label: 'Google Pay', detail: 'Compte Google' },
-  { key: 'paypal', label: 'PayPal', detail: 'camille@exemple.fr' },
-  { key: 'card', label: 'Carte bancaire', detail: 'Visa, Mastercard, CB' },
-  { key: 'wallet', label: 'Porte-monnaie Rota', detail: 'Solde de vos locations' },
-];
-
-export const identityDocs: { key: 'cni' | 'passport' | 'licence'; label: string; detail: string }[] = [
-  { key: 'cni', label: "Carte nationale d'identité", detail: 'Recto et verso' },
-  { key: 'passport', label: 'Passeport', detail: 'Page photo' },
-  { key: 'licence', label: 'Permis de conduire', detail: 'Recto et verso' },
-];
-
 /** Accepted proof that a branded piece is genuine, as on Vinted. */
 export const authenticityProofs = [
   {

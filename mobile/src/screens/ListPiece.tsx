@@ -4,9 +4,12 @@ import { CATEGORIES, OCCASIONS, SIZES } from '../data/catalog';
 import { useListings } from '../data/listings';
 import { useT } from '../i18n';
 import { useAuth } from '../lib/auth';
+import { friendlyError } from '../lib/errors';
 import { FEES } from '../lib/fees';
+import { submitForReview } from '../lib/moderation';
 import { uploadMedia } from '../lib/upload';
 import { useStore } from '../state/store';
+import type { MediaItem } from '../state/types';
 import { useTheme } from '../theme/useTheme';
 import {
   Amount,
@@ -81,12 +84,17 @@ export function ListPiece() {
     try {
       const userId = session.user.id;
       const photoPaths: string[] = [];
+      const uploads: { item: MediaItem; path: string }[] = [];
       for (const slot of photoSlots) {
         const item = media[slot];
-        if (item) photoPaths.push(await uploadMedia('listing-media', userId, item));
+        if (!item) continue;
+        const path = await uploadMedia('listing-media', userId, item);
+        photoPaths.push(path);
+        uploads.push({ item, path });
       }
       const videoItem = media[SLOT_VIDEO];
       const videoPath = videoItem ? await uploadMedia('listing-media', userId, videoItem) : null;
+      if (videoItem && videoPath) uploads.push({ item: videoItem, path: videoPath });
       const proofItem = media[SLOT_PROOF];
       const proofPath = proofItem ? await uploadMedia('private-docs', userId, proofItem) : null;
 
@@ -119,20 +127,25 @@ export function ListPiece() {
 
       // `sizes` arrives with migration 001 and `suggested_value` with 002.
       // Until they are run, drop the unknown column and publish anyway.
+      const insert = (p: Record<string, unknown>) => client.from('listings').insert(p).select('id').single();
       let payload = row;
-      let insertError = (await client.from('listings').insert(payload)).error;
+      let result = await insert(payload);
       for (const column of ['suggested_value', 'sizes']) {
-        if (!insertError || !insertError.message.includes(column)) continue;
+        if (!result.error || !result.error.message.includes(column)) continue;
         const { [column]: _dropped, ...rest } = payload;
         payload = rest;
-        insertError = (await client.from('listings').insert(payload)).error;
+        result = await insert(payload);
       }
 
-      if (insertError) throw new Error(insertError.message);
+      if (result.error) throw new Error(result.error.message);
       setPublished(true);
-      refresh();
+      // Stills, provenance and the review request. Not awaited by the UI:
+      // the listing exists and its review case is already queued.
+      submitForReview({ userId, listingId: (result.data as { id: string }).id, uploads })
+        .catch(() => undefined)
+        .finally(refresh);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'La publication a échoué.');
+      setError(friendlyError(e, t));
     } finally {
       setBusy(false);
     }
@@ -158,12 +171,15 @@ export function ListPiece() {
         <Display size={34} style={{ marginTop: 20, textAlign: 'center' }}>
           {t('list.published')}
         </Display>
+        <Txt size={15} color={c.ink2} style={{ marginTop: 10, textAlign: 'center' }}>
+          {t('list.publishedReview')}
+        </Txt>
         <PrimaryButton
-          label="Voir dans le feed"
+          label={t('list.seeCloset')}
           onPress={() => {
             setPublished(false);
             reset();
-            go('feed');
+            go('closet');
           }}
           style={{ marginTop: 24, alignSelf: 'stretch' }}
         />

@@ -59,7 +59,15 @@
         {
           "locationWhenInUsePermission": "Rota utilise votre position pour montrer les pièces proches et suggérer des points de remise publics."
         }
-      ]
+      ],
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.rota.app",
+          "enableGooglePay": true
+        }
+      ],
+      "expo-web-browser"
     ]
   }
 }

@@ -9,13 +9,16 @@ import {
   InstrumentSerif_400Regular,
   InstrumentSerif_400Regular_Italic,
 } from '@expo-google-fonts/instrument-serif';
+import { StripeProvider } from '@stripe/stripe-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, type ReactElement } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { paymentsConfigured, stripePublishableKey, stripeUrlScheme } from './src/data/payments';
 import { AuthProvider, useAuth } from './src/lib/auth';
 import { PolicyProvider } from './src/lib/policy';
 import { ListingsProvider } from './src/data/listings';
+import { Admin } from './src/screens/Admin';
 import { Booking } from './src/screens/Booking';
 import { Checkout } from './src/screens/Checkout';
 import { Claim } from './src/screens/Claim';
@@ -33,6 +36,7 @@ import { StoreProvider, useStore } from './src/state/store';
 import type { Screen as ScreenKey } from './src/state/types';
 import { useTheme } from './src/theme/useTheme';
 import { GhostButton, Display, Screen, Txt } from './src/ui/kit';
+import { ReportSheet } from './src/ui/Moderation';
 import { TabBar } from './src/ui/TabBar';
 
 /** Screens still being ported from the web build. */
@@ -64,6 +68,7 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   rentals: Rentals,
   rental: RentalDetail,
   claim: Claim,
+  admin: Admin,
 };
 
 function Shell() {
@@ -96,7 +101,22 @@ function Shell() {
         <Current />
       </View>
       {showTabs ? <TabBar /> : null}
+      <ReportSheet />
     </View>
+  );
+}
+
+/** Stripe only when a publishable key is set; the app still runs without one. */
+function Payments({ children }: { children: ReactElement }) {
+  if (!paymentsConfigured) return children;
+  return (
+    <StripeProvider
+      publishableKey={stripePublishableKey}
+      urlScheme={stripeUrlScheme}
+      merchantIdentifier="merchant.com.rota.app"
+    >
+      {children}
+    </StripeProvider>
   );
 }
 
@@ -124,7 +144,9 @@ export default function App() {
         <AuthProvider>
           <PolicyProvider>
             <ListingsProvider>
-              <Shell />
+              <Payments>
+                <Shell />
+              </Payments>
             </ListingsProvider>
           </PolicyProvider>
         </AuthProvider>

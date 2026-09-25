@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useListing } from '../data/listings';
+import { useUnavailableDays } from '../data/rentals';
+import { addDays, daysBetween, fromISO, monthGrid, monthLabel, todayISO, weekdayLetters } from '../lib/dates';
 import { useT } from '../i18n';
 import { usePolicy } from '../lib/policy';
 import { useBooking } from '../state/selectors';
@@ -19,55 +22,110 @@ import {
   Txt,
 } from '../ui/kit';
 
-const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
-const DAYS_IN_MONTH = 30;
-/** The demo month starts mid-month; earlier days read as past. */
-const FIRST_SELECTABLE = 13;
-
-function Calendar() {
+/**
+ * A real month view. Past days and days already booked (returned by the
+ * server without saying by whom) can't be picked; the first tap sets the
+ * start, the second the end.
+ */
+function Calendar({ taken }: { taken: (iso: string) => boolean }) {
   const { state, set } = useStore();
   const { c, fs } = useTheme();
+  const { t, lang } = useT();
+  const policy = usePolicy();
   const [start, end] = state.dates;
+  const today = todayISO();
+  const [month, setMonth] = useState(() => {
+    const d = fromISO(start >= today ? start : today);
+    return { y: d.getFullYear(), m: d.getMonth() };
+  });
+  const [picking, setPicking] = useState<'start' | 'end'>('start');
+
+  const shift = (n: number) =>
+    setMonth(({ y, m }) => {
+      const d = new Date(y, m + n, 1);
+      return { y: d.getFullYear(), m: d.getMonth() };
+    });
+  const current = new Date();
+  const atFirstMonth = month.y === current.getFullYear() && month.m === current.getMonth();
+
+  const choose = (iso: string) => {
+    if (picking === 'start' || iso < start) {
+      set({ dates: [iso, iso] });
+      setPicking('end');
+      return;
+    }
+    // A range can't jump over someone else's booking or exceed the maximum.
+    for (let d = start; d <= iso; d = addDays(d, 1)) if (taken(d)) return set({ dates: [iso, iso] });
+    if (daysBetween(start, iso) > policy.maxRentalDays) return;
+    set({ dates: [start, iso] });
+    setPicking('start');
+  };
 
   return (
-    <View style={{ marginTop: 6, flexDirection: 'row', flexWrap: 'wrap' }}>
-      <View style={{ width: `${100 / 7}%`, height: 44 }} />
-      {Array.from({ length: DAYS_IN_MONTH }, (_, i) => i + 1).map((day) => {
-        const past = day < FIRST_SELECTABLE;
-        const inRange = day > start && day < end;
-        const edge = day === start || day === end;
-
-        return (
-          <Pressable
-            key={day}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: past, selected: edge }}
-            onPress={() => !past && set({ dates: [day, day + 3] })}
-            style={{ width: `${100 / 7}%`, height: 44, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <View
-              style={{
-                width: '90%',
-                height: 40,
-                borderRadius: 10,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: edge ? c.accent : inRange ? c.accentSoft : 'transparent',
-              }}
+    <>
+      <View style={{ marginTop: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Pressable onPress={() => !atFirstMonth && shift(-1)} hitSlop={12} accessibilityLabel={t('booking.prevMonth')}>
+          <Txt size={20} color={atFirstMonth ? c.line2 : c.ink}>
+            ‹
+          </Txt>
+        </Pressable>
+        <Txt size={16} weight="bold">
+          {monthLabel(month.y, month.m, lang)}
+        </Txt>
+        <Pressable onPress={() => shift(1)} hitSlop={12} accessibilityLabel={t('booking.nextMonth')}>
+          <Txt size={20}>›</Txt>
+        </Pressable>
+      </View>
+      <View style={{ marginTop: 14, flexDirection: 'row' }}>
+        {weekdayLetters(lang).map((d, i) => (
+          <Txt key={`${d}${i}`} size={11} center color={c.ink3} style={{ width: `${100 / 7}%` }}>
+            {d}
+          </Txt>
+        ))}
+      </View>
+      <View style={{ marginTop: 6, flexDirection: 'row', flexWrap: 'wrap' }}>
+        {monthGrid(month.y, month.m).map((iso, i) => {
+          if (!iso) return <View key={`blank-${i}`} style={{ width: `${100 / 7}%`, height: 44 }} />;
+          const past = iso < today;
+          const booked = !past && taken(iso);
+          const off = past || booked;
+          const edge = iso === start || iso === end;
+          const inRange = iso > start && iso < end;
+          return (
+            <Pressable
+              key={iso}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: off, selected: edge }}
+              onPress={() => !off && choose(iso)}
+              style={{ width: `${100 / 7}%`, height: 44, alignItems: 'center', justifyContent: 'center' }}
             >
-              <Txt
-                size={14}
-                weight="semi"
-                color={edge ? c.onAccent : past ? c.ink3 : c.ink}
-                style={{ fontSize: fs(14) }}
+              <View
+                style={{
+                  width: '90%',
+                  height: 40,
+                  borderRadius: 10,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: edge ? c.accent : inRange ? c.accentSoft : 'transparent',
+                }}
               >
-                {day}
-              </Txt>
-            </View>
-          </Pressable>
-        );
-      })}
-    </View>
+                <Txt
+                  size={14}
+                  weight="semi"
+                  color={edge ? c.onAccent : off ? c.line2 : c.ink}
+                  style={{ fontSize: fs(14), textDecorationLine: booked ? 'line-through' : 'none' }}
+                >
+                  {fromISO(iso).getDate()}
+                </Txt>
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Txt size={12} color={c.ink3} style={{ marginTop: 6 }}>
+        {picking === 'end' ? t('booking.pickEnd') : t('booking.pickHelp').replace('{n}', String(policy.maxRentalDays))}
+      </Txt>
+    </>
   );
 }
 
@@ -106,6 +164,9 @@ export function Booking() {
   const policy = usePolicy();
   const listing = useListing(state.activeId);
   const { days, breakdown, total, cleaningFee, quote } = useBooking(listing);
+  const taken = useUnavailableDays(listing?.id ?? null);
+  const [start, end] = state.dates;
+  const datesValid = start >= todayISO() && !taken(start) && !taken(end);
 
   if (!listing) {
     return (
@@ -117,7 +178,7 @@ export function Booking() {
   }
 
   const hasRules = listing.rules.length > 0;
-  const canContinue = !hasRules || state.rulesAccepted;
+  const canContinue = datesValid && (!hasRules || state.rulesAccepted);
   const size = listing.sizes.includes(state.size) ? state.size : listing.sizes[0];
 
   return (
@@ -132,23 +193,7 @@ export function Booking() {
           {size ? ` · ${t('common.size')} ${size}` : ''}
         </Txt>
 
-        <View style={{ marginTop: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Txt size={16} weight="bold">
-            Septembre 2026
-          </Txt>
-          <Txt size={13} color={c.ink3}>
-            3 jours minimum
-          </Txt>
-        </View>
-
-        <View style={{ marginTop: 14, flexDirection: 'row' }}>
-          {WEEKDAYS.map((d, i) => (
-            <Txt key={`${d}${i}`} size={11} center color={c.ink3} style={{ width: `${100 / 7}%` }}>
-              {d}
-            </Txt>
-          ))}
-        </View>
-        <Calendar />
+        <Calendar taken={taken} />
 
         <Txt size={12} weight="semi" upper color={c.ink3} style={{ marginTop: 22 }}>
           Remise
@@ -253,7 +298,13 @@ export function Booking() {
 
       <FooterBar>
         <PrimaryButton
-          label={canContinue ? `${t('common.continue')} · ${days} jours` : 'Acceptez les règles pour continuer'}
+          label={
+            !datesValid
+              ? t('booking.pickDates')
+              : canContinue
+                ? `${t('common.continue')} · ${days} ${t('common.days')}`
+                : t('booking.acceptRules')
+          }
           disabled={!canContinue}
           onPress={() => go('checkout')}
         />

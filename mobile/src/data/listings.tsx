@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import type { Distribution, DistributionReason } from '../lib/moderation';
 import { supabase } from '../lib/supabase';
 
 /** A listing as the screens need it: owner joined, storage paths resolved. */
@@ -37,6 +38,14 @@ export interface Listing {
   authenticity: 'none' | 'pending' | 'verified' | 'rejected';
   photos: string[];
   video: string | null;
+  /**
+   * Moderation outcome. Only 'public' reaches the feed; 'limited' is
+   * reachable from a profile or link; the rest is visible to the owner only.
+   * Rows from before migration 003 read as 'public'.
+   */
+  distribution: Distribution;
+  distributionReason: DistributionReason | null;
+  distributionNote: string | null;
   createdAt: string;
   owner: {
     username: string;
@@ -77,6 +86,9 @@ interface ListingRow {
   authenticity_status: string;
   photo_paths: string[] | null;
   video_path: string | null;
+  distribution?: string | null;
+  distribution_reason?: string | null;
+  distribution_note?: string | null;
   created_at: string;
   owner: OwnerRow | OwnerRow[] | null;
 }
@@ -115,6 +127,9 @@ function toListing(row: ListingRow): Listing {
     authenticity: (row.authenticity_status as Listing['authenticity']) ?? 'none',
     photos: (row.photo_paths ?? []).map(publicUrl).filter((u): u is string => !!u),
     video: publicUrl(row.video_path),
+    distribution: (row.distribution as Distribution) ?? 'public',
+    distributionReason: (row.distribution_reason as DistributionReason) ?? null,
+    distributionNote: row.distribution_note ?? null,
     createdAt: row.created_at,
     owner: {
       username: owner?.username ?? 'membre',
@@ -126,6 +141,7 @@ function toListing(row: ListingRow): Listing {
 }
 
 interface ListingsValue {
+  /** What the feed and Explorer show: reviewed and distributed. */
   listings: Listing[];
   loading: boolean;
   error: string | null;
@@ -137,7 +153,10 @@ const ListingsContext = createContext<ListingsValue | null>(null);
 
 /** Loads every active listing once and shares it with all screens. */
 export function ListingsProvider({ children }: { children: ReactNode }) {
-  const [listings, setListings] = useState<Listing[]>([]);
+  // Everything this member may read: distributed listings, limited ones
+  // (reachable by link) and their own, whatever their state.
+  const [all, setAll] = useState<Listing[]>([]);
+  const listings = useMemo(() => all.filter((l) => l.distribution === 'public'), [all]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -159,7 +178,7 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
         if (queryError) setError(queryError.message);
         else {
           setError(null);
-          setListings(((data ?? []) as unknown as ListingRow[]).map(toListing));
+          setAll(((data ?? []) as unknown as ListingRow[]).map(toListing));
         }
         setLoading(false);
       });
@@ -169,7 +188,7 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
   }, [tick]);
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
-  const byId = useCallback((id: string | null) => listings.find((l) => l.id === id) ?? null, [listings]);
+  const byId = useCallback((id: string | null) => all.find((l) => l.id === id) ?? null, [all]);
 
   const value = useMemo<ListingsValue>(
     () => ({ listings, loading, error, refresh, byId }),

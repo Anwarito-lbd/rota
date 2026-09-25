@@ -5,9 +5,6 @@ import { FEES, quoteCheckout, type CheckoutQuote } from '../lib/fees';
 import { usePolicy } from '../lib/policy';
 import { useStore } from './store';
 
-/** The demo calendar sits in September 2026. */
-const isoDay = (day: number) => `2026-09-${String(day).padStart(2, '0')}`;
-
 export interface Booking {
   /** Billed days, counted inclusively (18 → 21 is four days). */
   days: number;
@@ -30,8 +27,8 @@ export function useBooking(listing: Listing | null): Booking {
 
   const quote = quoteCheckout({
     pricePerDay: listing?.price ?? 0,
-    startDate: isoDay(start),
-    endDate: isoDay(end),
+    startDate: start,
+    endDate: end,
     delivery: state.delivery,
     cleaningByLender: listing?.cleaning.byLender,
     cleaningFee: listing?.cleaning.fee,

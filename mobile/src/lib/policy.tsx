@@ -48,6 +48,10 @@ export interface Policy {
   ownerClaimWindowHours: number;
   trustedOwnerCleanRentals: number;
 
+  /** Booking limits (migration 004). */
+  maxRentalDays: number;
+  paymentWindowMinutes: number;
+
   /** P1 — kept off until real transaction and claim data exists. */
   flagIdStepUp: boolean;
   flagTrustTiers: boolean;
@@ -78,6 +82,9 @@ export const DEFAULT_POLICY: Policy = {
   ownerClaimWindowHours: 24,
   trustedOwnerCleanRentals: 5,
 
+  maxRentalDays: 14,
+  paymentWindowMinutes: 30,
+
   flagIdStepUp: false,
   flagTrustTiers: false,
   flagRiskScoring: false,
@@ -103,6 +110,8 @@ const KEYS: Record<string, keyof Policy> = {
   non_return_review_days: 'nonReturnReviewDays',
   owner_claim_window_hours: 'ownerClaimWindowHours',
   trusted_owner_clean_rentals: 'trustedOwnerCleanRentals',
+  max_rental_days: 'maxRentalDays',
+  payment_window_minutes: 'paymentWindowMinutes',
   flag_id_step_up: 'flagIdStepUp',
   flag_trust_tiers: 'flagTrustTiers',
   flag_risk_scoring: 'flagRiskScoring',

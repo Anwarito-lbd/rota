@@ -1,0 +1,16 @@
+# Only what the Edge Functions need; everything else keeps Supabase's defaults.
+# Each function checks its caller itself (member token, Stripe signature or
+# the cron secret), so the gateway's JWT check is off.
+project_id = "rota"
+
+[functions.moderate-listings]
+verify_jwt = false
+
+[functions.payments]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.worker]
+verify_jwt = false

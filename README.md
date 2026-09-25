@@ -7,7 +7,7 @@ Feel: TikTok × Pinterest × Vinted — discover a look, tap the pieces, rent th
 
 ```
 mobile/       The app — Expo SDK 57, runs in Expo Go, App Store path via EAS
-supabase/     Database schema: profiles, listings, favorites, storage, RLS
+supabase/     Database (schema + migrations) and Edge Functions
 src/          Web prototype (Vite + React) used as the design reference
 design/       The original Claude Design canvas export
 docs/         App Store checklist, roadmap, FR legal drafts
@@ -34,18 +34,28 @@ The web prototype still runs from the repo root with `npm run dev`.
 Accounts, listings and media live in **Supabase**; account e-mails are sent
 through **Resend** from `no-reply@therotaapp.com`.
 
-1. Run `supabase/schema.sql` in the Supabase SQL editor.
-2. Copy `mobile/.env.example` to `mobile/.env` and fill in the project URL and
-   the **publishable** key. `.env` is never committed.
+Payments go through **Stripe** (Connect for lenders' payouts, Identity for
+ID checks, Radar for fraud), listing review through the **Claude API**, and
+reminder e-mails through Resend.
+
+Full setup, step by step: [docs/BACKEND_SETUP.md](docs/BACKEND_SETUP.md).
+Copy `mobile/.env.example` to `mobile/.env` for the app's public keys;
+`.env` is never committed.
 
 ## What's in the app
 
 - Accounts: unique usernames, password rules, e-mail OTP, two-factor sign-in
 - Identity verification and account certification, authenticity proof on listings
-- Feed, discover, search, listing detail, dates, checkout with real payment
-  methods (Apple Pay, Google Pay, PayPal, card, wallet — never cash)
+- Feed, discover, listing detail, a real availability calendar (no double
+  booking), checkout paid through Stripe — never cash
+- Deposit-free by default; a hold only when a risk rule asks for one. The
+  renter's liability is capped at the value shown at checkout
+- Handover and return confirmed by code, late fees capped, claims decided by
+  Rota, lender payouts released after the claim window
+- Every listing reviewed before the feed: off-topic, AI-looking, unsafe or
+  copied content is kept out; members can report and appeal
+- Back office for staff: moderation, claims, rentals, safety incidents
 - Lender rules accepted before payment, cleaning fee only when the lender cleans
-- Two-sided 10% service fee and value-based deposit tiers (`mobile/src/lib/fees.ts`)
 - Real device permissions: camera, microphone, photos, location
 
 ## App Store

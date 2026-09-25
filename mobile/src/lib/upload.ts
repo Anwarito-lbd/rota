@@ -25,7 +25,7 @@ function describe(uri: string, kind: MediaItem['kind']) {
  * live under the owner's user id, which is what the storage policies allow.
  */
 export async function uploadMedia(
-  bucket: 'listing-media' | 'avatars' | 'private-docs' | 'rental-evidence',
+  bucket: 'listing-media' | 'avatars' | 'private-docs' | 'rental-evidence' | 'moderation-frames',
   userId: string,
   item: MediaItem,
   /** Second path segment, e.g. the rental id for condition evidence. */

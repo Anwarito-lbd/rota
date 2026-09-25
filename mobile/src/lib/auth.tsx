@@ -17,6 +17,10 @@ interface AuthValue {
   loading: boolean;
   session: Session | null;
   profile: Profile | null;
+  /** Rota staff see the back office (staff_members, migration 004). */
+  isStaff: boolean;
+  /** Re-reads the profile, e.g. after an identity check finished. */
+  refreshProfile: () => void;
   signUp: (input: { username: string; email: string; password: string }) => Promise<string | null>;
   confirmEmail: (input: { email: string; code: string }) => Promise<string | null>;
   resendCode: (email: string) => Promise<string | null>;
@@ -69,13 +73,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // The profile row is created by a database trigger at signup.
+  const [profileTick, setProfileTick] = useState(0);
+  const refreshProfile = useCallback(() => setProfileTick((n) => n + 1), []);
+  const [isStaff, setIsStaff] = useState(false);
   useEffect(() => {
     const userId = session?.user.id;
     if (!supabase || !userId) {
       setProfile(null);
+      setIsStaff(false);
       return;
     }
     let cancelled = false;
+    // Before migration 004 the function doesn't exist: not staff.
+    supabase.rpc('is_staff').then(({ data }) => !cancelled && setIsStaff(data === true));
     supabase
       .from('profiles')
       .select('id, username, certified, identity_status, avatar_url, city')
@@ -95,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [session?.user.id]);
+  }, [session?.user.id, profileTick]);
 
   const signUp = useCallback<AuthValue['signUp']>(async ({ username, email, password }) => {
     if (!supabase) return NOT_CONFIGURED;
@@ -138,8 +148,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthValue>(
-    () => ({ loading, session, profile, signUp, confirmEmail, resendCode, signIn, signOut }),
-    [loading, session, profile, signUp, confirmEmail, resendCode, signIn, signOut],
+    () => ({ loading, session, profile, isStaff, refreshProfile, signUp, confirmEmail, resendCode, signIn, signOut }),
+    [loading, session, profile, isStaff, refreshProfile, signUp, confirmEmail, resendCode, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

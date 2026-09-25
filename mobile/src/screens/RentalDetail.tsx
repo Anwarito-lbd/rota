@@ -11,8 +11,11 @@ import {
   type ConditionPhase,
   type Rental,
 } from '../data/rentals';
-import { useT } from '../i18n';
+import { usePayRental } from '../data/payments';
+import { useT, type TranslationKey } from '../i18n';
 import { useAuth } from '../lib/auth';
+import { dateTimeLabel, rangeLabel } from '../lib/dates';
+import { friendlyError } from '../lib/errors';
 import { returnStatus } from '../lib/fees';
 import { usePolicy } from '../lib/policy';
 import { useStore } from '../state/store';
@@ -98,7 +101,7 @@ function ConditionBlock({
       ids.forEach((id) => setMedia(id, null));
       onSaved();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Envoi impossible.');
+      setError(friendlyError(e, t));
     } finally {
       setBusy(false);
     }
@@ -197,7 +200,7 @@ function CodeBlock({
       setCode('');
       onConfirmed();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Confirmation impossible.');
+      setError(friendlyError(e, t));
     } finally {
       setBusy(false);
     }
@@ -240,10 +243,72 @@ function CodeBlock({
   );
 }
 
+/** Where the money stands, and a way to finish paying while the dates are held. */
+function PaymentCard({ rental, isOwner, onPaid }: { rental: Rental; isOwner: boolean; onPaid: () => void }) {
+  const { c } = useTheme();
+  const { t, lang } = useT();
+  const { session } = useAuth();
+  const { m } = useStore();
+  const payRental = usePayRental();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const status = rental.paymentStatus;
+  if (status === 'paid' || (rental.status !== 'booked' && status !== 'expired' && status !== 'refunded')) return null;
+
+  const payable = !isOwner && (status === 'unpaid' || status === 'failed');
+  const body =
+    status === 'processing'
+      ? t('pay.processing')
+      : status === 'expired'
+        ? t('pay.expired')
+        : status === 'refunded'
+          ? t('pay.refunded')
+          : isOwner
+            ? t('pay.waitingRenter')
+            : t('pay.holdUntil').replace('{time}', rental.paymentDueBy ? dateTimeLabel(rental.paymentDueBy, lang) : '—');
+
+  const pay = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      if ((await payRental(rental.id, session?.user.email)) === 'paid') onPaid();
+    } catch (e) {
+      setError(friendlyError(e, t));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card style={{ marginTop: 16 }} accent={payable}>
+      <Txt size={14} weight="bold">
+        {t(`pay.status.${status}` as TranslationKey)}
+      </Txt>
+      <Txt size={13} color={c.ink2} style={{ marginTop: 4 }}>
+        {body}
+      </Txt>
+      {error ? (
+        <Txt size={13} color={c.plum} style={{ marginTop: 8 }}>
+          {error}
+        </Txt>
+      ) : null}
+      {payable ? (
+        <PrimaryButton
+          label={busy ? t('checkout.paying') : `${t('checkout.pay')} ${m(rental.totalCharged)}`}
+          onPress={pay}
+          disabled={busy}
+          style={{ marginTop: 12 }}
+        />
+      ) : null}
+    </Card>
+  );
+}
+
 export function RentalDetail() {
   const { state, set, go, m } = useStore();
   const { c } = useTheme();
-  const { t } = useT();
+  const { t, lang } = useT();
   const { session } = useAuth();
   const policy = usePolicy();
   const uid = session?.user.id;
@@ -281,7 +346,7 @@ export function RentalDetail() {
     policy,
   });
 
-  const day = (iso: string | null) => (iso ? new Date(iso).toLocaleString('fr-FR') : '—');
+  const day = (iso: string | null) => (iso ? dateTimeLabel(iso, lang) : '—');
   const myClaims = claims.filter((claim) => claim.renterId === uid);
 
   const afterSave = () => {
@@ -300,9 +365,11 @@ export function RentalDetail() {
     <Screen bottomInset={120}>
       <Header title={rental.listingTitle} onBack={() => go('rentals')} size={28} />
       <Txt size={13} color={c.ink2} style={{ marginTop: 8 }}>
-        {rental.startDate} → {rental.endDate} · {rental.days} j ·{' '}
+        {rangeLabel(rental.startDate, rental.endDate, lang)} · {rental.days} {t('common.days')} ·{' '}
         {isOwner ? t('rentals.lending') : t('rentals.renting')}
       </Txt>
+
+      <PaymentCard rental={rental} isOwner={isOwner} onPaid={refresh} />
 
       {/* The terms, exactly as they were frozen at checkout. */}
       <Txt size={12} weight="semi" upper color={c.ink3} style={{ marginTop: 22 }}>

@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { useMyListings } from '../data/listings';
+import { useMyListings, type Listing } from '../data/listings';
 import { useT } from '../i18n';
 import { useAuth } from '../lib/auth';
 import { useStore } from '../state/store';
 import { useTheme } from '../theme/useTheme';
 import { Amount, Card, CertifiedMark, Display, GhostButton, Group, PrimaryButton, Row, Screen, Txt } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
+import { AppealSheet, DistributionStatus } from '../ui/Moderation';
+import { PayoutsCard } from '../ui/Payouts';
 
 export function Closet() {
   const { go, m } = useStore();
@@ -13,6 +16,7 @@ export function Closet() {
   const { t } = useT();
   const { session, profile, signOut } = useAuth();
   const { listings, loading } = useMyListings(session?.user.id);
+  const [appealFor, setAppealFor] = useState<Listing | null>(null);
 
   const checks = [
     { label: t('closet.emailVerified'), done: !!session?.user.email_confirmed_at },
@@ -64,6 +68,8 @@ export function Closet() {
         </Txt>
       </Card>
 
+      <PayoutsCard />
+
       <PrimaryButton label={t('closet.addPiece')} onPress={() => go('list')} style={{ marginTop: 12 }} />
 
       <Group>
@@ -86,35 +92,39 @@ export function Closet() {
       ) : (
         <View style={{ marginTop: 10, gap: 10 }}>
           {listings.map((item) => (
-            <Card key={item.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={{ width: 58, height: 74, borderRadius: 9, overflow: 'hidden' }}>
-                <MediaSlot
-                  id={`mine-${item.id}`}
-                  shape="rounded"
-                  radius={9}
-                  remoteUri={item.photos[0] ?? item.video ?? undefined}
-                />
+            <Card key={item.id}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ width: 58, height: 74, borderRadius: 9, overflow: 'hidden' }}>
+                  <MediaSlot
+                    id={`mine-${item.id}`}
+                    shape="rounded"
+                    radius={9}
+                    remoteUri={item.photos[0] ?? item.video ?? undefined}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Txt weight="bold" numberOfLines={2}>
+                    {item.title}
+                  </Txt>
+                  <Txt size={13} color={c.ink2} style={{ marginTop: 3 }}>
+                    {[item.brand, item.sizes.join(' · ')].filter(Boolean).join(' · ')}
+                  </Txt>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Amount size={15}>{m(item.price)}</Amount>
+                  <Txt size={12} color={c.ink3}>
+                    {t('common.perDay')}
+                  </Txt>
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <Txt weight="bold" numberOfLines={2}>
-                  {item.title}
-                </Txt>
-                <Txt size={13} color={c.ink2} style={{ marginTop: 3 }}>
-                  {[item.brand, item.sizes.join(' · ')].filter(Boolean).join(' · ')}
-                </Txt>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Amount size={15}>{m(item.price)}</Amount>
-                <Txt size={12} color={c.ink3}>
-                  {t('common.perDay')}
-                </Txt>
-              </View>
+              <DistributionStatus listing={item} onAppeal={() => setAppealFor(item)} />
             </Card>
           ))}
         </View>
       )}
 
       <GhostButton label={t('closet.signOut')} onPress={signOut} style={{ marginTop: 24 }} />
+      <AppealSheet listing={appealFor} onClose={() => setAppealFor(null)} />
     </Screen>
   );
 }

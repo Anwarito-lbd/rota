@@ -466,6 +466,7 @@ export function Field({
   keyboardType,
   hint,
   autoCapitalize = 'none',
+  multiline,
 }: {
   label: string;
   value: string;
@@ -475,6 +476,7 @@ export function Field({
   keyboardType?: 'default' | 'email-address' | 'number-pad';
   hint?: string;
   autoCapitalize?: 'none' | 'sentences';
+  multiline?: boolean;
 }) {
   const { c, fs } = useTheme();
   return (
@@ -490,10 +492,12 @@ export function Field({
         secureTextEntry={secure}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
-        autoCorrect={false}
+        autoCorrect={!!multiline}
+        multiline={multiline}
+        textAlignVertical={multiline ? 'top' : 'auto'}
         style={{
           marginTop: 4,
-          minHeight: 32,
+          minHeight: multiline ? 96 : 32,
           fontFamily: FONT.sansSemi,
           fontSize: fs(16),
           color: c.ink,

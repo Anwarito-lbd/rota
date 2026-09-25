@@ -6,8 +6,9 @@
  * 002) and Postgres computes and freezes the snapshot. Approved values, claim
  * amounts and payout state are service-role only by design.
  *
- * No payment provider is wired yet. `bookRental` records the consent and the
- * snapshot; the actual off-session charge is the seam marked in Checkout.
+ * Money moves through Stripe (migration 004 + the payments / worker Edge
+ * Functions): the booking is paid in Checkout, and anything owed later is
+ * charged by the server against the card saved with the renter's consent.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -24,6 +25,9 @@ export type RentalStatus =
   | 'returned'
   | 'closed'
   | 'cancelled';
+
+export type PaymentStatus = 'unpaid' | 'processing' | 'paid' | 'failed' | 'expired' | 'refunded';
+export type HoldStatus = 'none' | 'pending' | 'authorized' | 'released' | 'captured' | 'failed';
 
 export type ConditionPhase = 'pre_handover' | 'post_return';
 export type PossessionKind = 'handover' | 'return';
@@ -71,6 +75,12 @@ export interface Rental {
   claimWindowEndsAt: string | null;
   createdAt: string;
 
+  /** Rows from before migration 004 read as paid, with no hold. */
+  paymentStatus: PaymentStatus;
+  paymentDueBy: string | null;
+  holdStatus: HoldStatus;
+  lateFeesCollected: number;
+
   listingTitle: string;
   listingPhoto: string | null;
 }
@@ -110,6 +120,10 @@ interface RentalRow {
   return_confirmed_at: string | null;
   claim_window_ends_at: string | null;
   created_at: string;
+  payment_status?: PaymentStatus;
+  payment_due_by?: string | null;
+  hold_status?: HoldStatus;
+  late_fees_collected?: number | string;
   listing?: { title: string; photo_paths: string[] | null } | { title: string; photo_paths: string[] | null }[] | null;
 }
 
@@ -165,6 +179,11 @@ function toRental(row: RentalRow): Rental {
     claimWindowEndsAt: row.claim_window_ends_at,
     createdAt: row.created_at,
 
+    paymentStatus: row.payment_status ?? 'paid',
+    paymentDueBy: row.payment_due_by ?? null,
+    holdStatus: row.hold_status ?? 'none',
+    lateFeesCollected: num(row.late_fees_collected),
+
     listingTitle: listing?.title ?? 'Pièce',
     listingPhoto: photoUrl(listing?.photo_paths?.[0]),
   };
@@ -200,6 +219,45 @@ export async function bookRental(args: {
   const row = (Array.isArray(data) ? data[0] : data) as RentalRow | null;
   if (!row) throw new Error('La réservation n’a pas abouti.');
   return toRental(row);
+}
+
+/**
+ * Days this listing can't be booked (other rentals plus their turnaround).
+ * The server says when, never by whom. Before migration 004 nothing is taken.
+ */
+export function useUnavailableDays(listingId: string | null) {
+  const [ranges, setRanges] = useState<{ from: string; to: string }[]>([]);
+  useEffect(() => {
+    if (!listingId || !supabase) return;
+    let cancelled = false;
+    supabase.rpc('listing_unavailable_ranges', { p_listing: listingId }).then(({ data }) => {
+      if (cancelled || !Array.isArray(data)) return;
+      setRanges(data.map((r: { from_date: string; to_date: string }) => ({ from: r.from_date, to: r.to_date })));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [listingId]);
+  return useCallback((iso: string) => ranges.some((r) => iso >= r.from && iso <= r.to), [ranges]);
+}
+
+/**
+ * This member's own unpaid booking of the same piece and dates, if the
+ * payment sheet was closed earlier. Re-booking would clash with it.
+ */
+export async function findPendingRental(listingId: string, startDate: string, endDate: string, renterId: string) {
+  const { data } = await client()
+    .from('rentals')
+    .select('id')
+    .eq('listing_id', listingId)
+    .eq('renter_id', renterId)
+    .eq('start_date', startDate)
+    .eq('end_date', endDate)
+    .eq('status', 'booked')
+    .in('payment_status', ['unpaid', 'failed'])
+    .gt('payment_due_by', new Date().toISOString())
+    .maybeSingle();
+  return (data?.id as string | undefined) ?? null;
 }
 
 /** Handover or return, confirmed with the one-time code held by the other party. */

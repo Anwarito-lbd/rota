@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { defaultDates } from '../lib/dates';
 import type { AppConfig, AppState, MediaItem, Screen, Theme } from './types';
 
 const initialState: AppState = {
@@ -31,16 +32,8 @@ const initialState: AppState = {
   twoFactorInput: '',
   twoFactorErr: false,
 
-  identityStatus: 'none',
-  identityStep: 0,
-  identityDoc: 'cni',
-
   certificationStatus: 'none',
   certifies: {},
-
-  payMethod: 'applepay',
-  cards: [{ last4: '4417', brand: 'Visa', expiry: '04/29' }],
-  walletBalance: 226,
 
   activeId: 'f3',
   size: 'S',
@@ -49,7 +42,7 @@ const initialState: AppState = {
   wish: { f3: true, f1: true },
 
   delivery: 'ship',
-  dates: [18, 21],
+  dates: defaultDates(),
   rulesAccepted: false,
   payConsent: false,
   rentalTab: 'renting',

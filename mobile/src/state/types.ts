@@ -33,7 +33,8 @@ export type Screen =
   | 'preferences'
   | 'bundles'
   | 'vacation'
-  | 'help';
+  | 'help'
+  | 'admin';
 
 /**
  * 0 welcome · 'auth' credentials · 'otp' e-mail code · 'twofa' login challenge
@@ -50,9 +51,6 @@ export type RentalTab = 'renting' | 'lending';
 export type OfferStatus = 'pending' | 'accepted' | 'declined';
 export type PermKey = 'camera' | 'microphone' | 'photos' | 'location';
 
-/** Cash is never an option — every rental is captured in-app. */
-export type PayMethod = 'applepay' | 'googlepay' | 'paypal' | 'card' | 'wallet';
-
 /** Shared shape for identity checks and certification requests. */
 export type ReviewStatus = 'none' | 'pending' | 'verified' | 'rejected';
 
@@ -63,12 +61,16 @@ export interface MediaItem {
   uri: string;
   kind: 'image' | 'video';
   name: string;
-}
-
-export interface CardDetails {
-  last4: string;
-  brand: string;
-  expiry: string;
+  /**
+   * Where the file came from and what the picker said about it. Sent to
+   * moderation as a signal; the phone reports it, so it is never proof.
+   */
+  source?: 'camera' | 'library';
+  width?: number;
+  height?: number;
+  durationMs?: number;
+  fileSize?: number;
+  exif?: { make?: string; model?: string; software?: string };
 }
 
 export interface AppState {
@@ -95,17 +97,9 @@ export interface AppState {
   twoFactorInput: string;
   twoFactorErr: boolean;
 
-  identityStatus: ReviewStatus;
-  identityStep: number;
-  identityDoc: 'cni' | 'passport' | 'licence';
-
   certificationStatus: ReviewStatus;
   /** Accounts this user vouches for — their profiles show a certified mark. */
   certifies: Flags;
-
-  payMethod: PayMethod;
-  cards: CardDetails[];
-  walletBalance: number;
 
   activeId: string;
   size: string;
@@ -114,7 +108,8 @@ export interface AppState {
   wish: Flags;
 
   delivery: Delivery;
-  dates: [number, number];
+  /** ISO dates (YYYY-MM-DD), start and end inclusive. */
+  dates: [string, string];
   rulesAccepted: boolean;
   /** Explicit consent to keep the payment method for off-session charges. */
   payConsent: boolean;

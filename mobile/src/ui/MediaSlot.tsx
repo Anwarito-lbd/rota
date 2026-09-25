@@ -46,6 +46,19 @@ function tintFor(id: string) {
   return TINTS[h % TINTS.length];
 }
 
+/**
+ * Camera make/model and the software that last wrote the file. iOS nests
+ * these under {TIFF}; Android returns them flat. A generator's name in
+ * Software is the clearest synthetic-media signal a phone can give us.
+ */
+function readExif(exif: Record<string, unknown> | null | undefined) {
+  if (!exif) return undefined;
+  const tiff = (exif['{TIFF}'] as Record<string, unknown> | undefined) ?? exif;
+  const text = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 120) : undefined);
+  const out = { make: text(tiff.Make), model: text(tiff.Model), software: text(tiff.Software) };
+  return out.make || out.model || out.software ? out : undefined;
+}
+
 function VideoTile({ uri, radius }: { uri: string; radius: number }) {
   const player = useVideoPlayer(uri, (p) => {
     p.loop = true;
@@ -90,13 +103,19 @@ export function MediaSlot({
 
   const mediaTypes: ImagePicker.MediaType[] = video ? ['images', 'videos'] : ['images'];
 
-  const keep = (result: ImagePicker.ImagePickerResult) => {
+  const keep = (result: ImagePicker.ImagePickerResult, source: 'camera' | 'library') => {
     const asset = result.canceled ? undefined : result.assets[0];
     if (!asset) return;
     setMedia(id, {
       uri: asset.uri,
       kind: asset.type === 'video' ? 'video' : 'image',
       name: asset.fileName ?? id,
+      source,
+      width: asset.width || undefined,
+      height: asset.height || undefined,
+      durationMs: asset.duration ?? undefined,
+      fileSize: asset.fileSize ?? undefined,
+      exif: readExif(asset.exif),
     });
   };
 
@@ -113,13 +132,13 @@ export function MediaSlot({
       const mic = await Camera.requestMicrophonePermissionsAsync();
       if (!mic.granted) return refused('au micro');
     }
-    keep(await ImagePicker.launchCameraAsync({ mediaTypes, quality: 0.85, videoMaxDuration: 60 }));
+    keep(await ImagePicker.launchCameraAsync({ mediaTypes, quality: 0.85, videoMaxDuration: 60, exif: true }), 'camera');
   };
 
   const fromLibrary = async () => {
     const library = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!library.granted) return refused('aux photos');
-    keep(await ImagePicker.launchImageLibraryAsync({ mediaTypes, quality: 0.85, videoMaxDuration: 60 }));
+    keep(await ImagePicker.launchImageLibraryAsync({ mediaTypes, quality: 0.85, videoMaxDuration: 60, exif: true }), 'library');
   };
 
   const pick = () => {
