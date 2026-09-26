@@ -9,7 +9,6 @@ import { emailValid, passwordChecks, passwordValid, usernameError } from '../sta
 import { useStore } from '../state/store';
 import { FONT, OVER_INK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
-import { AppleIcon } from '../ui/icons';
 import {
   Amount,
   BackButton,
@@ -64,7 +63,6 @@ function SocialButton({
 function Welcome() {
   const { set } = useStore();
   const insets = useSafeAreaInsets();
-  const social = () => set({ signedIn: true, emailVerified: true, obStep: 1, authErr: null });
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0C0A0D' }}>
@@ -104,9 +102,8 @@ function Welcome() {
         </Txt>
 
         <View style={{ marginTop: 24, gap: 10 }}>
-          <SocialButton label="Continuer avec Apple" onPress={social} filled icon={<AppleIcon />} />
-          <SocialButton label="Continuer avec Google" onPress={social} />
           <SocialButton
+            filled
             label="S'inscrire avec un e-mail"
             onPress={() => set({ obStep: 'auth', authMode: 'signup', authErr: null })}
           />
@@ -420,48 +417,6 @@ function EmailOtp() {
   );
 }
 
-function TwoFactorChallenge() {
-  const { state, set } = useStore();
-  const { c } = useTheme();
-
-  return (
-    <View style={{ flex: 1 }}>
-      <Screen bottomInset={140}>
-        <BackButton onPress={() => set({ obStep: 'auth' })} />
-        <Display size={36} style={{ marginTop: 16 }}>
-          Validation en deux étapes
-        </Display>
-        <Txt size={15} color={c.ink2} style={{ marginTop: 10 }}>
-          Entrez le code affiché dans votre application d'authentification.
-        </Txt>
-
-        <CodeField
-          value={state.twoFactorInput}
-          label="Code de validation en deux étapes"
-          onChangeText={(v) => set({ twoFactorInput: v, twoFactorErr: false })}
-        />
-
-        {state.twoFactorErr ? <ErrorBanner>Entrez les 6 chiffres affichés dans votre application.</ErrorBanner> : null}
-
-        <Txt size={13} color={c.ink3} style={{ marginTop: 14 }}>
-          Vous n'avez plus accès à votre application ? Utilisez un code de secours enregistré lors de l'activation.
-        </Txt>
-      </Screen>
-
-      <FooterBar>
-        <PrimaryButton
-          label="Valider"
-          onPress={() =>
-            state.twoFactorInput.length === 6
-              ? set({ signedIn: true, screen: 'feed', twoFactorErr: false })
-              : set({ twoFactorErr: true })
-          }
-        />
-      </FooterBar>
-    </View>
-  );
-}
-
 function RulesGate() {
   const { state, set } = useStore();
   const { c } = useTheme();
@@ -604,7 +559,6 @@ export function Onboarding() {
   const { state } = useStore();
   if (state.obStep === 'auth') return <AuthForm />;
   if (state.obStep === 'otp') return <EmailOtp />;
-  if (state.obStep === 'twofa') return <TwoFactorChallenge />;
   if (state.obStep === 1) return <RulesGate />;
   if (state.obStep === 2) return <Perms />;
   return <Welcome />;

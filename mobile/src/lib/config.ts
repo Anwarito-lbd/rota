@@ -5,7 +5,7 @@ export const BRAND = {
   domain: 'therotaapp.com',
   site: 'https://therotaapp.com',
   /** Shown in the app and given to Apple as the support contact. */
-  supportEmail: 'rota_devs@therotaapp.com',
+  supportEmail: 'rota_support@therotaapp.com',
   /** Address the account e-mails are sent from. */
   senderEmail: 'no-reply@therotaapp.com',
   city: 'Paris',

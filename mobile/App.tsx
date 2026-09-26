@@ -11,7 +11,7 @@ import {
 } from '@expo-google-fonts/instrument-serif';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, type ReactElement } from 'react';
+import { useEffect, useRef, type ReactElement } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { paymentsConfigured, stripePublishableKey, stripeUrlScheme } from './src/data/payments';
@@ -24,6 +24,7 @@ import { Checkout } from './src/screens/Checkout';
 import { Claim } from './src/screens/Claim';
 import { Closet } from './src/screens/Closet';
 import { Detail } from './src/screens/Detail';
+import { Fees } from './src/screens/Fees';
 import { Discover } from './src/screens/Discover';
 import { Feed } from './src/screens/Feed';
 import { ListPiece } from './src/screens/ListPiece';
@@ -32,10 +33,23 @@ import { Onboarding } from './src/screens/Onboarding';
 import { RentalDetail } from './src/screens/RentalDetail';
 import { Rentals } from './src/screens/Rentals';
 import { Settings } from './src/screens/Settings';
+import {
+  AccountSettings,
+  EmailSettings,
+  LanguageSettings,
+  PaymentsSettings,
+  PrivacySettings,
+  ProfileSettings,
+  PushSettings,
+  SecuritySettings,
+  ShippingSettings,
+  ThemeSettings,
+} from './src/screens/SettingsPages';
 import { StoreProvider, useStore } from './src/state/store';
 import type { Screen as ScreenKey } from './src/state/types';
 import { useTheme } from './src/theme/useTheme';
 import { GhostButton, Display, Screen, Txt } from './src/ui/kit';
+import { MfaChallenge } from './src/ui/Mfa';
 import { ReportSheet } from './src/ui/Moderation';
 import { TabBar } from './src/ui/TabBar';
 
@@ -69,12 +83,23 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   rental: RentalDetail,
   claim: Claim,
   admin: Admin,
+  fees: Fees,
+  'set.profile': ProfileSettings,
+  'set.account': AccountSettings,
+  'set.payments': PaymentsSettings,
+  'set.shipping': ShippingSettings,
+  'set.security': SecuritySettings,
+  'set.push': PushSettings,
+  'set.email': EmailSettings,
+  'set.language': LanguageSettings,
+  'set.theme': ThemeSettings,
+  'set.privacy': PrivacySettings,
 };
 
 function Shell() {
   const { state, set } = useStore();
   const { c, dark } = useTheme();
-  const { loading, session } = useAuth();
+  const { loading, session, needsMfa } = useAuth();
 
   // A stored session means the phone is already signed in: skip onboarding.
   useEffect(() => {
@@ -83,10 +108,32 @@ function Shell() {
     }
   }, [session, state.screen, state.obStep, set]);
 
+  // Signed out (from Settings, a closed account, an expired session): back to
+  // the welcome screen. Only on the change from signed in to signed out.
+  const hadSession = useRef(false);
+  useEffect(() => {
+    if (session) {
+      hadSession.current = true;
+    } else if (hadSession.current) {
+      hadSession.current = false;
+      set({ screen: 'onboard', obStep: 0, signedIn: false, emailVerified: false });
+    }
+  }, [session, set]);
+
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={c.accent} />
+      </View>
+    );
+  }
+
+  // Password accepted, authenticator code still owed: nothing else is reachable.
+  if (session && needsMfa) {
+    return (
+      <View style={{ flex: 1, backgroundColor: c.bg }}>
+        <StatusBar style={dark ? 'light' : 'dark'} />
+        <MfaChallenge />
       </View>
     );
   }

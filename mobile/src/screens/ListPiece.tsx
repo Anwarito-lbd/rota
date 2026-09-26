@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { CATEGORIES, OCCASIONS, SIZES } from '../data/catalog';
+import { OCCASIONS } from '../data/catalog';
 import { useListings } from '../data/listings';
+import { findLeaf, isLuxury, SIZE_SCALES, suggestDailyPrice } from '../data/taxonomy';
 import { useT } from '../i18n';
 import { useAuth } from '../lib/auth';
 import { friendlyError } from '../lib/errors';
 import { FEES } from '../lib/fees';
+import { usePolicy } from '../lib/policy';
 import { submitForReview } from '../lib/moderation';
 import { uploadMedia } from '../lib/upload';
 import { useStore } from '../state/store';
@@ -28,6 +30,7 @@ import {
   Txt,
 } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
+import { BrandPicker, CategoryPicker, FitSlider, PickerRow } from '../ui/Pickers';
 
 const SLOT_VIDEO = 'new-listing-video';
 const SLOT_PHOTO_1 = 'new-listing-photo-1';
@@ -37,15 +40,18 @@ const SLOT_PROOF = 'new-listing-proof';
 export function ListPiece() {
   const { state, set, go, m, setMedia } = useStore();
   const { c } = useTheme();
-  const { t } = useT();
+  const { t, lang } = useT();
   const { session } = useAuth();
   const { refresh } = useListings();
+  const policy = usePolicy();
 
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState('');
   const [brand, setBrand] = useState('');
   const [retail, setRetail] = useState('');
-  const [category, setCategory] = useState(CATEGORIES[0]);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [picker, setPicker] = useState<'category' | 'brand' | null>(null);
+  const [fit, setFit] = useState(0);
   const [occasion, setOccasion] = useState(OCCASIONS[0]);
   const [sizes, setSizes] = useState<string[]>([]);
   const [price, setPrice] = useState(20);
@@ -58,6 +64,56 @@ export function ListPiece() {
   const [published, setPublished] = useState(false);
 
   const media = state.media;
+  const leaf = findLeaf(categoryId);
+  const sizeScale = leaf ? SIZE_SCALES[leaf.sizeKind] : [];
+  const luxury = isLuxury(brand, policy.luxuryBrands);
+  const pricey = price >= policy.authenticityPricePerDay;
+  // Proof is asked for luxury brands (on the piece's page) and for pieces
+  // rented at a high daily price (on the price page), nowhere else.
+  const proofNeeded = luxury || pricey;
+  const purchase = Number(retail.replace(/\D/g, '')) || 0;
+  const advice = suggestDailyPrice(purchase, categoryId);
+
+  const chooseCategory = (id: string) => {
+    const next = findLeaf(id);
+    // A different size scale (letters → shoe sizes) makes the old ticks meaningless.
+    if (next && leaf && next.sizeKind !== leaf.sizeKind) setSizes([]);
+    if (next?.sizeKind === 'one') setSizes(['TU']);
+    setCategoryId(id);
+  };
+
+  const proofCard = (
+    <Card>
+      <Txt size={11} weight="semi" upper color={c.ink3}>
+        {t('list.authenticity')}
+      </Txt>
+      <Txt size={13} color={c.ink2} style={{ marginTop: 6 }}>
+        {luxury ? t('list.proofLuxury').replace('{brand}', brand) : t('list.proofPrice').replace('{price}', m(policy.authenticityPricePerDay))}
+      </Txt>
+      <View style={{ marginTop: 10, height: 140, borderRadius: 12, overflow: 'hidden' }}>
+        <MediaSlot id={SLOT_PROOF} shape="rounded" radius={12} editable placeholder={t('list.proofSlot')} />
+      </View>
+    </Card>
+  );
+
+  /** What must be right before leaving each step. */
+  const stepError = (n: number): string | null => {
+    if (n === 0 && !hasPhoto) return t('list.needPhoto');
+    if (n === 1) {
+      if (title.trim().length < 3) return t('list.needTitle');
+      if (!categoryId) return t('list.needCategory');
+      if (sizes.length === 0) return t('list.needSize');
+      if (luxury && !media[SLOT_PROOF]) return t('list.needProof');
+    }
+    if (n === 2 && proofNeeded && !media[SLOT_PROOF]) return t('list.needProof');
+    return null;
+  };
+  const next = () => {
+    const problem = stepError(step);
+    if (problem) return setError(problem);
+    setError(null);
+    setStep((s) => s + 1);
+  };
   const photoSlots = [SLOT_PHOTO_1, SLOT_PHOTO_2].filter((id) => media[id]);
   const hasPhoto = photoSlots.length > 0 || !!media[SLOT_VIDEO];
 
@@ -67,6 +123,8 @@ export function ListPiece() {
     setBrand('');
     setRetail('');
     setSizes([]);
+    setCategoryId(null);
+    setFit(0);
     setRules([]);
     setPrice(20);
     setLenderCleans(false);
@@ -75,9 +133,8 @@ export function ListPiece() {
 
   const publish = async () => {
     if (!session) return setError('Connectez-vous pour publier une annonce.');
-    if (!hasPhoto) return setError(t('list.needPhoto'));
-    if (title.trim().length < 3) return setError(t('list.needTitle'));
-    if (sizes.length === 0) return setError(t('list.needSize'));
+    const problem = stepError(0) ?? stepError(1) ?? stepError(2);
+    if (problem) return setError(problem);
 
     setBusy(true);
     setError(null);
@@ -104,9 +161,12 @@ export function ListPiece() {
         owner_id: userId,
         title: title.trim(),
         brand: brand.trim() || null,
-        category,
+        // The French label keeps older screens readable; the id is the real category.
+        category: leaf?.label.fr ?? 'Autres',
+        category_id: categoryId,
         size: sizes[0],
         sizes,
+        size_fit: leaf?.sizeKind === 'one' ? null : fit,
         occasion,
         price_per_day: price,
         retail_value: suggested,
@@ -125,12 +185,13 @@ export function ListPiece() {
         authenticity_path: proofPath,
       };
 
-      // `sizes` arrives with migration 001 and `suggested_value` with 002.
+      // `sizes` arrives with migration 001, `suggested_value` with 002 and
+      // `category_id` / `size_fit` with 008.
       // Until they are run, drop the unknown column and publish anyway.
       const insert = (p: Record<string, unknown>) => client.from('listings').insert(p).select('id').single();
       let payload = row;
       let result = await insert(payload);
-      for (const column of ['suggested_value', 'sizes']) {
+      for (const column of ['category_id', 'size_fit', 'suggested_value', 'sizes']) {
         if (!result.error || !result.error.message.includes(column)) continue;
         const { [column]: _dropped, ...rest } = payload;
         payload = rest;
@@ -236,32 +297,16 @@ export function ListPiece() {
               placeholder={t('list.titlePlaceholder')}
               autoCapitalize="sentences"
             />
-            <Field
-              label={t('list.brand')}
-              value={brand}
-              onChangeText={setBrand}
-              placeholder={t('list.brandPlaceholder')}
-              autoCapitalize="sentences"
-            />
+            <PickerRow label={t('list.category')} value={leaf?.label[lang]} onPress={() => setPicker('category')} />
+            <PickerRow label={t('list.brand')} value={brand || null} onPress={() => setPicker('brand')} />
             <Field
               label={t('list.retail')}
               value={retail}
               onChangeText={setRetail}
-              placeholder="340"
+              placeholder={t('list.retailPlaceholder')}
               keyboardType="number-pad"
               hint={t('list.valueHint')}
             />
-
-            <Card>
-              <Txt size={11} weight="semi" upper color={c.ink3}>
-                {t('list.category')}
-              </Txt>
-              <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {CATEGORIES.map((cat) => (
-                  <Chip key={cat} label={cat} on={category === cat} onPress={() => setCategory(cat)} />
-                ))}
-              </View>
-            </Card>
 
             <Card>
               <Txt size={11} weight="semi" upper color={c.ink3}>
@@ -281,8 +326,13 @@ export function ListPiece() {
               <Txt size={13} color={c.ink2} style={{ marginTop: 6 }}>
                 {t('list.sizesHint')}
               </Txt>
+              {!leaf ? (
+                <Txt size={13} color={c.ink3} style={{ marginTop: 10 }}>
+                  {t('list.pickCategoryFirst')}
+                </Txt>
+              ) : null}
               <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {SIZES.map((s) => (
+                {sizeScale.map((s) => (
                   <Chip
                     key={s}
                     label={s}
@@ -297,17 +347,18 @@ export function ListPiece() {
               </View>
             </Card>
 
-            <Card>
-              <Txt size={11} weight="semi" upper color={c.ink3}>
-                {t('list.authenticity')}
-              </Txt>
-              <Txt size={13} color={c.ink2} style={{ marginTop: 6 }}>
-                {t('list.authenticityHint')}
-              </Txt>
-              <View style={{ marginTop: 10, height: 140, borderRadius: 12, overflow: 'hidden' }}>
-                <MediaSlot id={SLOT_PROOF} shape="rounded" radius={12} editable placeholder="Facture ou étiquette" />
-              </View>
-            </Card>
+            {leaf && leaf.sizeKind !== 'one' ? (
+              <Card>
+                <Txt size={11} weight="semi" upper color={c.ink3}>
+                  {t('fit.title')}
+                </Txt>
+                <View style={{ marginTop: 12 }}>
+                  <FitSlider value={fit} onChange={setFit} />
+                </View>
+              </Card>
+            ) : null}
+
+            {luxury ? proofCard : null}
           </View>
         ) : null}
 
@@ -339,10 +390,39 @@ export function ListPiece() {
                 </Pressable>
               </View>
               <Txt size={13} color={c.ink3} style={{ marginTop: 10 }}>
-                Vous gardez {m(Math.round(price * 3 * (1 - FEES.lenderServiceRate)))} sur 3 jours, après notre
-                commission de {Math.round(FEES.lenderServiceRate * 100)} %.
+                {t('list.youKeep')
+                  .replace('{amount}', m(Math.round(price * 3 * (1 - FEES.lenderServiceRate))))
+                  .replace('{rate}', String(Math.round(FEES.lenderServiceRate * 100)))}
               </Txt>
+              <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: c.line }}>
+                {advice ? (
+                  <>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <View style={{ flex: 1 }}>
+                        <Txt size={13} weight="semi">
+                          {t('list.suggested').replace('{price}', m(advice.best))}
+                        </Txt>
+                        <Txt size={12} color={c.ink3} style={{ marginTop: 2 }}>
+                          {t('list.suggestedRange')
+                            .replace('{low}', m(advice.low))
+                            .replace('{high}', m(advice.high))
+                            .replace('{value}', m(purchase))}
+                        </Txt>
+                      </View>
+                      {price !== advice.best ? (
+                        <GhostButton label={t('list.useSuggested')} tone="accent" onPress={() => setPrice(advice.best)} />
+                      ) : null}
+                    </View>
+                  </>
+                ) : (
+                  <Txt size={12} color={c.ink3}>
+                    {t('list.suggestNeedsValue')}
+                  </Txt>
+                )}
+              </View>
             </Card>
+
+            {pricey && !luxury ? proofCard : null}
 
             <Card accent={lenderCleans}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -463,11 +543,18 @@ export function ListPiece() {
       <FooterBar>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           {step > 0 ? (
-            <GhostButton label={t('common.back')} onPress={() => setStep((s) => s - 1)} style={{ minHeight: 54 }} />
+            <GhostButton
+              label={t('common.back')}
+              onPress={() => {
+                setError(null);
+                setStep((s) => s - 1);
+              }}
+              style={{ minHeight: 54 }}
+            />
           ) : null}
           <View style={{ flex: 1 }}>
             {step < 2 ? (
-              <PrimaryButton label={t('common.continue')} onPress={() => setStep((s) => s + 1)} />
+              <PrimaryButton label={t('common.continue')} onPress={next} />
             ) : (
               <PrimaryButton
                 label={busy ? t('list.publishing') : t('list.publish')}
@@ -478,6 +565,14 @@ export function ListPiece() {
           </View>
         </View>
       </FooterBar>
+
+      <CategoryPicker
+        visible={picker === 'category'}
+        value={categoryId}
+        onClose={() => setPicker(null)}
+        onPick={chooseCategory}
+      />
+      <BrandPicker visible={picker === 'brand'} value={brand} onClose={() => setPicker(null)} onPick={setBrand} />
     </View>
   );
 }

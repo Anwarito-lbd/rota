@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useListing } from '../data/listings';
-import { useT } from '../i18n';
+import { useT, type TranslationKey } from '../i18n';
 import { FEES } from '../lib/fees';
 import { OFFER_TIERS, useBooking } from '../state/selectors';
 import { useStore } from '../state/store';
@@ -218,6 +218,27 @@ export function Detail() {
               {listing.sizes[0] ?? '—'}
             </Txt>
           )}
+          {listing.sizeFit !== null ? (
+            <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flexDirection: 'row', gap: 4 }}>
+                {[-2, -1, 0, 1, 2].map((s) => (
+                  <View
+                    key={s}
+                    style={{
+                      width: s === listing.sizeFit ? 12 : 8,
+                      height: s === listing.sizeFit ? 12 : 8,
+                      borderRadius: 99,
+                      alignSelf: 'center',
+                      backgroundColor: s === listing.sizeFit ? c.accent : c.surf2,
+                    }}
+                  />
+                ))}
+              </View>
+              <Txt size={14} color={c.ink2}>
+                {t(`fit.${listing.sizeFit}` as TranslationKey)}
+              </Txt>
+            </View>
+          ) : null}
 
           {listing.photos.length > 1 ? (
             <>

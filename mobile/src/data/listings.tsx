@@ -17,6 +17,10 @@ export interface Listing {
   title: string;
   brand: string | null;
   category: string;
+  /** Leaf of the category tree (migration 008); null on older listings. */
+  categoryId: string | null;
+  /** -2 runs very small … 0 true to size … 2 runs very large; null for one-size. */
+  sizeFit: number | null;
   /** Every size the lender offers. A single one means no size picker. */
   sizes: string[];
   occasion: string | null;
@@ -68,6 +72,10 @@ interface ListingRow {
   title: string;
   brand: string | null;
   category: string;
+  /** Leaf of the category tree (migration 008); null on older listings. */
+  categoryId: string | null;
+  /** -2 runs very small … 0 true to size … 2 runs very large; null for one-size. */
+  sizeFit: number | null;
   size: string;
   sizes?: string[] | null;
   occasion: string | null;
@@ -87,6 +95,8 @@ interface ListingRow {
   photo_paths: string[] | null;
   video_path: string | null;
   distribution?: string | null;
+  category_id?: string | null;
+  size_fit?: number | null;
   distribution_reason?: string | null;
   distribution_note?: string | null;
   created_at: string;
@@ -112,6 +122,8 @@ function toListing(row: ListingRow): Listing {
     title: row.title,
     brand: row.brand,
     category: row.category,
+    categoryId: row.category_id ?? null,
+    sizeFit: row.size_fit ?? null,
     sizes,
     occasion: row.occasion,
     price: row.price_per_day,

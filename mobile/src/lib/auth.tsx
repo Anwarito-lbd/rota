@@ -10,6 +10,8 @@ export interface Profile {
   identityStatus: 'none' | 'pending' | 'verified' | 'rejected';
   avatarUrl: string | null;
   city: string | null;
+  bio: string | null;
+  showCity: boolean;
 }
 
 interface AuthValue {
@@ -21,6 +23,13 @@ interface AuthValue {
   isStaff: boolean;
   /** Re-reads the profile, e.g. after an identity check finished. */
   refreshProfile: () => void;
+  /**
+   * Signed in with a password but two-step verification is on and the code
+   * hasn't been entered yet (Supabase aal1 → aal2). The app shows the code
+   * screen and nothing else until it is.
+   */
+  needsMfa: boolean;
+  refreshMfa: () => Promise<void>;
   signUp: (input: { username: string; email: string; password: string }) => Promise<string | null>;
   confirmEmail: (input: { email: string; code: string }) => Promise<string | null>;
   resendCode: (email: string) => Promise<string | null>;
@@ -58,6 +67,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [needsMfa, setNeedsMfa] = useState(false);
+
+  const refreshMfa = useCallback(async () => {
+    if (!supabase) return;
+    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    setNeedsMfa(!!data && data.nextLevel === 'aal2' && data.currentLevel !== 'aal2');
+  }, []);
+  useEffect(() => {
+    if (session) refreshMfa();
+    else setNeedsMfa(false);
+  }, [session, refreshMfa]);
 
   useEffect(() => {
     if (!supabase) {
@@ -88,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.rpc('is_staff').then(({ data }) => !cancelled && setIsStaff(data === true));
     supabase
       .from('profiles')
-      .select('id, username, certified, identity_status, avatar_url, city')
+      .select('*')
       .eq('id', userId)
       .single()
       .then(({ data }) => {
@@ -100,6 +120,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           identityStatus: data.identity_status,
           avatarUrl: data.avatar_url,
           city: data.city,
+          bio: data.bio ?? null,
+          showCity: data.show_city ?? true,
         });
       });
     return () => {
@@ -148,8 +170,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthValue>(
-    () => ({ loading, session, profile, isStaff, refreshProfile, signUp, confirmEmail, resendCode, signIn, signOut }),
-    [loading, session, profile, isStaff, refreshProfile, signUp, confirmEmail, resendCode, signIn, signOut],
+    () => ({
+      loading,
+      session,
+      profile,
+      isStaff,
+      refreshProfile,
+      needsMfa,
+      refreshMfa,
+      signUp,
+      confirmEmail,
+      resendCode,
+      signIn,
+      signOut,
+    }),
+    [loading, session, profile, isStaff, refreshProfile, needsMfa, refreshMfa, signUp, confirmEmail, resendCode, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

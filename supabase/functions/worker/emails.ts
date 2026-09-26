@@ -122,13 +122,27 @@ const SIGN: Record<Lang, string> = {
 const PIECE: Record<Lang, string> = { fr: 'votre pièce', en: 'your piece', es: 'tu prenda' };
 
 /** Null for kinds that have no email (they stay in-app only). */
-export function render(c: EmailContext): { subject: string; text: string } | null {
+function parts(c: EmailContext): { lang: Lang; subject: string; body: string } | null {
   const lang: Lang = c.lang === 'en' || c.lang === 'es' ? c.lang : 'fr';
   const template = T[c.kind]?.[lang];
   if (!template) return null;
   const quoted = lang === 'en' ? `“${c.title}”` : lang === 'es' ? `«${c.title}»` : `« ${c.title} »`;
   const [subject, body] = template({ ...c, lang }, c.title ? quoted : PIECE[lang]);
-  return { subject, text: `${GREETING[lang](c.username)}\n\n${body}\n\n${SIGN[lang]}` };
+  return { lang, subject, body };
+}
+
+export function render(c: EmailContext): { subject: string; text: string } | null {
+  const p = parts(c);
+  if (!p) return null;
+  return { subject: p.subject, text: `${GREETING[p.lang](c.username)}\n\n${p.body}\n\n${SIGN[p.lang]}` };
+}
+
+/** The same message as a phone notification: the subject as title, the first sentence as body. */
+export function renderPush(c: EmailContext): { title: string; body: string } | null {
+  const p = parts(c);
+  if (!p) return null;
+  const first = p.body.split(/(?<=[.!?])\s/)[0];
+  return { title: p.subject, body: first.length > 178 ? `${first.slice(0, 177)}…` : first };
 }
 
 export const KINDS = Object.keys(T);

@@ -4,6 +4,7 @@
 // POST { action: 'rental_checkout', rentalId }
 // POST { action: 'connect_onboarding' | 'connect_status' | 'connect_dashboard' }
 // POST { action: 'identity_session' | 'identity_status' }
+// POST { action: 'payment_methods' | 'setup_sheet' }, { action: 'remove_payment_method', id }
 // GET  ?page=done|connect_refresh — where Stripe sends the browser back to.
 
 import type { User } from 'npm:@supabase/supabase-js@2';
@@ -167,6 +168,62 @@ async function identityStatus(s: StripeClient, user: User) {
   return json({ status: session.status });
 }
 
+/** The member's saved cards, as Stripe knows them (brand, last 4, expiry only). */
+async function paymentMethods(s: StripeClient, user: User) {
+  const customer = (await paymentAccount(user.id))?.stripe_customer_id;
+  if (!customer) return json({ methods: [] });
+  const list = await s.customers.listPaymentMethods(customer, { limit: 20 });
+  return json({
+    methods: list.data.map((pm) => ({
+      id: pm.id,
+      type: pm.type,
+      brand: pm.card?.brand ?? pm.type,
+      last4: pm.card?.last4 ?? null,
+      expMonth: pm.card?.exp_month ?? null,
+      expYear: pm.card?.exp_year ?? null,
+    })),
+  });
+}
+
+async function removePaymentMethod(s: StripeClient, user: User, id: string) {
+  const customer = (await paymentAccount(user.id))?.stripe_customer_id;
+  const pm = await s.paymentMethods.retrieve(id);
+  const owner = typeof pm.customer === 'string' ? pm.customer : pm.customer?.id;
+  // Only ever detach a card that belongs to the member asking.
+  if (!customer || owner !== customer) return json({ error: 'not_found' }, 404);
+  await s.paymentMethods.detach(id);
+  return json({ removed: true });
+}
+
+/** Adding a card outside a booking: a SetupIntent shown in Stripe's own sheet. */
+async function setupSheet(s: StripeClient, user: User) {
+  const customer = await ensureCustomer(s, user);
+  const intent = await s.setupIntents.create({
+    customer,
+    usage: 'off_session',
+    automatic_payment_methods: { enabled: true },
+    metadata: { kind: 'saved_card', user_id: user.id },
+  });
+  const session = await s.customerSessions.create({
+    customer,
+    components: {
+      mobile_payment_element: {
+        enabled: true,
+        features: {
+          payment_method_save: 'enabled',
+          payment_method_redisplay: 'enabled',
+          payment_method_remove: 'enabled',
+        },
+      },
+    },
+  });
+  return json({
+    setupIntentClientSecret: intent.client_secret,
+    customerSessionClientSecret: session.client_secret,
+    customerId: customer,
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'GET') {
     const page = new URL(req.url).searchParams.get('page');
@@ -199,6 +256,13 @@ Deno.serve(async (req) => {
         return await identitySession(s, user);
       case 'identity_status':
         return await identityStatus(s, user);
+      case 'payment_methods':
+        return await paymentMethods(s, user);
+      case 'remove_payment_method':
+        if (typeof body.id !== 'string') return json({ error: 'id' }, 400);
+        return await removePaymentMethod(s, user, body.id);
+      case 'setup_sheet':
+        return await setupSheet(s, user);
       default:
         return json({ error: 'unknown_action' }, 400);
     }

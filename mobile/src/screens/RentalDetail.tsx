@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import {
   addConditionReport,
@@ -11,6 +11,7 @@ import {
   type ConditionPhase,
   type Rental,
 } from '../data/rentals';
+import { rentalShippingAddress, type Address } from '../data/account';
 import { usePayRental } from '../data/payments';
 import { useT, type TranslationKey } from '../i18n';
 import { useAuth } from '../lib/auth';
@@ -305,6 +306,45 @@ function PaymentCard({ rental, isOwner, onPaid }: { rental: Rental; isOwner: boo
   );
 }
 
+/**
+ * Rentals that ship: the owner sees where to send the piece (only once it's
+ * paid), the renter sees which address they gave, or is asked to add one.
+ */
+function ShippingCard({ rental, isOwner }: { rental: Rental; isOwner: boolean }) {
+  const { go } = useStore();
+  const { c } = useTheme();
+  const { t } = useT();
+  const [address, setAddress] = useState<Address | null | undefined>(undefined);
+  useEffect(() => {
+    rentalShippingAddress(rental.id)
+      .then(setAddress)
+      .catch(() => setAddress(null));
+  }, [rental.id]);
+
+  if (rental.delivery !== 'ship' || rental.paymentStatus !== 'paid' || rental.handoverConfirmedAt) return null;
+  return (
+    <Card style={{ marginTop: 16 }}>
+      <Txt size={14} weight="bold">
+        {isOwner ? t('ship.sendTo') : t('ship.yourAddress')}
+      </Txt>
+      {address ? (
+        <Txt size={14} color={c.ink2} style={{ marginTop: 6 }}>
+          {[address.fullName, address.line1, address.line2, `${address.postalCode} ${address.city}`, address.country, address.phone]
+            .filter(Boolean)
+            .join('\n')}
+        </Txt>
+      ) : (
+        <Txt size={13} color={c.ink2} style={{ marginTop: 6 }}>
+          {address === undefined ? t('common.loading') : isOwner ? t('ship.missingOwner') : t('ship.missingRenter')}
+        </Txt>
+      )}
+      {!isOwner && address === null ? (
+        <GhostButton label={t('ship.add')} onPress={() => go('set.shipping')} style={{ marginTop: 10 }} />
+      ) : null}
+    </Card>
+  );
+}
+
 export function RentalDetail() {
   const { state, set, go, m } = useStore();
   const { c } = useTheme();
@@ -370,6 +410,7 @@ export function RentalDetail() {
       </Txt>
 
       <PaymentCard rental={rental} isOwner={isOwner} onPaid={refresh} />
+      <ShippingCard rental={rental} isOwner={isOwner} />
 
       {/* The terms, exactly as they were frozen at checkout. */}
       <Txt size={12} weight="semi" upper color={c.ink3} style={{ marginTop: 22 }}>

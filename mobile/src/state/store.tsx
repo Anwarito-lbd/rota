@@ -1,13 +1,16 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
+import { useColorScheme } from 'react-native';
 import { defaultDates } from '../lib/dates';
-import type { AppConfig, AppState, MediaItem, Screen, Theme } from './types';
+import type { AppConfig, AppState, Lang, MediaItem, Screen, Theme, ThemeMode } from './types';
 
 const initialState: AppState = {
   screen: 'onboard',
@@ -28,9 +31,6 @@ const initialState: AppState = {
   otpErr: false,
   emailVerified: false,
 
-  twoFactorOn: false,
-  twoFactorInput: '',
-  twoFactorErr: false,
 
   certificationStatus: 'none',
   certifies: {},
@@ -79,7 +79,7 @@ const initialState: AppState = {
   favs: {},
   pinSaves: { p2: true, p5: true },
 
-  theme: null,
+  themeMode: 'dark',
   textLg: false,
   lang: 'fr',
 
@@ -126,9 +126,37 @@ interface Store {
 
 const StoreContext = createContext<Store | null>(null);
 
+/** Language and appearance survive closing the app. */
+const PREFS_KEY = 'rota.prefs.v1';
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(initialState);
   const [config, setConfigState] = useState<AppConfig>(defaultConfig);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
+  const system = useColorScheme();
+
+  useEffect(() => {
+    AsyncStorage.getItem(PREFS_KEY)
+      .then((raw) => {
+        const saved = raw ? (JSON.parse(raw) as { lang?: Lang; themeMode?: ThemeMode }) : {};
+        setState((s) => ({
+          ...s,
+          ...(saved.lang === 'fr' || saved.lang === 'en' || saved.lang === 'es' ? { lang: saved.lang } : {}),
+          ...(saved.themeMode === 'system' || saved.themeMode === 'light' || saved.themeMode === 'dark'
+            ? { themeMode: saved.themeMode }
+            : {}),
+        }));
+      })
+      .catch(() => undefined)
+      .finally(() => setPrefsLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    if (!prefsLoaded) return;
+    AsyncStorage.setItem(PREFS_KEY, JSON.stringify({ lang: state.lang, themeMode: state.themeMode })).catch(
+      () => undefined,
+    );
+  }, [prefsLoaded, state.lang, state.themeMode]);
 
   const set = useCallback((patch: Patch) => {
     setState((s) => ({ ...s, ...(typeof patch === 'function' ? patch(s) : patch) }));
@@ -165,7 +193,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const theme: Theme = state.theme ?? config.theme;
+  const theme: Theme =
+    state.themeMode === 'system' ? (system === 'light' ? 'light' : 'dark') : state.themeMode;
   const currency = config.currency;
   const m = useCallback(
     (n: number) => (currency === '€' ? `${n} ${currency}` : `${currency}${n}`),

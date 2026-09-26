@@ -34,15 +34,27 @@ export type Screen =
   | 'bundles'
   | 'vacation'
   | 'help'
-  | 'admin';
+  | 'admin'
+  | 'set.profile'
+  | 'set.account'
+  | 'set.payments'
+  | 'set.shipping'
+  | 'set.security'
+  | 'set.push'
+  | 'set.email'
+  | 'set.language'
+  | 'set.theme'
+  | 'set.privacy';
 
 /**
- * 0 welcome · 'auth' credentials · 'otp' e-mail code · 'twofa' login challenge
- * · 1 guidelines gate · 2 permission priming
+ * 0 welcome · 'auth' credentials · 'otp' e-mail code · 1 guidelines gate
+ * · 2 permission priming. Two-step verification is handled by ui/Mfa.tsx.
  */
-export type ObStep = 0 | 1 | 2 | 'auth' | 'otp' | 'twofa';
+export type ObStep = 0 | 1 | 2 | 'auth' | 'otp';
 
 export type Theme = 'dark' | 'light';
+/** What the member picked in Settings; 'system' follows the phone. */
+export type ThemeMode = 'system' | Theme;
 export type Lang = 'fr' | 'en' | 'es';
 export type AuthMode = 'signup' | 'login';
 export type Delivery = 'ship' | 'meet';
@@ -93,9 +105,6 @@ export interface AppState {
   otpErr: boolean;
   emailVerified: boolean;
 
-  twoFactorOn: boolean;
-  twoFactorInput: string;
-  twoFactorErr: boolean;
 
   certificationStatus: ReviewStatus;
   /** Accounts this user vouches for — their profiles show a certified mark. */
@@ -149,7 +158,7 @@ export interface AppState {
   favs: Flags;
   pinSaves: Flags;
 
-  theme: Theme | null;
+  themeMode: ThemeMode;
   textLg: boolean;
   lang: Lang;
 

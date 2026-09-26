@@ -127,3 +127,45 @@ export function usePayoutStatus(enabled: boolean) {
   }, [enabled, tick]);
   return { status, setStatus, refresh: useCallback(() => setTick((n) => n + 1), []) };
 }
+
+// ── Saved cards (Settings › Paiements) ─────────────────────────
+
+export interface SavedMethod {
+  id: string;
+  type: string;
+  brand: string;
+  last4: string | null;
+  expMonth: number | null;
+  expYear: number | null;
+}
+
+export const listPaymentMethods = async () => (await call<{ methods: SavedMethod[] }>('payment_methods')).methods;
+
+export const removePaymentMethod = (id: string) => call<{ removed: boolean }>('remove_payment_method', { id });
+
+/** Adds a card without booking anything, in Stripe's own sheet. Resolves 'added' or 'canceled'. */
+export function useAddCard() {
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  return useCallback(async (): Promise<'added' | 'canceled'> => {
+    if (!paymentsConfigured) throw new Error('payments_not_configured');
+    const sheet = await call<{
+      setupIntentClientSecret: string;
+      customerSessionClientSecret: string;
+      customerId: string;
+    }>('setup_sheet');
+    const init = await initPaymentSheet({
+      merchantDisplayName: 'Rota',
+      customerId: sheet.customerId,
+      customerSessionClientSecret: sheet.customerSessionClientSecret,
+      setupIntentClientSecret: sheet.setupIntentClientSecret,
+      returnURL: Linking.createURL('stripe-redirect'),
+    });
+    if (init.error) throw new Error(init.error.message);
+    const result = await presentPaymentSheet();
+    if (result.error) {
+      if (result.error.code === 'Canceled') return 'canceled';
+      throw new Error(result.error.message);
+    }
+    return 'added';
+  }, [initPaymentSheet, presentPaymentSheet]);
+}

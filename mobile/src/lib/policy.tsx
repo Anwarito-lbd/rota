@@ -52,6 +52,11 @@ export interface Policy {
   maxRentalDays: number;
   paymentWindowMinutes: number;
 
+  /** Listings at or above this daily price need proof of authenticity (migration 008). */
+  authenticityPricePerDay: number;
+  /** Brands added server-side on top of the app's luxury list, normalised. */
+  luxuryBrands: string[];
+
   /** P1 — kept off until real transaction and claim data exists. */
   flagIdStepUp: boolean;
   flagTrustTiers: boolean;
@@ -85,6 +90,9 @@ export const DEFAULT_POLICY: Policy = {
   maxRentalDays: 14,
   paymentWindowMinutes: 30,
 
+  authenticityPricePerDay: 50,
+  luxuryBrands: [],
+
   flagIdStepUp: false,
   flagTrustTiers: false,
   flagRiskScoring: false,
@@ -112,6 +120,8 @@ const KEYS: Record<string, keyof Policy> = {
   trusted_owner_clean_rentals: 'trustedOwnerCleanRentals',
   max_rental_days: 'maxRentalDays',
   payment_window_minutes: 'paymentWindowMinutes',
+  authenticity_price_per_day: 'authenticityPricePerDay',
+  luxury_brands: 'luxuryBrands',
   flag_id_step_up: 'flagIdStepUp',
   flag_trust_tiers: 'flagTrustTiers',
   flag_risk_scoring: 'flagRiskScoring',
@@ -131,6 +141,8 @@ function merge(rows: ConfigRow[]): Policy {
       (next[field] as boolean) = row.value;
     } else if (typeof fallback === 'string' && typeof row.value === 'string') {
       (next[field] as string) = row.value;
+    } else if (Array.isArray(fallback) && Array.isArray(row.value)) {
+      (next[field] as string[]) = row.value.filter((v): v is string => typeof v === 'string');
     }
   }
   return next;

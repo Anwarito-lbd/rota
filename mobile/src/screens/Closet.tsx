@@ -1,20 +1,20 @@
 import { useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, View } from 'react-native';
 import { useMyListings, type Listing } from '../data/listings';
 import { useT } from '../i18n';
 import { useAuth } from '../lib/auth';
+import { BRAND } from '../lib/config';
 import { useStore } from '../state/store';
 import { useTheme } from '../theme/useTheme';
 import { Amount, Card, CertifiedMark, Display, GhostButton, Group, PrimaryButton, Row, Screen, Txt } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
 import { AppealSheet, DistributionStatus } from '../ui/Moderation';
-import { PayoutsCard } from '../ui/Payouts';
 
 export function Closet() {
   const { go, m } = useStore();
   const { c } = useTheme();
   const { t } = useT();
-  const { session, profile, signOut } = useAuth();
+  const { session, profile } = useAuth();
   const { listings, loading } = useMyListings(session?.user.id);
   const [appealFor, setAppealFor] = useState<Listing | null>(null);
 
@@ -27,10 +27,14 @@ export function Closet() {
 
   return (
     <Screen>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => go('set.profile')}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}
+      >
         <View style={{ width: 74, height: 74, borderRadius: 999, padding: 2, backgroundColor: c.accent }}>
           <View style={{ flex: 1, borderRadius: 999, overflow: 'hidden', borderWidth: 2, borderColor: c.bg }}>
-            <MediaSlot id="me-avatar" shape="circle" editable remoteUri={profile?.avatarUrl ?? undefined} placeholder="Photo" />
+            <MediaSlot id="profile-avatar" shape="circle" remoteUri={profile?.avatarUrl ?? undefined} placeholder={t('set.photo')} />
           </View>
         </View>
         <View style={{ flex: 1 }}>
@@ -41,12 +45,18 @@ export function Closet() {
             {profile?.certified ? <CertifiedMark /> : null}
           </View>
           <Txt size={13} color={c.ink3} style={{ marginTop: 4 }}>
-            {session?.user.email ?? ''}
+            {profile?.city && profile.showCity ? profile.city : t('closet.editProfile')}
           </Txt>
         </View>
-      </View>
+      </Pressable>
 
-      <Card style={{ marginTop: 16 }}>
+      {profile?.bio ? (
+        <Txt size={14} color={c.ink2} style={{ marginTop: 12 }}>
+          {profile.bio}
+        </Txt>
+      ) : null}
+
+      <Card style={{ marginTop: 16 }} onPress={() => go('set.account')}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Txt weight="bold" style={{ flex: 1 }}>
             {t('closet.verifications')}
@@ -68,15 +78,25 @@ export function Closet() {
         </Txt>
       </Card>
 
-      <PayoutsCard />
-
       <PrimaryButton label={t('closet.addPiece')} onPress={() => go('list')} style={{ marginTop: 12 }} />
 
       <Group>
-        <Row label={t('rentals.title')} onPress={() => go('rentals')} />
-        <Row label={t('closet.settings')} onPress={() => go('settings')} />
+        <Row label={t('rentals.title')} onPress={() => go('rentals')} last />
+      </Group>
+
+      <Group>
+        <Row label={t('closet.feesProtection')} onPress={() => go('fees')} />
         <Row label={t('settings.guidelines')} onPress={() => go('guidelines')} />
-        <Row label={t('settings.fees')} onPress={() => go('fees')} last />
+        <Row
+          label={t('closet.help')}
+          detail={BRAND.supportEmail}
+          onPress={() => Linking.openURL(`mailto:${BRAND.supportEmail}`).catch(() => undefined)}
+          last
+        />
+      </Group>
+
+      <Group>
+        <Row label={t('settings.title')} onPress={() => go('settings')} last />
       </Group>
 
       <Txt size={12} weight="semi" upper color={c.ink3} style={{ marginTop: 24 }}>
@@ -123,7 +143,6 @@ export function Closet() {
         </View>
       )}
 
-      <GhostButton label={t('closet.signOut')} onPress={signOut} style={{ marginTop: 24 }} />
       <AppealSheet listing={appealFor} onClose={() => setAppealFor(null)} />
     </Screen>
   );

@@ -16,6 +16,8 @@ Run each file once, in this order. Each one says "Success" when it's done.
 | `supabase/migrations/004_payments_and_rental_ops.sql` | Stripe, no double booking, reminders |
 | `supabase/migrations/005_staff_and_safety.sql` | back office, safety incidents, limits |
 | `supabase/migrations/006_schedules.sql` | the automatic jobs — **run after step 5** |
+| `supabase/migrations/007_account_settings.sql` | settings: profile, address, notification choices, data export, account closing |
+| `supabase/migrations/008_listing_details.sql` | category tree, fit, proof of authenticity for luxury brands and pricey pieces |
 
 Then make yourself staff (replace the username):
 
@@ -53,7 +55,7 @@ npx.cmd supabase login
 ```
 
 ```bash
-npx.cmd supabase functions deploy moderate-listings payments stripe-webhook worker --project-ref <ref> --no-verify-jwt
+npx.cmd supabase functions deploy moderate-listings payments stripe-webhook worker account --project-ref <ref> --no-verify-jwt
 ```
 
 `--no-verify-jwt` is intentional: each function checks who is calling itself
@@ -92,7 +94,28 @@ Check they're running: `select * from cron.job;` shows three jobs, and
 `select * from cron.job_run_details order by start_time desc limit 10;` shows
 their last runs.
 
-## 6. Test with Stripe test mode
+## 6. E-mail change and push notifications
+
+**Changing e-mail from Settings** sends a 6-digit code to the new address:
+
+1. Supabase → Authentication → Emails → **Change email address**: make the
+   message contain `{{ .Token }}` (like the sign-up template), e.g.
+   `Votre code Rota pour confirmer cette adresse : {{ .Token }}`.
+2. Supabase → Authentication → Providers → Email: turn **Secure email change**
+   off (otherwise a second code goes to the old address, which the app doesn't ask for).
+
+**Push notifications** need an Expo project id once (Expo Go on iPhone
+supports them; Android needs the store build):
+
+```bash
+npx.cmd eas-cli init
+```
+
+It adds `extra.eas.projectId` to `mobile/app.json`. Until then the
+Settings › Push screen says so, and the "test notification" button still
+works (it's local to the phone).
+
+## 7. Test with Stripe test mode
 
 Card `4242 4242 4242 4242`, any future date, any CVC. `4000 0027 6000 3184`
 asks for 3-D Secure. For a lender's payouts, Stripe's test onboarding accepts

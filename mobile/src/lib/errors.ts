@@ -17,6 +17,7 @@ const KNOWN: [RegExp, TranslationKey][] = [
   [/Wrong code/i, 'error.wrongCode'],
   [/Condition photos are required/i, 'error.photosFirst'],
   [/Posting suspended/i, 'error.postingSuspended'],
+  [/Authenticity proof required/i, 'list.needProof'],
   [/Too many listings today/i, 'error.tooManyListings'],
   [/payments_not_configured|server_not_configured/i, 'error.paymentsUnavailable'],
   [/expired/i, 'error.bookingExpired'],
