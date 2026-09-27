@@ -31,6 +31,7 @@ import {
 } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
 import { BrandPicker, CategoryPicker, FitSlider, PickerRow } from '../ui/Pickers';
+import { IdentityGate } from './Verify';
 
 const SLOT_VIDEO = 'new-listing-video';
 const SLOT_PHOTO_1 = 'new-listing-photo-1';
@@ -556,11 +557,13 @@ export function ListPiece() {
             {step < 2 ? (
               <PrimaryButton label={t('common.continue')} onPress={next} />
             ) : (
-              <PrimaryButton
-                label={busy ? t('list.publishing') : t('list.publish')}
-                disabled={busy}
-                onPress={publish}
-              />
+              <IdentityGate reason="list" returnTo="list">
+                <PrimaryButton
+                  label={busy ? t('list.publishing') : t('list.publish')}
+                  disabled={busy}
+                  onPress={publish}
+                />
+              </IdentityGate>
             )}
           </View>
         </View>

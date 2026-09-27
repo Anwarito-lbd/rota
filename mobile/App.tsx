@@ -1,13 +1,7 @@
 import {
-  Archivo_400Regular,
-  Archivo_500Medium,
-  Archivo_600SemiBold,
-  Archivo_700Bold,
-  useFonts,
-} from '@expo-google-fonts/archivo';
-import {
   InstrumentSerif_400Regular,
   InstrumentSerif_400Regular_Italic,
+  useFonts,
 } from '@expo-google-fonts/instrument-serif';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -18,6 +12,7 @@ import { paymentsConfigured, stripePublishableKey, stripeUrlScheme } from './src
 import { AuthProvider, useAuth } from './src/lib/auth';
 import { PolicyProvider } from './src/lib/policy';
 import { ListingsProvider } from './src/data/listings';
+import { SocialProvider } from './src/data/social';
 import { Admin } from './src/screens/Admin';
 import { Booking } from './src/screens/Booking';
 import { Checkout } from './src/screens/Checkout';
@@ -32,7 +27,12 @@ import { Messages } from './src/screens/Messages';
 import { Onboarding } from './src/screens/Onboarding';
 import { RentalDetail } from './src/screens/RentalDetail';
 import { Rentals } from './src/screens/Rentals';
+import { Compose } from './src/screens/Compose';
+import { NearMap } from './src/screens/NearMap';
 import { Settings } from './src/screens/Settings';
+import { Boards, PostScreen, UserProfile } from './src/screens/Social';
+import { TryOn } from './src/screens/TryOn';
+import { Verify } from './src/screens/Verify';
 import {
   AccountSettings,
   EmailSettings,
@@ -51,7 +51,8 @@ import { useTheme } from './src/theme/useTheme';
 import { GhostButton, Display, Screen, Txt } from './src/ui/kit';
 import { MfaChallenge } from './src/ui/Mfa';
 import { ReportSheet } from './src/ui/Moderation';
-import { TabBar } from './src/ui/TabBar';
+import { CommentsSheet, CreateSheet, SaveSheet, SocialReportSheet } from './src/ui/SocialSheets';
+import { TAB_BAR_SPACE, TabBar } from './src/ui/TabBar';
 
 /** Screens still being ported from the web build. */
 function ComingSoon() {
@@ -94,7 +95,21 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   'set.language': LanguageSettings,
   'set.theme': ThemeSettings,
   'set.privacy': PrivacySettings,
+  post: PostScreen,
+  user: UserProfile,
+  profile: UserProfile,
+  map: NearMap,
+  compose: Compose,
+  tryon: TryOn,
+  verify: Verify,
+  boards: Boards,
+  board: Boards,
 };
+
+/** Full-screen flows that hide the tab bar. */
+const NO_TABS: ScreenKey[] = ['onboard', 'map', 'compose', 'tryon', 'verify'];
+/** Screens whose photos run under the floating tab bar. */
+const FULL_BLEED: ScreenKey[] = ['feed', 'post'];
 
 function Shell() {
   const { state, set } = useStore();
@@ -139,16 +154,21 @@ function Shell() {
   }
 
   const Current = SCREENS[state.screen] ?? ComingSoon;
-  const showTabs = state.screen !== 'onboard' && !(state.screen === 'messages' && state.thread);
+  const showTabs = !NO_TABS.includes(state.screen) && !(state.screen === 'messages' && state.thread);
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <StatusBar style={dark ? 'light' : 'dark'} />
-      <View style={{ flex: 1 }}>
+      {/* The glass tab bar floats; full-bleed photo screens run under it. */}
+      <View style={{ flex: 1, paddingBottom: showTabs && !FULL_BLEED.includes(state.screen) ? TAB_BAR_SPACE : 0 }}>
         <Current />
       </View>
       {showTabs ? <TabBar /> : null}
       <ReportSheet />
+      <CommentsSheet />
+      <SaveSheet />
+      <CreateSheet />
+      <SocialReportSheet />
     </View>
   );
 }
@@ -169,10 +189,7 @@ function Payments({ children }: { children: ReactElement }) {
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    Archivo_400Regular,
-    Archivo_500Medium,
-    Archivo_600SemiBold,
-    Archivo_700Bold,
+    // UI text uses the system font (Figma tokens); the serif is brand-only.
     InstrumentSerif_400Regular,
     InstrumentSerif_400Regular_Italic,
   });
@@ -191,9 +208,11 @@ export default function App() {
         <AuthProvider>
           <PolicyProvider>
             <ListingsProvider>
-              <Payments>
-                <Shell />
-              </Payments>
+              <SocialProvider>
+                <Payments>
+                  <Shell />
+                </Payments>
+              </SocialProvider>
             </ListingsProvider>
           </PolicyProvider>
         </AuthProvider>

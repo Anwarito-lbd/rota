@@ -9,6 +9,7 @@ import {
 } from 'react';
 import type { Distribution, DistributionReason } from '../lib/moderation';
 import { supabase } from '../lib/supabase';
+import { DEMO_LISTINGS } from './demo';
 
 /** A listing as the screens need it: owner joined, storage paths resolved. */
 export interface Listing {
@@ -175,6 +176,8 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!supabase) {
+      // Demo mode: sample pieces so every screen can be tried without a backend.
+      setAll(DEMO_LISTINGS);
       setLoading(false);
       return;
     }

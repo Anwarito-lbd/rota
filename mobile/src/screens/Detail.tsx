@@ -8,7 +8,7 @@ import { OFFER_TIERS, useBooking } from '../state/selectors';
 import { useStore } from '../state/store';
 import { OVER_INK, OVER_SCRIM } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
-import { BookmarkIcon, DotsIcon } from '../ui/icons';
+import { BookmarkIcon, DotsIcon, SparkleIcon } from '../ui/icons';
 import {
   Amount,
   Card,
@@ -22,6 +22,7 @@ import {
   Txt,
 } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
+import { PressScale } from '../ui/motion';
 
 function RoundOverlayButton({
   onPress,
@@ -183,7 +184,38 @@ export function Detail() {
             </View>
           ) : null}
 
-          <Card onPress={() => go('profile')} style={{ marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <PressScale
+            haptic="light"
+            onPress={() => set({ screen: 'tryon', tryOnListingId: listing.id })}
+            accessibilityLabel={t('tryon.title')}
+            style={{
+              marginTop: 18,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              padding: 14,
+              borderRadius: 18,
+              backgroundColor: c.accentSoft,
+              borderWidth: 1,
+              borderColor: c.accent,
+            }}
+          >
+            <SparkleIcon size={26} color={c.accent} />
+            <View style={{ flex: 1 }}>
+              <Txt weight="bold">{t('tryon.title')}</Txt>
+              <Txt size={13} color={c.ink2}>
+                {t('tryon.subtitle')}
+              </Txt>
+            </View>
+            <Txt size={20} color={c.accent}>
+              ›
+            </Txt>
+          </PressScale>
+
+          <Card
+            onPress={() => set({ screen: 'user', profileId: listing.ownerId })}
+            style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+          >
             <View style={{ width: 48, height: 48, borderRadius: 999, padding: 2, backgroundColor: c.accent }}>
               <View style={{ flex: 1, borderRadius: 999, overflow: 'hidden' }}>
                 <MediaSlot id={`lender-${listing.id}`} shape="circle" remoteUri={listing.owner.avatar ?? undefined} />

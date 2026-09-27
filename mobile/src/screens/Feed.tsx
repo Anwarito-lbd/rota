@@ -1,81 +1,80 @@
+import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useListings, type Listing } from '../data/listings';
+import { useSocial, type Post } from '../data/social';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
-import { OVER_INK } from '../theme/tokens';
+import type { FeedTab } from '../state/types';
+import { BRAND_LAVENDER, OVER_INK, OVER_INK_SOFT } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
-import { BookmarkIcon, DotsIcon, HeartIcon, PersonPlusIcon } from '../ui/icons';
-import { CertifiedMark, Display, PrimaryButton, Txt } from '../ui/kit';
+import { BookmarkIcon, DotsIcon, HeartIcon, MapIcon, PersonPlusIcon, PinIcon, PlusIcon, SparkleIcon } from '../ui/icons';
+import { CertifiedMark, Display, GhostButton, PrimaryButton, Txt } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
+import { Avatar, FadeIn, GlassChip, IdBadge, Logo, Pop, PressScale, Segmented, tap } from '../ui/motion';
+import { PostCard } from '../ui/PostCard';
+import { TAB_BAR_SPACE } from '../ui/TabBar';
 
-function RailAction({
-  onPress,
-  label,
-  caption,
-  children,
+type Item = { type: 'post'; post: Post; km?: number } | { type: 'listing'; listing: Listing };
+
+function EmptyState({
+  title,
+  body,
+  cta,
+  onCta,
+  secondary,
+  onSecondary,
+  icon,
 }: {
-  onPress: () => void;
-  label: string;
-  caption?: string;
-  children: React.ReactNode;
+  title: string;
+  body: string;
+  cta: string;
+  onCta: () => void;
+  secondary?: string;
+  onSecondary?: () => void;
+  icon?: React.ReactNode;
 }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', gap: 3 }}
-    >
-      {children}
-      {caption ? (
-        <Txt size={12} weight="semi" color={OVER_INK}>
-          {caption}
-        </Txt>
-      ) : null}
-    </Pressable>
-  );
-}
-
-function EmptyFeed({ onList }: { onList: () => void }) {
   const { c } = useTheme();
-  const { t } = useT();
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+    <FadeIn style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
       <View
         style={{
           width: 76,
           height: 76,
-          borderRadius: 22,
-          borderWidth: 1,
-          borderColor: c.line2,
+          borderRadius: 24,
+          backgroundColor: c.accentSoft,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <PersonPlusIcon color={c.ink3} />
+        {icon ?? <PersonPlusIcon color={c.accent} />}
       </View>
       <Display size={30} style={{ marginTop: 20, textAlign: 'center' }}>
-        {t('feed.emptyTitle')}
+        {title}
       </Display>
       <Txt size={14} center color={c.ink2} style={{ marginTop: 10 }}>
-        {t('feed.emptyBody')}
+        {body}
       </Txt>
-      <PrimaryButton label={t('feed.emptyCta')} onPress={onList} style={{ marginTop: 22, alignSelf: 'stretch' }} />
-    </View>
+      <PrimaryButton label={cta} onPress={onCta} style={{ marginTop: 22, alignSelf: 'stretch' }} />
+      {secondary && onSecondary ? (
+        <GhostButton label={secondary} onPress={onSecondary} style={{ marginTop: 10, alignSelf: 'stretch' }} />
+      ) : null}
+    </FadeIn>
   );
 }
 
-function FeedCard({ item, height }: { item: Listing; height: number }) {
+/** A piece for rent, in the same full-screen format as posts. */
+function ListingCard({ item, height }: { item: Listing; height: number }) {
   const { state, set, toggleFlag, m } = useStore();
   const { t } = useT();
+  const social = useSocial();
   const liked = !!state.liked[item.id];
-  const wished = !!state.wish[item.id];
+  const saved = social.isSaved({ kind: 'listing', id: item.id });
 
   return (
-    <View style={{ height, overflow: 'hidden' }}>
+    <View style={{ height, overflow: 'hidden', backgroundColor: '#0C0A0D' }}>
       <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
         <MediaSlot
           id={`feed-${item.id}`}
@@ -86,133 +85,310 @@ function FeedCard({ item, height }: { item: Listing; height: number }) {
         />
       </View>
       <LinearGradient
-        colors={['rgba(12,10,13,0.62)', 'rgba(12,10,13,0)', 'rgba(12,10,13,0)', 'rgba(12,10,13,0.92)']}
-        locations={[0, 0.26, 0.44, 0.92]}
+        colors={['rgba(12,10,13,0.55)', 'rgba(12,10,13,0)', 'rgba(12,10,13,0)', 'rgba(12,10,13,0.94)']}
+        locations={[0, 0.22, 0.44, 0.92]}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         pointerEvents="none"
       />
 
-      <View style={{ position: 'absolute', right: 10, bottom: 190, alignItems: 'center', gap: 14 }}>
-        <Pressable
-          accessibilityRole="button"
+      <View style={{ position: 'absolute', right: 8, bottom: 190 + TAB_BAR_SPACE, alignItems: 'center', gap: 14 }}>
+        <PressScale
+          onPress={() => set({ screen: 'user', profileId: item.ownerId })}
           accessibilityLabel={item.owner.username}
-          onPress={() => set({ screen: 'profile', activeId: item.id })}
-          style={{ width: 52, height: 52, borderRadius: 999, padding: 2, backgroundColor: '#E2A9F1' }}
+          style={{ marginBottom: 6 }}
         >
-          <View style={{ flex: 1, borderRadius: 999, overflow: 'hidden', borderWidth: 2, borderColor: '#0C0A0D' }}>
-            <MediaSlot id={`av-${item.id}`} shape="circle" tone="media" remoteUri={item.owner.avatar ?? undefined} />
-          </View>
-        </Pressable>
-
-        <RailAction onPress={() => toggleFlag('liked', item.id)} label="J'aime">
-          <HeartIcon fill={liked ? '#E2A9F1' : 'none'} color={liked ? '#E2A9F1' : OVER_INK} />
-        </RailAction>
-
-        <RailAction onPress={() => toggleFlag('wish', item.id)} label="Enregistrer">
-          <BookmarkIcon fill={wished ? OVER_INK : 'none'} />
-        </RailAction>
-
-        <RailAction onPress={() => set({ report: true, reportSent: false, activeId: item.id })} label="Signaler">
+          <Avatar uri={item.owner.avatar} size={50} ring />
+        </PressScale>
+        <PressScale
+          scaleTo={0.84}
+          accessibilityLabel={t('post.like')}
+          onPress={() => {
+            tap(liked ? 'light' : 'medium');
+            toggleFlag('liked', item.id);
+          }}
+          style={{ minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Pop active={liked}>
+            <HeartIcon size={32} fill={liked ? BRAND_LAVENDER : 'none'} color={liked ? BRAND_LAVENDER : OVER_INK} />
+          </Pop>
+        </PressScale>
+        <PressScale
+          scaleTo={0.84}
+          accessibilityLabel={t('post.save')}
+          onPress={() => set({ saveTarget: { kind: 'listing', id: item.id } })}
+          style={{ minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Pop active={saved}>
+            <BookmarkIcon size={29} fill={saved ? OVER_INK : 'none'} />
+          </Pop>
+        </PressScale>
+        <PressScale
+          scaleTo={0.84}
+          accessibilityLabel={t('post.tryOn')}
+          onPress={() => set({ screen: 'tryon', tryOnListingId: item.id })}
+          style={{ minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <SparkleIcon size={29} />
+        </PressScale>
+        <PressScale
+          scaleTo={0.84}
+          accessibilityLabel={t('post.more')}
+          onPress={() => set({ report: true, reportSent: false, activeId: item.id })}
+          style={{ minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
+        >
           <DotsIcon />
-        </RailAction>
+        </PressScale>
       </View>
 
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingBottom: 20 }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
-          {item.occasion ? (
-            <View style={{ paddingHorizontal: 9, paddingVertical: 5, borderRadius: 7, backgroundColor: '#E2A9F1' }}>
-              <Txt size={11} weight="bold" upper color="#2A1033">
-                {item.occasion}
-              </Txt>
-            </View>
-          ) : null}
+      <View style={{ position: 'absolute', left: 0, right: 64, bottom: 0, paddingHorizontal: 16, paddingBottom: 18 + TAB_BAR_SPACE }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+          <GlassChip style={{ backgroundColor: 'rgba(226,169,241,0.92)', borderColor: 'transparent' }}>
+            <Txt size={11} weight="bold" upper color="#2A1033">
+              {t('feed.rent')} · {item.occasion ?? item.category}
+            </Txt>
+          </GlassChip>
           {item.authenticity === 'verified' ? (
-            <View
-              style={{
-                paddingHorizontal: 9,
-                paddingVertical: 5,
-                borderRadius: 7,
-                borderWidth: 1,
-                borderColor: 'rgba(247,242,248,0.55)',
-              }}
-            >
+            <GlassChip>
               <Txt size={11} weight="bold" upper color={OVER_INK}>
                 Authenticité vérifiée
               </Txt>
-            </View>
+            </GlassChip>
+          ) : null}
+          {item.city ? (
+            <GlassChip>
+              <PinIcon size={12} color={OVER_INK} />
+              <Txt size={11} weight="semi" color={OVER_INK}>
+                {item.city}
+              </Txt>
+            </GlassChip>
           ) : null}
         </View>
 
         <Pressable
-          onPress={() => set({ screen: 'profile', activeId: item.id })}
+          onPress={() => set({ screen: 'user', profileId: item.ownerId })}
           style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}
         >
           <Txt size={15} weight="semi" color={OVER_INK}>
             @{item.owner.username}
           </Txt>
           {item.owner.certified ? <CertifiedMark size={16} /> : null}
+          {item.owner.identityVerified ? <IdBadge compact label={t('verify.badge')} /> : null}
         </Pressable>
 
         <Display size={31} color={OVER_INK} style={{ marginTop: 5 }}>
           {item.title}
         </Display>
-        <Txt size={14} color="rgba(247,242,248,0.75)" style={{ marginTop: 4 }}>
-          {[item.brand, item.sizes.join(' · '), item.city].filter(Boolean).join(' · ')}
+        <Txt size={14} color={OVER_INK_SOFT} style={{ marginTop: 4 }}>
+          {[item.brand, item.sizes.join(' · ')].filter(Boolean).join(' · ')}
         </Txt>
 
         <PrimaryButton
           label={`${t('feed.rent')} · ${m(item.price)} ${t('common.perDay')}`}
           onPress={() => set({ screen: 'detail', activeId: item.id })}
-          style={{ marginTop: 14, minHeight: 52, backgroundColor: '#E2A9F1' }}
+          style={{ marginTop: 14, minHeight: 52, backgroundColor: BRAND_LAVENDER }}
         />
       </View>
     </View>
   );
 }
 
+/** "Pour toi": posts first, a piece for rent after every two. */
+function interleave(posts: Post[], listings: Listing[]): Item[] {
+  const out: Item[] = [];
+  let l = 0;
+  posts.forEach((post, i) => {
+    out.push({ type: 'post', post });
+    if (i % 2 === 1 && l < listings.length) out.push({ type: 'listing', listing: listings[l++] });
+  });
+  while (l < listings.length) out.push({ type: 'listing', listing: listings[l++] });
+  return out;
+}
+
+const PARIS = { lat: 48.8606, lng: 2.3522 };
+
 export function Feed() {
-  const { go } = useStore();
+  const { state, set, go } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const insets = useSafeAreaInsets();
   const [height, setHeight] = useState(0);
-  const { listings, loading, error, refresh } = useListings();
+  const { listings, loading: listingsLoading, error, refresh: refreshListings } = useListings();
+  const social = useSocial();
+  const tab = state.feedTab;
+  const [near, setNear] = useState<{ post: Post; km: number }[] | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locDenied, setLocDenied] = useState(false);
+
+  const locate = useCallback(async () => {
+    setLocating(true);
+    try {
+      let origin = PARIS;
+      const perm = await Location.requestForegroundPermissionsAsync().catch(() => null);
+      if (perm?.granted) {
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+        if (pos) origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setLocDenied(false);
+      } else {
+        setLocDenied(true);
+      }
+      let rows = await social.nearby(origin.lat, origin.lng, 5);
+      // Outside Paris there may be nothing yet: fall back to the city.
+      if (rows.length === 0 && origin !== PARIS) rows = await social.nearby(PARIS.lat, PARIS.lng, 5);
+      setNear(rows);
+    } finally {
+      setLocating(false);
+    }
+  }, [social]);
+
+  useEffect(() => {
+    if (tab === 'near' && near === null && !locating) locate();
+  }, [tab, near, locating, locate]);
+
+  const items: Item[] = useMemo(() => {
+    if (tab === 'follow') {
+      return social.posts.filter((p) => social.isFollowing(p.authorId)).map((post) => ({ type: 'post' as const, post }));
+    }
+    if (tab === 'near') return (near ?? []).map((r) => ({ type: 'post' as const, post: r.post, km: r.km }));
+    return interleave(social.posts, listings);
+  }, [tab, social, listings, near]);
+
+  const loading = listingsLoading || social.loading || (tab === 'near' && (near === null || locating));
+  const refresh = () => {
+    refreshListings();
+    social.refresh();
+    if (tab === 'near') setNear(null);
+  };
+
+  const tabs: { key: FeedTab; label: string }[] = [
+    { key: 'follow', label: t('feed.tab.follow') },
+    { key: 'foryou', label: t('feed.tab.foryou') },
+    { key: 'near', label: t('feed.tab.near') },
+  ];
+
+  let body: React.ReactNode;
+  if (loading) {
+    body = (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={c.accent} />
+      </View>
+    );
+  } else if (error && tab === 'foryou') {
+    body = (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+        <Txt center color={c.ink2}>
+          {t('feed.error')}
+        </Txt>
+        <PrimaryButton label={t('common.retry')} onPress={refresh} style={{ marginTop: 16, alignSelf: 'stretch' }} />
+      </View>
+    );
+  } else if (items.length === 0) {
+    body =
+      tab === 'follow' ? (
+        <EmptyState
+          title={t('feed.followEmpty')}
+          body={t('feed.followEmptyBody')}
+          cta={t('feed.followEmptyCta')}
+          onCta={() => go('discover')}
+        />
+      ) : tab === 'near' ? (
+        <EmptyState
+          icon={<PinIcon size={30} color={c.accent} />}
+          title={t('feed.nearOff')}
+          body={locDenied ? t('feed.nearOffBody') : t('feed.nearEmpty')}
+          cta={t('feed.nearMap')}
+          onCta={() => go('map')}
+          secondary={locDenied ? t('feed.nearAllow') : undefined}
+          onSecondary={locDenied ? locate : undefined}
+        />
+      ) : (
+        <EmptyState title={t('feed.emptyTitle')} body={t('feed.emptyBody')} cta={t('feed.emptyCta')} onCta={() => go('list')} />
+      );
+  } else {
+    body = (
+      <FlatList
+        key={tab}
+        data={items}
+        keyExtractor={(it) => (it.type === 'post' ? `p-${it.post.id}` : `l-${it.listing.id}`)}
+        pagingEnabled
+        showsVerticalScrollIndicator={false}
+        snapToInterval={height || undefined}
+        decelerationRate="fast"
+        windowSize={3}
+        initialNumToRender={2}
+        maxToRenderPerBatch={2}
+        refreshControl={<RefreshControl refreshing={false} onRefresh={refresh} tintColor={c.ink3} />}
+        renderItem={({ item }) =>
+          item.type === 'post' ? (
+            <PostCard post={item.post} height={height || 600} distanceKm={item.km} />
+          ) : (
+            <ListingCard item={item.listing} height={height || 600} />
+          )
+        }
+      />
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: c.sink }} onLayout={(e) => setHeight(e.nativeEvent.layout.height)}>
-      {loading ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={c.accent} />
-        </View>
-      ) : error ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
-          <Txt center color={c.ink2}>
-            {t('feed.error')}
-          </Txt>
-          <PrimaryButton label={t('common.retry')} onPress={refresh} style={{ marginTop: 16, alignSelf: 'stretch' }} />
-        </View>
-      ) : listings.length === 0 ? (
-        <EmptyFeed onList={() => go('list')} />
-      ) : (
-        <FlatList
-          data={listings}
-          keyExtractor={(item) => item.id}
-          pagingEnabled
-          showsVerticalScrollIndicator={false}
-          snapToInterval={height || undefined}
-          decelerationRate="fast"
-          refreshControl={<RefreshControl refreshing={false} onRefresh={refresh} tintColor={c.ink3} />}
-          renderItem={({ item }) => <FeedCard item={item} height={height || 600} />}
-        />
-      )}
+      {body}
 
-      {listings.length > 0 ? (
-        <View style={{ position: 'absolute', top: insets.top + 6, left: 0, right: 0, alignItems: 'center' }}>
-          <Txt size={15} weight="bold" color={OVER_INK}>
-            Rota
-          </Txt>
+      <View
+        pointerEvents="box-none"
+        style={{ position: 'absolute', top: insets.top + 6, left: 0, right: 0, paddingHorizontal: 14 }}
+      >
+        <View pointerEvents="box-none" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Logo width={64} />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <PressScale
+            haptic="light"
+            onPress={() => set({ createSheet: true })}
+            accessibilityLabel={t('create.title')}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingHorizontal: 14,
+              height: 40,
+              borderRadius: 99,
+              backgroundColor: 'rgba(12,10,13,0.42)',
+              borderWidth: 1,
+              borderColor: 'rgba(247,242,248,0.14)',
+            }}
+          >
+            <PlusIcon size={16} />
+            <Txt size={14} weight="bold" color={OVER_INK}>
+              {t('feed.rent')}
+            </Txt>
+          </PressScale>
+          <PressScale
+            onPress={() => go('map')}
+            accessibilityLabel={t('explore.map')}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 99,
+              backgroundColor: 'rgba(12,10,13,0.42)',
+              borderWidth: 1,
+              borderColor: 'rgba(247,242,248,0.14)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <MapIcon size={19} />
+          </PressScale>
+          </View>
         </View>
-      ) : null}
+        <View pointerEvents="box-none" style={{ marginTop: 8 }}>
+          <Segmented items={tabs} value={tab} onChange={(k) => set({ feedTab: k })} over />
+        </View>
+        {social.demo ? (
+          <View pointerEvents="none" style={{ alignSelf: 'center', marginTop: 6 }}>
+            <Txt size={10} weight="bold" upper color="rgba(247,242,248,0.55)">
+              {t('demo.banner')}
+            </Txt>
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }

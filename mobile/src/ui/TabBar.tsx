@@ -1,25 +1,49 @@
-import type { ReactElement } from 'react';
-import { Pressable, View } from 'react-native';
+/**
+ * Floating Liquid Glass tab bar (Figma redesign): four tabs in a pill,
+ * the selected one marked by a filled capsule and a bolder label — shape,
+ * not colour alone. With Reduce Transparency on, the glass becomes solid.
+ * Creating (a fit or a listing) moved to the "+" in the feed header.
+ */
+import { BlurView } from 'expo-blur';
+import { useEffect, useState, type ReactElement } from 'react';
+import { AccessibilityInfo, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useT } from '../i18n';
 import { useStore } from '../state/store';
 import type { Screen } from '../state/types';
 import { useTheme } from '../theme/useTheme';
-import { TabAddIcon, TabClosetIcon, TabDiscoverIcon, TabFeedIcon, TabMessagesIcon } from './icons';
+import { TabClosetIcon, TabDiscoverIcon, TabFeedIcon, TabMessagesIcon } from './icons';
 import { Txt } from './kit';
+import { PressScale } from './motion';
 
-type TabKey = 'feed' | 'discover' | 'list' | 'messages' | 'closet';
+type TabKey = 'feed' | 'discover' | 'messages' | 'closet';
 
-const TABS: { key: TabKey; label: string; Icon: (p: { color: string }) => ReactElement }[] = [
-  { key: 'feed', label: 'Feed', Icon: TabFeedIcon },
-  { key: 'discover', label: 'Explorer', Icon: TabDiscoverIcon },
-  { key: 'list', label: 'Louez', Icon: TabAddIcon },
-  { key: 'messages', label: 'Messages', Icon: TabMessagesIcon },
-  { key: 'closet', label: 'Dressing', Icon: TabClosetIcon },
+const TABS: { key: TabKey; label: 'tab.feed' | 'tab.discover' | 'tab.messages' | 'tab.closet'; Icon: (p: { color: string }) => ReactElement }[] = [
+  { key: 'feed', label: 'tab.feed', Icon: TabFeedIcon },
+  { key: 'discover', label: 'tab.discover', Icon: TabDiscoverIcon },
+  { key: 'messages', label: 'tab.messages', Icon: TabMessagesIcon },
+  { key: 'closet', label: 'tab.closet', Icon: TabClosetIcon },
 ];
+
+/** Height the floating bar takes, for content that scrolls under it. */
+export const TAB_BAR_SPACE = 84;
+
+function useReduceTransparency() {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceTransparencyEnabled?.()
+      .then(setOn)
+      .catch(() => undefined);
+    const sub = AccessibilityInfo.addEventListener('reduceTransparencyChanged', setOn);
+    return () => sub.remove();
+  }, []);
+  return on;
+}
 
 /** Screens that keep a given tab lit while you are deeper in its stack. */
 const TAB_GROUPS: Record<string, Screen[]> = {
-  discover: ['discover', 'search', 'boards', 'board'],
+  feed: ['feed', 'post'],
+  discover: ['discover', 'search', 'boards', 'board', 'map'],
   messages: ['messages'],
   closet: [
     'closet',
@@ -48,35 +72,36 @@ const TAB_GROUPS: Record<string, Screen[]> = {
 
 export function TabBar() {
   const { state, go, config } = useStore();
-  const { c } = useTheme();
+  const { c, dark } = useTheme();
+  const { t } = useT();
   const insets = useSafeAreaInsets();
+  const solid = useReduceTransparency();
 
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        backgroundColor: c.sink,
-        borderTopWidth: 1,
-        borderTopColor: c.line,
-        paddingTop: 8,
-        paddingHorizontal: 6,
-        paddingBottom: Math.max(insets.bottom, 10),
-      }}
-    >
+  const bar = (
+    <View style={{ flexDirection: 'row', padding: 6, gap: 2 }}>
       {TABS.map(({ key, label, Icon }) => {
         const active = state.screen === key || (TAB_GROUPS[key] ?? []).includes(state.screen);
-        const color = active ? c.accent : c.ink3;
+        const color = active ? c.accent : c.ink2;
         return (
-          <Pressable
+          <PressScale
             key={key}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
-            accessibilityLabel={label}
+            accessibilityLabel={t(label)}
+            haptic="light"
+            scaleTo={0.9}
             onPress={() => go(key)}
-            style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 4 }}
+            style={{
+              flex: 1,
+              minHeight: 52,
+              borderRadius: 999,
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 3,
+              backgroundColor: active ? c.accentSoft : 'transparent',
+            }}
           >
-            <View style={{ width: 26, height: 26, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: 26, height: 24, alignItems: 'center', justifyContent: 'center' }}>
               <Icon color={color} />
               {key === 'messages' ? (
                 <View
@@ -93,13 +118,39 @@ export function TabBar() {
               ) : null}
             </View>
             {config.showTabLabels ? (
-              <Txt size={10} weight="semi" color={color}>
-                {label}
+              <Txt size={11} weight={active ? 'bold' : 'semi'} color={color}>
+                {t(label)}
               </Txt>
             ) : null}
-          </Pressable>
+          </PressScale>
         );
       })}
+    </View>
+  );
+
+  const frame = {
+    borderRadius: 999,
+    overflow: 'hidden' as const,
+    borderWidth: 1,
+    borderColor: dark ? 'rgba(247,242,248,0.14)' : 'rgba(26,20,32,0.10)',
+  };
+
+  return (
+    <View
+      pointerEvents="box-none"
+      style={{ position: 'absolute', left: 14, right: 14, bottom: Math.max(insets.bottom - 6, 10) }}
+    >
+      {solid ? (
+        <View style={[frame, { backgroundColor: c.surf2 }]}>{bar}</View>
+      ) : (
+        <BlurView
+          intensity={Platform.OS === 'web' ? 40 : 60}
+          tint={dark ? 'dark' : 'light'}
+          style={[frame, { backgroundColor: dark ? 'rgba(27,24,29,0.62)' : 'rgba(255,255,255,0.62)' }]}
+        >
+          {bar}
+        </BlurView>
+      )}
     </View>
   );
 }

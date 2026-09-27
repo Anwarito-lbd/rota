@@ -5,6 +5,7 @@ import { paymentsConfigured, usePayRental } from '../data/payments';
 import { bookRental, findPendingRental } from '../data/rentals';
 import { useT } from '../i18n';
 import { useAuth } from '../lib/auth';
+import { IdentityGate } from './Verify';
 import { rangeLabel } from '../lib/dates';
 import { friendlyError } from '../lib/errors';
 import { usePolicy } from '../lib/policy';
@@ -282,11 +283,13 @@ export function Checkout() {
       </Screen>
 
       <FooterBar>
-        <PrimaryButton
-          label={busy ? t('checkout.paying') : `${t('checkout.pay')} ${m(total)}`}
-          disabled={busy || !state.payConsent}
-          onPress={pay}
-        />
+        <IdentityGate reason="rent" returnTo="checkout">
+          <PrimaryButton
+            label={busy ? t('checkout.paying') : `${t('checkout.pay')} ${m(total)}`}
+            disabled={busy || !state.payConsent}
+            onPress={pay}
+          />
+        </IdentityGate>
       </FooterBar>
     </View>
   );

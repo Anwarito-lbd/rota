@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useStore } from '../state/store';
 import type { Lang } from '../state/types';
+import { socialEn, socialEs, socialFr } from './social';
 
 export const LANGUAGES: { key: Lang; label: string; native: string }[] = [
   { key: 'fr', label: 'Français', native: 'Français' },
@@ -543,6 +544,7 @@ const fr = {
   'fit.small': 'Petit',
   'fit.true': 'Normal',
   'fit.large': 'Grand',
+  ...socialFr,
 } as const;
 
 export type TranslationKey = keyof typeof fr;
@@ -1076,6 +1078,7 @@ const en: Partial<Record<TranslationKey, string>> = {
   'fit.small': 'Small',
   'fit.true': 'True to size',
   'fit.large': 'Large',
+  ...socialEn,
 };
 
 const es: Partial<Record<TranslationKey, string>> = {
@@ -1607,6 +1610,7 @@ const es: Partial<Record<TranslationKey, string>> = {
   'fit.small': 'Pequeña',
   'fit.true': 'Normal',
   'fit.large': 'Grande',
+  ...socialEs,
 };
 
 const DICTIONARIES: Record<Lang, Partial<Record<TranslationKey, string>>> = { fr, en, es };

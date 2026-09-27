@@ -41,7 +41,8 @@ const initialState: AppState = {
   liked: {},
   wish: { f3: true, f1: true },
 
-  delivery: 'ship',
+  // Meeting in Paris is the free default (docs/DELIVERY.md).
+  delivery: 'meet',
   dates: defaultDates(),
   rulesAccepted: false,
   payConsent: false,
@@ -95,6 +96,16 @@ const initialState: AppState = {
   ratingTags: {},
 
   media: {},
+
+  activePostId: null,
+  profileId: null,
+  challenge: null,
+  commentsFor: null,
+  saveTarget: null,
+  createSheet: false,
+  socialReport: null,
+  tryOnListingId: null,
+  afterVerify: null,
 };
 
 const defaultConfig: AppConfig = {
@@ -177,6 +188,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       report: false,
       reportSent: false,
       deleteStep: 0,
+      commentsFor: null,
+      saveTarget: null,
+      createSheet: false,
+      socialReport: null,
     }));
   }, []);
 
