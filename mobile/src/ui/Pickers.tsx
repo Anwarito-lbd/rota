@@ -19,10 +19,32 @@ import {
 import { useT } from '../i18n';
 import { useTheme } from '../theme/useTheme';
 import { FONT, ff } from '../theme/tokens';
-import { ChevronRight, DressIcon, KidsIcon, PencilIcon, PlusIcon, SearchIcon, ShirtIcon } from './icons';
+import { ChevronRight, DressIcon, HandbagIcon, KidsIcon, PencilIcon, PlusIcon, RingIcon, SearchIcon, ShirtIcon, ShoeIcon, WatchIcon } from './icons';
 import { BackButton, Radio, Txt } from './kit';
 
-const CATEGORY_ICONS = { dress: DressIcon, shirt: ShirtIcon, kids: KidsIcon } as const;
+const CATEGORY_ICONS = {
+  dress: DressIcon,
+  shirt: ShirtIcon,
+  kids: KidsIcon,
+  shoe: ShoeIcon,
+  bag: HandbagIcon,
+  watch: WatchIcon,
+  ring: RingIcon,
+} as const;
+type IconKey = keyof typeof CATEGORY_ICONS;
+
+/** Top levels carry their own icon; groups get one from what they hold. */
+function iconFor(node: CategoryNode): IconKey | undefined {
+  if (node.icon) return node.icon;
+  const kind = node.id.split('.')[1];
+  if (kind === 'clothing') return node.id.startsWith('women') ? 'dress' : 'shirt';
+  if (kind === 'shoes') return 'shoe';
+  if (kind === 'bags') return 'bag';
+  if (kind === 'accessories') return 'watch';
+  if (kind === 'jewellery') return 'ring';
+  if (kind === 'girls' || kind === 'boys' || kind === 'baby') return 'kids';
+  return undefined;
+}
 
 /** The bordered "Catégorie  ＋" row from Vinted's listing form. */
 export function PickerRow({ label, value, onPress }: { label: string; value?: string | null; onPress: () => void }) {
@@ -111,7 +133,7 @@ function ListRow({
   subtitle?: string;
   right: 'chevron' | 'radio';
   selected?: boolean;
-  icon?: keyof typeof CATEGORY_ICONS;
+  icon?: IconKey;
   onPress: () => void;
 }) {
   const { c } = useTheme();
@@ -122,21 +144,32 @@ function ListRow({
       accessibilityRole="button"
       style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 58, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.line }}
     >
-      {Icon ? (
-        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: c.surf2, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon size={20} color={c.ink} />
-        </View>
-      ) : null}
+      {Icon ? <Icon size={24} color={c.accent} /> : null}
       <View style={{ flex: 1 }}>
         <Txt size={16}>{title}</Txt>
-        {subtitle ? (
-          <Txt size={13} color={right === 'chevron' ? c.accent : c.ink3} style={{ marginTop: 2 }} numberOfLines={1}>
+        {subtitle && right === 'radio' ? (
+          <Txt size={13} color={c.ink3} style={{ marginTop: 2 }} numberOfLines={1}>
             {subtitle}
           </Txt>
         ) : null}
       </View>
+      {/* Like Vinted: the chosen category sits on the right of its parent. */}
+      {subtitle && right === 'chevron' ? (
+        <Txt size={14} color={c.accent} numberOfLines={1} style={{ maxWidth: '45%' }}>
+          {subtitle}
+        </Txt>
+      ) : null}
       {right === 'chevron' ? <ChevronRight size={16} color={c.ink3} /> : <Radio on={!!selected} />}
     </Pressable>
+  );
+}
+
+function GroupLabel({ label }: { label: string }) {
+  const { c } = useTheme();
+  return (
+    <Txt size={14} color={c.ink3} style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 6 }}>
+      {label}
+    </Txt>
   );
 }
 
@@ -201,11 +234,30 @@ export function CategoryPicker({
         <FlatList
           data={nodes}
           keyExtractor={(n) => n.id}
+          ListHeaderComponent={
+            !current ? (
+              <>
+                {selected ? (
+                  <>
+                    <GroupLabel label={t('pick.suggestions')} />
+                    <ListRow
+                      title={selected.label[lang]}
+                      subtitle={selected.path.map((p) => p[lang]).join(' › ')}
+                      right="radio"
+                      selected
+                      onPress={() => pick(selected.id)}
+                    />
+                  </>
+                ) : null}
+                <GroupLabel label={t('pick.all')} />
+              </>
+            ) : null
+          }
           renderItem={({ item }) => {
             const within = selected && selected.id.startsWith(`${item.id}.`);
             return item.children ? (
               <ListRow
-                icon={item.icon}
+                icon={iconFor(item)}
                 title={item.label[lang]}
                 subtitle={within ? selected.label[lang] : undefined}
                 right="chevron"

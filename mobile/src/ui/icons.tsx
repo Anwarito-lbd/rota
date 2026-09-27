@@ -369,3 +369,29 @@ export const ReceiptIcon = ({ size = 20, color = '#F7F2F8' }: IconProps) => (
     <Path d="M6 3.5h12v17l-2.5-1.5-2 1.5-1.5-1.5-1.5 1.5-2-1.5L6 20.5v-17ZM9 8h6M9 12h6M9 16h3" stroke={color} strokeWidth={1.8} fill="none" strokeLinejoin="round" strokeLinecap="round" />
   </Svg>
 );
+
+export const ShoeIcon = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="M3 17.5V12l3-1 2 2.5c2.5.3 4.2-.4 5.5-2l6 3.3a2 2 0 0 1 1 1.7v2H3ZM3 17.5h18" stroke={color} strokeWidth={1.7} fill="none" strokeLinejoin="round" />
+  </Svg>
+);
+
+export const WatchIcon = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Circle cx="12" cy="12" r="5" stroke={color} strokeWidth={1.7} fill="none" />
+    <Path d="M9 7.5 9.7 3h4.6l.7 4.5M9 16.5l.7 4.5h4.6l.7-4.5M12 10v2.2l1.3 1" stroke={color} strokeWidth={1.7} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+export const RingIcon = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Circle cx="12" cy="14.5" r="6" stroke={color} strokeWidth={1.7} fill="none" />
+    <Path d="m9.5 6 2.5-3 2.5 3-2.5 2.5L9.5 6Z" stroke={color} strokeWidth={1.7} fill="none" strokeLinejoin="round" />
+  </Svg>
+);
+
+export const HandbagIcon = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="M5 9h14l-1.2 11H6.2L5 9ZM9 9V7a3 3 0 0 1 6 0v2" stroke={color} strokeWidth={1.7} fill="none" strokeLinejoin="round" />
+  </Svg>
+);
