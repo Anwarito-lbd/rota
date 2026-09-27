@@ -95,7 +95,7 @@ export function NearMapView({ embedded = false }: { embedded?: boolean }) {
         showMe={located}
       />
 
-      <View pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + (embedded ? 118 : 8), left: 12, right: 12 }}>
+      <View pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + (embedded ? 72 : 8), left: 12, right: 12 }}>
         {embedded ? null : (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <PressScale

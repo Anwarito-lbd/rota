@@ -297,9 +297,13 @@ export function Feed() {
         pointerEvents="box-none"
         style={{ position: 'absolute', top: insets.top + 6, left: 0, right: 0, paddingHorizontal: 14 }}
       >
-        <View pointerEvents="box-none" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Logo width={64} />
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+        {/* One row: logo, tabs, map — the tabs sit level with the logo. */}
+        <View pointerEvents="box-none" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Logo width={52} />
+          <View pointerEvents="box-none" style={{ flex: 1, alignItems: 'center' }}>
+            <Segmented items={tabs} value={tab} onChange={(k) => set({ feedTab: k })} over />
+          </View>
+          <View style={{ width: 40 }}>
           {tab === 'near' ? null : (
           <PressScale
             onPress={() => go('map')}
@@ -319,9 +323,6 @@ export function Feed() {
           </PressScale>
           )}
           </View>
-        </View>
-        <View pointerEvents="box-none" style={{ marginTop: 8 }}>
-          <Segmented items={tabs} value={tab} onChange={(k) => set({ feedTab: k })} over />
         </View>
         {social.demo ? (
           <View pointerEvents="none" style={{ alignSelf: 'center', marginTop: 6 }}>
