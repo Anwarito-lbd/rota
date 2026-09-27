@@ -1,6 +1,5 @@
-import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useListings, type Listing } from '../data/listings';
@@ -16,6 +15,7 @@ import { MediaSlot } from '../ui/MediaSlot';
 import { Avatar, FadeIn, GlassChip, IdBadge, Logo, Pop, PressScale, Segmented, tap } from '../ui/motion';
 import { PostCard } from '../ui/PostCard';
 import { TAB_BAR_SPACE } from '../ui/TabBar';
+import { NearMapView } from './NearMap';
 
 type Item = { type: 'post'; post: Post; km?: number } | { type: 'listing'; listing: Listing };
 
@@ -204,7 +204,6 @@ function interleave(posts: Post[], listings: Listing[]): Item[] {
   return out;
 }
 
-const PARIS = { lat: 48.8606, lng: 2.3522 };
 
 export function Feed() {
   const { state, set, go } = useStore();
@@ -215,48 +214,17 @@ export function Feed() {
   const { listings, loading: listingsLoading, error, refresh: refreshListings } = useListings();
   const social = useSocial();
   const tab = state.feedTab;
-  const [near, setNear] = useState<{ post: Post; km: number }[] | null>(null);
-  const [locating, setLocating] = useState(false);
-  const [locDenied, setLocDenied] = useState(false);
-
-  const locate = useCallback(async () => {
-    setLocating(true);
-    try {
-      let origin = PARIS;
-      const perm = await Location.requestForegroundPermissionsAsync().catch(() => null);
-      if (perm?.granted) {
-        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
-        if (pos) origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setLocDenied(false);
-      } else {
-        setLocDenied(true);
-      }
-      let rows = await social.nearby(origin.lat, origin.lng, 5);
-      // Outside Paris there may be nothing yet: fall back to the city.
-      if (rows.length === 0 && origin !== PARIS) rows = await social.nearby(PARIS.lat, PARIS.lng, 5);
-      setNear(rows);
-    } finally {
-      setLocating(false);
-    }
-  }, [social]);
-
-  useEffect(() => {
-    if (tab === 'near' && near === null && !locating) locate();
-  }, [tab, near, locating, locate]);
-
   const items: Item[] = useMemo(() => {
     if (tab === 'follow') {
       return social.posts.filter((p) => social.isFollowing(p.authorId)).map((post) => ({ type: 'post' as const, post }));
     }
-    if (tab === 'near') return (near ?? []).map((r) => ({ type: 'post' as const, post: r.post, km: r.km }));
     return interleave(social.posts, listings);
-  }, [tab, social, listings, near]);
+  }, [tab, social, listings]);
 
-  const loading = listingsLoading || social.loading || (tab === 'near' && (near === null || locating));
+  const loading = listingsLoading || social.loading;
   const refresh = () => {
     refreshListings();
     social.refresh();
-    if (tab === 'near') setNear(null);
   };
 
   const tabs: { key: FeedTab; label: string }[] = [
@@ -266,7 +234,10 @@ export function Feed() {
   ];
 
   let body: React.ReactNode;
-  if (loading) {
+  if (tab === 'near') {
+    // Près de moi is the map itself (under this header, above the tab bar).
+    body = <NearMapView embedded />;
+  } else if (loading) {
     body = (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={c.accent} />
@@ -289,16 +260,6 @@ export function Feed() {
           body={t('feed.followEmptyBody')}
           cta={t('feed.followEmptyCta')}
           onCta={() => go('discover')}
-        />
-      ) : tab === 'near' ? (
-        <EmptyState
-          icon={<PinIcon size={30} color={c.accent} />}
-          title={t('feed.nearOff')}
-          body={locDenied ? t('feed.nearOffBody') : t('feed.nearEmpty')}
-          cta={t('feed.nearMap')}
-          onCta={() => go('map')}
-          secondary={locDenied ? t('feed.nearAllow') : undefined}
-          onSecondary={locDenied ? locate : undefined}
         />
       ) : (
         <EmptyState title={t('feed.emptyTitle')} body={t('feed.emptyBody')} cta={t('feed.emptyCta')} onCta={() => go('list')} />
@@ -360,6 +321,7 @@ export function Feed() {
               {t('create.title')}
             </Txt>
           </PressScale>
+          {tab === 'near' ? null : (
           <PressScale
             onPress={() => go('map')}
             accessibilityLabel={t('explore.map')}
@@ -376,6 +338,7 @@ export function Feed() {
           >
             <MapIcon size={19} />
           </PressScale>
+          )}
           </View>
         </View>
         <View pointerEvents="box-none" style={{ marginTop: 8 }}>
