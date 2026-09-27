@@ -17,3 +17,10 @@ android/
 .env
 .env.local
 .DS_Store
+
+# Skill links created by `npx skills add` (Windows junctions to .agents/skills,
+# machine-specific). The real skills live in .agents/skills.
+.claude/skills/
+.aider-desk/
+.autohand/
+data/skills/
