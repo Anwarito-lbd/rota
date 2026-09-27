@@ -343,3 +343,29 @@ export const MenuIcon = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
     <Path d="M4 7h16M4 12h16M4 17h16" stroke={color} strokeWidth={2} strokeLinecap="round" />
   </Svg>
 );
+
+export const WalletIcon = ({ size = 20, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Rect x="3.5" y="6" width="17" height="13" rx="3" stroke={color} strokeWidth={1.8} fill="none" />
+    <Path d="M16 12.5h4.5M6 6l9-2.5 1 2.5" stroke={color} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+export const HelpIcon = ({ size = 20, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Circle cx="12" cy="12" r="8.5" stroke={color} strokeWidth={1.8} fill="none" />
+    <Path d="M9.6 9.5a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.4M12 16.8v.2" stroke={color} strokeWidth={1.8} fill="none" strokeLinecap="round" />
+  </Svg>
+);
+
+export const BookIcon = ({ size = 20, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="M5 4.5h10.5A3.5 3.5 0 0 1 19 8v11.5H8.5A3.5 3.5 0 0 1 5 16V4.5ZM5 16a3.5 3.5 0 0 1 3.5-3.5H19" stroke={color} strokeWidth={1.8} fill="none" strokeLinejoin="round" />
+  </Svg>
+);
+
+export const ReceiptIcon = ({ size = 20, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="M6 3.5h12v17l-2.5-1.5-2 1.5-1.5-1.5-1.5 1.5-2-1.5L6 20.5v-17ZM9 8h6M9 12h6M9 16h3" stroke={color} strokeWidth={1.8} fill="none" strokeLinejoin="round" strokeLinecap="round" />
+  </Svg>
+);

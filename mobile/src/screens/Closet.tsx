@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, View, useWindowDimensions } from 'react-native';
 import { useMyListings, type Listing } from '../data/listings';
 import { DEMO_ME } from '../data/demo';
 import { useMember, useSocial } from '../data/social';
@@ -9,15 +9,16 @@ import { useAuth } from '../lib/auth';
 import { useStore } from '../state/store';
 import { OVER_INK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
-import { CalendarIcon, CheckIcon, GearIcon, TagIcon } from '../ui/icons';
-import { Amount, Card, CertifiedMark, Display, GhostButton, Group, PrimaryButton, Row, Screen, Txt } from '../ui/kit';
+import { MenuIcon, TagIcon } from '../ui/icons';
+import { Amount, CertifiedMark, Display, GhostButton, Screen, Txt } from '../ui/kit';
 import { AppealSheet } from '../ui/Moderation';
+import { SideMenu } from '../ui/SideMenu';
 import { Avatar, FadeIn, IdBadge, PressScale, Segmented, compact } from '../ui/motion';
 
 /**
- * Dressing = your profile (Figma 07 plus the social layer): who you follow,
- * who follows you, your posts and the pieces you rent out, then your
- * verifications, rentals and settings.
+ * Dressing = your profile, Instagram-style: who you follow, who follows you,
+ * your posts and the pieces you rent out. Everything else (rentals,
+ * payments, verification, settings, rules, help) lives in the ☰ side menu.
  */
 export function Closet() {
   const { set, go, m } = useStore();
@@ -30,6 +31,7 @@ export function Closet() {
   const member = useMember(social.meId);
   const [tab, setTab] = useState<'posts' | 'pieces'>('posts');
   const [appealFor, setAppealFor] = useState<Listing | null>(null);
+  const [menu, setMenu] = useState(false);
 
   const posts = social.posts.filter((p) => p.authorId === social.meId);
   const username = profile?.username ?? member?.username ?? (social.demo ? DEMO_ME.username : '…');
@@ -37,13 +39,6 @@ export function Closet() {
   const email = session?.user.email ?? (social.demo ? 'demo@therotaapp.com' : null);
   const bio = profile?.bio ?? member?.bio ?? null;
   const cell = (Math.min(width, 720) - 36 - 8) / 3;
-
-  const checks = [
-    { label: t('closet.emailVerified'), done: !!session?.user.email_confirmed_at || social.demo, go: 'set.account' as const },
-    { label: t('closet.identity'), done: social.identity === 'verified', go: 'verify' as const },
-    { label: t('closet.certified'), done: !!profile?.certified, go: 'set.account' as const },
-  ];
-  const done = checks.filter((x) => x.done).length;
 
   const stats: [string, string][] = [
     [compact(posts.length, lang), t('profile.posts')],
@@ -53,9 +48,18 @@ export function Closet() {
 
   return (
     <Screen>
-      <Display size={34} style={{ marginTop: 8, marginBottom: 16 }}>
-        {t('tab.closet')}
-      </Display>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, marginBottom: 16 }}>
+        <Display size={34} style={{ flex: 1 }}>
+          {t('tab.closet')}
+        </Display>
+        <PressScale
+          onPress={() => setMenu(true)}
+          accessibilityLabel={t('settings.title')}
+          style={{ width: 44, height: 44, borderRadius: 99, backgroundColor: c.surf2, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <MenuIcon size={22} color={c.ink} />
+        </PressScale>
+      </View>
 
       {/* Profile header */}
       <FadeIn>
@@ -101,52 +105,6 @@ export function Closet() {
         </View>
       </FadeIn>
 
-      {/* Verifications (Figma 07) */}
-      <Card style={{ marginTop: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Txt weight="bold" style={{ flex: 1 }}>
-            {t('closet.verifications')}
-          </Txt>
-          <Amount size={14} color={c.ink2}>
-            {`${done} / 3`}
-          </Amount>
-        </View>
-        <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-          {checks.map((check) => (
-            <Pressable
-              key={check.label}
-              accessibilityRole="button"
-              onPress={() => (check.go === 'verify' ? set({ screen: 'verify', afterVerify: 'closet' }) : go(check.go))}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 5,
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                borderRadius: 999,
-                backgroundColor: check.done ? c.accentSoft : c.surf2,
-              }}
-            >
-              {check.done ? (
-                <CheckIcon size={13} color={c.accent} />
-              ) : (
-                <View style={{ width: 9, height: 9, borderRadius: 99, borderWidth: 1.5, borderColor: c.ink3 }} />
-              )}
-              <Txt size={12} weight="semi" color={check.done ? c.accent : c.ink2}>
-                {check.label}
-              </Txt>
-            </Pressable>
-          ))}
-        </View>
-      </Card>
-
-      <PrimaryButton label={t('closet.addPiece')} onPress={() => go('list')} style={{ marginTop: 12 }} />
-
-      <View style={{ height: 12 }} />
-      <Group>
-        <Row label={t('rentals.title')} icon={<CalendarIcon color={c.accent} />} onPress={() => go('rentals')} />
-        <Row label={t('settings.title')} icon={<GearIcon color={c.accent} />} onPress={() => go('settings')} last />
-      </Group>
 
       {/* Posts and pieces */}
       <View style={{ marginTop: 22, marginHorizontal: -18 }}>
@@ -221,6 +179,7 @@ export function Closet() {
       ) : null}
 
       <AppealSheet listing={appealFor} onClose={() => setAppealFor(null)} />
+      <SideMenu visible={menu} onClose={() => setMenu(false)} />
     </Screen>
   );
 }
