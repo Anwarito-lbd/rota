@@ -799,12 +799,13 @@ export function useMember(memberId: string | null): Member | null {
       const m = DEMO_MEMBERS.find((x) => x.id === memberId);
       const a = demoAuthor(memberId);
       const followedByMe = followingIds.includes(memberId) ? 1 : 0;
+      const isMe = memberId === meId;
       setMember({
         id: memberId,
         ...a,
         bio: m?.bio ?? null,
-        followers: 1200 + memberId.length * 137 + followedByMe,
-        following: 180 + memberId.length * 11,
+        followers: isMe ? 38 : 1200 + memberId.length * 137 + followedByMe,
+        following: isMe ? followingIds.length : 180 + memberId.length * 11,
       });
       return;
     }

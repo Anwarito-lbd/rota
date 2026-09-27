@@ -120,6 +120,7 @@ export const socialFr = {
   'profile.blocked': 'Vous avez bloqué ce membre. Ni vous ni lui ne voyez plus les publications de l’autre.',
   'profile.empty': 'Rien de publié pour l’instant.',
   'profile.me': 'Mon profil',
+  'profile.posts': 'publications',
 
   'sreport.title': 'Signaler',
   'sreport.reason.harassment': 'Harcèlement ou propos haineux',
@@ -384,6 +385,7 @@ export const socialEn: Partial<Record<Keys, string>> = {
   'profile.blocked': 'You blocked this member. Neither of you sees the other’s posts any more.',
   'profile.empty': 'Nothing posted yet.',
   'profile.me': 'My profile',
+  'profile.posts': 'posts',
   'sreport.title': 'Report',
   'sreport.reason.harassment': 'Harassment or hate speech',
   'sreport.block': 'Also block this member',
@@ -638,6 +640,7 @@ export const socialEs: Partial<Record<Keys, string>> = {
   'profile.blocked': 'Has bloqueado a este miembro. Ninguno ve ya las publicaciones del otro.',
   'profile.empty': 'Nada publicado todavía.',
   'profile.me': 'Mi perfil',
+  'profile.posts': 'publicaciones',
   'sreport.title': 'Denunciar',
   'sreport.reason.harassment': 'Acoso o discurso de odio',
   'sreport.block': 'Bloquear también a este miembro',

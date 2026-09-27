@@ -9,7 +9,7 @@ import { useStore } from '../state/store';
 import type { FeedTab } from '../state/types';
 import { BRAND_LAVENDER, OVER_INK, OVER_INK_SOFT } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
-import { BookmarkIcon, DotsIcon, HeartIcon, MapIcon, PersonPlusIcon, PinIcon, PlusIcon, SparkleIcon } from '../ui/icons';
+import { BookmarkIcon, DotsIcon, HeartIcon, MapIcon, PersonPlusIcon, PinIcon, SparkleIcon } from '../ui/icons';
 import { CertifiedMark, Display, GhostButton, PrimaryButton, Txt } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
 import { Avatar, FadeIn, GlassChip, IdBadge, Logo, Pop, PressScale, Segmented, tap } from '../ui/motion';
@@ -300,27 +300,6 @@ export function Feed() {
         <View pointerEvents="box-none" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Logo width={64} />
           <View style={{ flexDirection: 'row', gap: 8 }}>
-          <PressScale
-            haptic="light"
-            onPress={() => set({ createSheet: true })}
-            accessibilityLabel={t('create.title')}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 6,
-              paddingHorizontal: 14,
-              height: 40,
-              borderRadius: 99,
-              backgroundColor: 'rgba(12,10,13,0.42)',
-              borderWidth: 1,
-              borderColor: 'rgba(247,242,248,0.14)',
-            }}
-          >
-            <PlusIcon size={16} />
-            <Txt size={14} weight="bold" color={OVER_INK}>
-              {t('create.title')}
-            </Txt>
-          </PressScale>
           {tab === 'near' ? null : (
           <PressScale
             onPress={() => go('map')}
