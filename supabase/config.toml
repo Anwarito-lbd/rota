@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.account]
 verify_jwt = false
+
+[functions.tryon-token]
+verify_jwt = false

@@ -44,7 +44,13 @@ export type Screen =
   | 'set.email'
   | 'set.language'
   | 'set.theme'
-  | 'set.privacy';
+  | 'set.privacy'
+  | 'post'
+  | 'user'
+  | 'map'
+  | 'compose'
+  | 'tryon'
+  | 'verify';
 
 /**
  * 0 welcome · 'auth' credentials · 'otp' e-mail code · 1 guidelines gate
@@ -175,6 +181,26 @@ export interface AppState {
 
   /** Uploaded photos and videos, keyed by the slot they fill. */
   media: Record<string, MediaItem>;
+
+  // ── Social layer ──
+  /** Post opened on the post screen. */
+  activePostId: string | null;
+  /** Member opened on the profile screen. */
+  profileId: string | null;
+  /** Explorer's challenge filter; null shows everything. */
+  challenge: string | null;
+  /** Post whose comments sheet is open. */
+  commentsFor: string | null;
+  /** Thing being saved to a board. */
+  saveTarget: { kind: 'post' | 'listing'; id: string } | null;
+  /** The "+" tab's chooser: publish a fit or list a piece. */
+  createSheet: boolean;
+  /** What "Signaler" was opened on, beyond listings. */
+  socialReport: { kind: 'post' | 'comment' | 'member'; id: string; memberId: string } | null;
+  /** Listing the try-on screen dresses you in. */
+  tryOnListingId: string | null;
+  /** Where to send the member once their identity is verified. */
+  afterVerify: Screen | null;
 }
 
 /** Canvas-level props that were editor-configurable on the design doc. */

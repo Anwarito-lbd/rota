@@ -18,7 +18,7 @@ import {
 } from '../data/taxonomy';
 import { useT } from '../i18n';
 import { useTheme } from '../theme/useTheme';
-import { FONT } from '../theme/tokens';
+import { FONT, ff } from '../theme/tokens';
 import { Radio, Txt } from './kit';
 
 /** The bordered "Catégorie  ＋" row from Vinted's listing form. */
@@ -94,7 +94,7 @@ function SearchBox({ value, onChange, placeholder, autoFocus }: { value: string;
         placeholderTextColor={c.ink3}
         autoFocus={autoFocus}
         autoCorrect={false}
-        style={{ flex: 1, color: c.ink, fontFamily: FONT.sansSemi, fontSize: fs(16), padding: 0 }}
+        style={{ flex: 1, color: c.ink, ...ff('semi'), fontSize: fs(16), padding: 0 }}
       />
     </View>
   );

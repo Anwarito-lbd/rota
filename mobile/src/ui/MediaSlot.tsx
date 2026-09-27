@@ -14,7 +14,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useStore } from '../state/store';
-import { FONT, OVER_INK } from '../theme/tokens';
+import { FONT, OVER_INK, ff } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Txt } from './kit';
 
@@ -231,7 +231,7 @@ export function MediaSlot({
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: OVER_INK, fontSize: 15, fontFamily: FONT.sansBold }}>×</Text>
+          <Text style={{ color: OVER_INK, fontSize: 15, ...ff('bold') }}>×</Text>
         </Pressable>
       ) : null}
     </Pressable>

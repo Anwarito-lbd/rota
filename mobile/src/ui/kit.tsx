@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -13,16 +15,10 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/useTheme';
-import { FONT } from '../theme/tokens';
+import { FONT, ff } from '../theme/tokens';
 
 type Weight = 'reg' | 'med' | 'semi' | 'bold';
 
-const FAMILY: Record<Weight, string> = {
-  reg: FONT.sans,
-  med: FONT.sansMed,
-  semi: FONT.sansSemi,
-  bold: FONT.sansBold,
-};
 
 export function Txt({
   children,
@@ -49,7 +45,7 @@ export function Txt({
       numberOfLines={numberOfLines}
       style={[
         {
-          fontFamily: FAMILY[weight],
+          ...ff(weight),
           fontSize: fs(size),
           lineHeight: fs(size) * 1.45,
           color: color ?? c.ink,
@@ -65,30 +61,37 @@ export function Txt({
   );
 }
 
-/** Display type — the serif is for words only, never for figures. */
+/**
+ * Titles. Per the Figma redesign they are set in the system font, bold
+ * (largeTitle 34 / title 28). `brand` switches to Instrument Serif, which is
+ * kept for short brand lines only ("Wear it once. Pass it on."); `italic`
+ * implies `brand`.
+ */
 export function Display({
   children,
   size = 34,
   color,
   italic,
+  brand,
   style,
 }: {
   children: ReactNode;
   size?: number;
   color?: string;
   italic?: boolean;
+  brand?: boolean;
   style?: StyleProp<TextStyle>;
 }) {
   const { c } = useTheme();
+  const serif = brand || italic;
   return (
     <Text
+      accessibilityRole="header"
       style={[
-        {
-          fontFamily: italic ? FONT.serifItalic : FONT.serif,
-          fontSize: size,
-          lineHeight: size * 1.05,
-          color: color ?? c.ink,
-        },
+        serif
+          ? { fontFamily: italic ? FONT.serifItalic : FONT.serif, fontSize: size, lineHeight: size * 1.05 }
+          : { ...ff('bold'), fontSize: size, lineHeight: Math.round(size * 1.18), letterSpacing: size >= 28 ? -0.6 : -0.3 },
+        { color: color ?? c.ink },
         style,
       ]}
     >
@@ -201,7 +204,8 @@ export function PrimaryButton({
       style={({ pressed }) => [
         {
           minHeight: 54,
-          borderRadius: 16,
+          borderRadius: 999,
+          paddingHorizontal: 20,
           backgroundColor: bg,
           alignItems: 'center',
           justifyContent: 'center',
@@ -210,7 +214,7 @@ export function PrimaryButton({
         style,
       ]}
     >
-      <Text style={{ fontFamily: FONT.sansBold, fontSize: fs(17), color: fg }}>{label}</Text>
+      <Text style={{ ...ff('bold'), fontSize: fs(17), color: fg }}>{label}</Text>
     </Pressable>
   );
 }
@@ -235,7 +239,7 @@ export function GhostButton({
       style={({ pressed }) => [
         {
           minHeight: 50,
-          borderRadius: 14,
+          borderRadius: 999,
           borderWidth: 1,
           borderColor: tone === 'plum' ? c.plum : tone === 'accent' ? c.accent : c.line2,
           alignItems: 'center',
@@ -246,7 +250,7 @@ export function GhostButton({
         style,
       ]}
     >
-      <Text style={{ fontFamily: FONT.sansBold, fontSize: fs(15), color }}>{label}</Text>
+      <Text style={{ ...ff('bold'), fontSize: fs(15), color }}>{label}</Text>
     </Pressable>
   );
 }
@@ -280,7 +284,7 @@ export function Chip({
         backgroundColor: on ? fill : 'transparent',
       }}
     >
-      <Text style={{ fontFamily: FONT.sansSemi, fontSize: fs(13), color: on ? onFill : c.ink }}>{label}</Text>
+      <Text style={{ ...ff('semi'), fontSize: fs(13), color: on ? onFill : c.ink }}>{label}</Text>
     </Pressable>
   );
 }
@@ -498,7 +502,7 @@ export function Field({
         style={{
           marginTop: 4,
           minHeight: multiline ? 96 : 32,
-          fontFamily: FONT.sansSemi,
+          ...ff('semi'),
           fontSize: fs(16),
           color: c.ink,
           padding: 0,
@@ -541,12 +545,18 @@ export function Sheet({
   const { c } = useTheme();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(6,5,5,0.62)' }} />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <Pressable
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="Fermer"
+        style={{ flex: 1, backgroundColor: 'rgba(6,5,5,0.62)' }}
+      />
       <View
         style={{
           backgroundColor: c.surf,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
           borderTopWidth: 1,
           borderColor: c.line,
           paddingHorizontal: 20,
@@ -556,8 +566,11 @@ export function Sheet({
         }}
       >
         <View style={{ width: 44, height: 4, borderRadius: 99, backgroundColor: c.line2, alignSelf: 'center', marginBottom: 16 }} />
-        <ScrollView showsVerticalScrollIndicator={false}>{children}</ScrollView>
+        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          {children}
+        </ScrollView>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -593,7 +606,7 @@ export function Check({ on }: { on: boolean }) {
         justifyContent: 'center',
       }}
     >
-      {on ? <Text style={{ color: c.onAccent, fontSize: 13, fontFamily: FONT.sansBold }}>✓</Text> : null}
+      {on ? <Text style={{ color: c.onAccent, fontSize: 13, ...ff('bold') }}>✓</Text> : null}
     </View>
   );
 }
@@ -611,7 +624,7 @@ export function CertifiedMark({ size = 18 }: { size?: number }) {
         justifyContent: 'center',
       }}
     >
-      <Text style={{ color: c.onAccent, fontSize: size * 0.6, fontFamily: FONT.sansBold }}>✓</Text>
+      <Text style={{ color: c.onAccent, fontSize: size * 0.6, ...ff('bold') }}>✓</Text>
     </View>
   );
 }

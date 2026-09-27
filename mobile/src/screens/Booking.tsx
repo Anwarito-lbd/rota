@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Pressable, View } from 'react-native';
 import { useListing } from '../data/listings';
 import { useUnavailableDays } from '../data/rentals';
@@ -15,6 +15,7 @@ import {
   Check,
   Display,
   FooterBar,
+  Note,
   GhostButton,
   PrimaryButton,
   Radio,
@@ -157,6 +158,8 @@ function HandoverOption({
   );
 }
 
+const HIGH_VALUE_EUR = 1500;
+
 export function Booking() {
   const { state, set, go, m } = useStore();
   const { c } = useTheme();
@@ -167,6 +170,10 @@ export function Booking() {
   const taken = useUnavailableDays(listing?.id ?? null);
   const [start, end] = state.dates;
   const datesValid = start >= todayISO() && !taken(start) && !taken(end);
+  const isHighValue = !!listing && (listing.approvedValue ?? listing.retail ?? 0) >= HIGH_VALUE_EUR;
+  useEffect(() => {
+    if (isHighValue && state.delivery === 'ship') set({ delivery: 'meet' });
+  }, [isHighValue, state.delivery, set]);
 
   if (!listing) {
     return (
@@ -178,6 +185,8 @@ export function Booking() {
   }
 
   const hasRules = listing.rules.length > 0;
+  // Very high-value pieces don't go by ordinary parcel (docs/DELIVERY.md).
+  const highValue = isHighValue;
   const canContinue = datesValid && (!hasRules || state.rulesAccepted);
   const size = listing.sizes.includes(state.size) ? state.size : listing.sizes[0];
 
@@ -199,20 +208,28 @@ export function Booking() {
           Remise
         </Txt>
         <View style={{ marginTop: 10, gap: 8 }}>
-          <HandoverOption
-            selected={state.delivery === 'ship'}
-            onPress={() => set({ delivery: 'ship' })}
-            title="Livraison · prépayée aller-retour"
-            body="Étiquette retour incluse dans le colis"
-            price={m(policy.shippingFee)}
-          />
+          {/* docs/DELIVERY.md: two choices, the mechanics stay behind Rota. */}
           <HandoverOption
             selected={state.delivery === 'meet'}
             onPress={() => set({ delivery: 'meet' })}
-            title="Remise en main propre"
-            body={listing.city ?? 'À convenir avec la prêteuse'}
+            title="Rencontre à Paris"
+            body="Point public choisi dans Rota, adresse jamais partagée. Photos d’état et QR à la remise."
             price="Offert"
           />
+          {highValue ? (
+            <Note>
+              Pièce de grande valeur : remise en main propre uniquement pour l’instant. La livraison assurée
+              renforcée arrive bientôt.
+            </Note>
+          ) : (
+            <HandoverOption
+              selected={state.delivery === 'ship'}
+              onPress={() => set({ delivery: 'ship' })}
+              title="Rota Delivery"
+              body="Suivi et protégé · étiquettes aller et retour prépayées. Le retour compte dès le premier scan du transporteur."
+              price={m(policy.shippingFee)}
+            />
+          )}
         </View>
 
         {hasRules ? (

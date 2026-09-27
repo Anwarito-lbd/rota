@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { TextStyle } from 'react-native';
 import { useStore } from '../state/store';
-import { FONT, darkPalette, lightPalette, type Palette } from './tokens';
+import { FONT, darkPalette, lightPalette, type Palette, ff } from './tokens';
 
 export interface Theme {
   c: Palette;
@@ -24,7 +24,7 @@ export function useTheme(): Theme {
       dark,
       fs,
       amount: (size: number, weight: 'bold' | 'semi' = 'bold') => ({
-        fontFamily: weight === 'bold' ? FONT.sansBold : FONT.sansSemi,
+        ...ff(weight === 'bold' ? 'bold' : 'semi'),
         fontSize: size,
         lineHeight: Math.round(size * 1.08),
         letterSpacing: -0.4,

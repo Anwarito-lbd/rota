@@ -1,3 +1,5 @@
+import { Platform, type TextStyle } from 'react-native';
+
 export interface Palette {
   bg: string;
   surf: string;
@@ -65,16 +67,40 @@ export const OVER_INK_SOFT = 'rgba(247,242,248,0.75)';
 export const OVER_SCRIM = 'rgba(12,10,13,0.66)';
 
 /**
- * React Native picks a font file, not a weight — each weight is its own family.
+ * Type, per the Figma redesign ("Rota — iOS redesign" → Tokens): the system
+ * font (SF Pro on iOS, Roboto on Android) for every UI role, and Instrument
+ * Serif only for short brand lines.
  */
+const SYSTEM = Platform.select({
+  ios: 'System',
+  android: 'sans-serif',
+  default: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, "Segoe UI", Roboto, system-ui, sans-serif',
+});
+
+export type FontWeight = 'reg' | 'med' | 'semi' | 'bold';
+const WEIGHTS: Record<FontWeight, TextStyle['fontWeight']> = { reg: '400', med: '500', semi: '600', bold: '700' };
+
+/** System font at a weight — spread into a text style. */
+export function ff(weight: FontWeight = 'reg'): Pick<TextStyle, 'fontFamily' | 'fontWeight'> {
+  return { fontFamily: SYSTEM, fontWeight: WEIGHTS[weight] };
+}
+
 export const FONT = {
-  sans: 'Archivo_400Regular',
-  sansMed: 'Archivo_500Medium',
-  sansSemi: 'Archivo_600SemiBold',
-  sansBold: 'Archivo_700Bold',
   serif: 'InstrumentSerif_400Regular',
   serifItalic: 'InstrumentSerif_400Regular_Italic',
 } as const;
+
+/** Figma type roles (pt). */
+export const TYPE = {
+  largeTitle: 34,
+  title: 28,
+  headline: 17,
+  body: 17,
+  caption: 12,
+} as const;
+
+/** Corner radii from the Figma tokens. */
+export const RADIUS = { sm: 8, md: 12, lg: 20, xl: 28, pill: 999 } as const;
 
 /** Gradient stops for the feed scrim and the bottom action fades. */
 export const FEED_SCRIM = [

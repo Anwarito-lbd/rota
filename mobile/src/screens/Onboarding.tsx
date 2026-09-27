@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { permissions, rules } from '../data/catalog';
-import { useAuth } from '../lib/auth';
+import { backendConfigured, useAuth } from '../lib/auth';
 import { usePermissions, type PermStatus } from '../lib/permissions';
 import { emailValid, passwordChecks, passwordValid, usernameError } from '../state/auth';
 import { useStore } from '../state/store';
@@ -22,6 +22,8 @@ import {
   Txt,
 } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
+import { FadeIn, Logo, PressScale } from '../ui/motion';
+import { useT } from '../i18n';
 
 function SocialButton({
   label,
@@ -62,19 +64,30 @@ function SocialButton({
 
 function Welcome() {
   const { set } = useStore();
+  const { t } = useT();
   const insets = useSafeAreaInsets();
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0C0A0D' }}>
       <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-        <MediaSlot id="ob-hero" shape="rect" tone="media" placeholder="Photo d'accueil" />
+        <MediaSlot
+          id="ob-hero"
+          shape="rect"
+          tone="media"
+          placeholder="Photo d'accueil"
+          remoteUri="https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=1200&q=80"
+        />
       </View>
       <LinearGradient
         colors={['rgba(12,10,13,0.5)', 'rgba(12,10,13,0.05)', 'rgba(12,10,13,0.92)', '#0C0A0D']}
         locations={[0, 0.3, 0.74, 1]}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
-      <View style={{ flex: 1, justifyContent: 'flex-end', paddingHorizontal: 26, paddingBottom: insets.bottom + 24 }}>
+      <FadeIn style={{ paddingTop: insets.top + 28, alignItems: 'center' }}>
+        <Logo width={150} />
+      </FadeIn>
+      <View style={{ flex: 1, minHeight: 0 }} />
+      <View style={{ justifyContent: 'flex-end', paddingHorizontal: 26, paddingBottom: insets.bottom + 24 }}>
         <View
           style={{
             alignSelf: 'flex-start',
@@ -89,7 +102,7 @@ function Welcome() {
           </Txt>
         </View>
 
-        <Display size={48} color={OVER_INK} style={{ marginTop: 16 }}>
+        <Display brand size={48} color={OVER_INK} style={{ marginTop: 16 }}>
           Wear it once.
         </Display>
         <Display size={48} color="#E2A9F1" italic>
@@ -107,6 +120,28 @@ function Welcome() {
             label="S'inscrire avec un e-mail"
             onPress={() => set({ obStep: 'auth', authMode: 'signup', authErr: null })}
           />
+          {!backendConfigured ? (
+            <PressScale
+              haptic="light"
+              onPress={() => set({ signedIn: true, emailVerified: true, obStep: 1, authErr: null })}
+              style={{
+                minHeight: 54,
+                borderRadius: 16,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#E2A9F1',
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+              }}
+            >
+              <Txt size={17} weight="bold" center color="#2A1033">
+                {t('demo.enter')}
+              </Txt>
+              <Txt size={11} center color="#2A1033">
+                {t('demo.body')}
+              </Txt>
+            </PressScale>
+          ) : null}
         </View>
 
         <Pressable
