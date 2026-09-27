@@ -300,7 +300,7 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => ({}));
   const listingId: string | undefined = typeof body?.listingId === 'string' ? body.listingId : undefined;
-  const isSweep = isCron(req);
+  const isSweep = await isCron(req);
 
   if (!isSweep) {
     // A member may only ask for their own listing to be looked at now.

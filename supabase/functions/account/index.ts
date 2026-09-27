@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
   // Their own photos. Condition photos of past rentals stay: the other
   // party may still need them as evidence.
   const removed: Record<string, number> = {};
-  for (const bucket of ['avatars', 'listing-media', 'private-docs', 'moderation-frames']) {
+  for (const bucket of ['avatars', 'listing-media', 'post-media', 'private-docs', 'moderation-frames']) {
     removed[bucket] = await wipeFolder(bucket, user.id).catch(() => 0);
   }
 

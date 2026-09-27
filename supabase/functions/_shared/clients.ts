@@ -4,7 +4,7 @@
 //   STRIPE_SECRET_KEY               sk_test_… while testing, sk_live_… later
 //   STRIPE_WEBHOOK_SECRET           whsec_… of the "Your account" endpoint
 //   STRIPE_CONNECT_WEBHOOK_SECRET   whsec_… of the "Connected accounts" endpoint
-//   ROTA_CRON_SECRET                long random string, also stored in the Vault
+//   ROTA_CRON_SECRET                optional: the Vault secret is checked instead (014)
 //   RESEND_API_KEY                  for reminder emails
 //   ANTHROPIC_API_KEY               for the listing analyzer
 //   MUX_TOKEN_ID / MUX_TOKEN_SECRET optional: stills taken from videos on the server
@@ -43,10 +43,18 @@ export async function userFrom(req: Request): Promise<User | null> {
   return data?.user ?? null;
 }
 
-/** Scheduled calls from pg_cron (006_schedules.sql) carry the shared secret. */
-export function isCron(req: Request): boolean {
-  const secret = Deno.env.get('ROTA_CRON_SECRET') ?? Deno.env.get('MODERATION_CRON_SECRET') ?? '';
-  return secret.length >= 16 && req.headers.get('x-rota-cron') === secret;
+/**
+ * Scheduled calls from pg_cron (006_schedules.sql) carry the Vault secret
+ * 'rota_cron_secret'; the database checks it (014), so it never has to be
+ * copied into an Edge Function secret. ROTA_CRON_SECRET still works if set.
+ */
+export async function isCron(req: Request): Promise<boolean> {
+  const sent = req.headers.get('x-rota-cron') ?? '';
+  if (sent.length < 16) return false;
+  const local = Deno.env.get('ROTA_CRON_SECRET') ?? Deno.env.get('MODERATION_CRON_SECRET') ?? '';
+  if (local.length >= 16 && sent === local) return true;
+  const { data } = await admin.rpc('cron_secret_matches', { p_secret: sent });
+  return data === true;
 }
 
 /** Euros (numeric from Postgres) to cents for Stripe. */
