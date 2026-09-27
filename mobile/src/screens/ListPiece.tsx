@@ -21,7 +21,7 @@ import { useTheme } from '../theme/useTheme';
 import { CheckIcon, CloseIcon, MinusIcon, PlusIcon } from '../ui/icons';
 import { Amount, Check, Chip, Display, Field, GhostButton, Note, PrimaryButton, Screen, Toggle, Txt } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
-import { BrandPicker, CategoryPicker, FitSlider, PickerRow } from '../ui/Pickers';
+import { BrandPicker, CategoryPicker, FitSlider, ParcelPicker, PickerRow, recommendedParcel, type ParcelSize } from '../ui/Pickers';
 import { IdentityGate } from './Verify';
 
 const SLOT_VIDEO = 'new-listing-video';
@@ -86,7 +86,8 @@ export function ListPiece() {
   const [brand, setBrand] = useState('');
   const [retail, setRetail] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [picker, setPicker] = useState<'category' | 'brand' | null>(null);
+  const [picker, setPicker] = useState<'category' | 'brand' | 'parcel' | null>(null);
+  const [parcel, setParcel] = useState<ParcelSize | null>(null);
   const [fit, setFit] = useState(0);
   const [occasion, setOccasion] = useState(OCCASIONS[0]);
   const [sizes, setSizes] = useState<string[]>([]);
@@ -103,7 +104,7 @@ export function ListPiece() {
   const leaf = findLeaf(categoryId);
   const sizeScale = leaf ? SIZE_SCALES[leaf.sizeKind] : [];
   const luxury = isLuxury(brand, policy.luxuryBrands);
-  const pricey = price >= policy.authenticityPricePerDay;
+  const pricey = price > policy.authenticityPricePerDay;
   // Proof is asked for luxury brands and pieces rented at a high daily price.
   const proofNeeded = luxury || pricey;
   const purchase = Number(retail.replace(/\D/g, '')) || 0;
@@ -141,6 +142,7 @@ export function ListPiece() {
     setRules([]);
     setPrice(20);
     setLenderCleans(false);
+    setParcel(null);
   };
 
   const publish = async () => {
@@ -181,6 +183,7 @@ export function ListPiece() {
         sizes,
         size_fit: leaf?.sizeKind === 'one' ? null : fit,
         occasion,
+        parcel_size: parcel ?? recommendedParcel(categoryId),
         price_per_day: price,
         retail_value: suggested,
         // A suggestion only: Rota approves the value that caps a renter's
@@ -202,7 +205,7 @@ export function ListPiece() {
       const insert = (p: Record<string, unknown>) => client.from('listings').insert(p).select('id').single();
       let payload = row;
       let result = await insert(payload);
-      for (const column of ['description', 'category_id', 'size_fit', 'suggested_value', 'sizes']) {
+      for (const column of ['parcel_size', 'description', 'category_id', 'size_fit', 'suggested_value', 'sizes']) {
         if (!result.error || !result.error.message.includes(column)) continue;
         const { [column]: _dropped, ...rest } = payload;
         payload = rest;
@@ -360,6 +363,12 @@ export function ListPiece() {
             hint={t('list.valueHint')}
           />
 
+          <PickerRow
+            label={t('list.parcel')}
+            value={parcel ? t(`list.parcel.${parcel}` as 'list.parcel.s') : null}
+            onPress={() => setPicker('parcel')}
+          />
+
           {luxury ? proofBlock : null}
         </Section>
 
@@ -473,6 +482,13 @@ export function ListPiece() {
       </Screen>
 
       <CategoryPicker visible={picker === 'category'} value={categoryId} onClose={() => setPicker(null)} onPick={chooseCategory} />
+      <ParcelPicker
+        visible={picker === 'parcel'}
+        value={parcel}
+        recommended={recommendedParcel(categoryId)}
+        onClose={() => setPicker(null)}
+        onPick={setParcel}
+      />
       <BrandPicker visible={picker === 'brand'} value={brand} onClose={() => setPicker(null)} onPick={setBrand} />
     </View>
   );

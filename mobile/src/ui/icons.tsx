@@ -321,13 +321,14 @@ export const CalendarIcon = ({ size = 20, color = '#F7F2F8' }: IconProps) => (
 
 export const GearIcon = ({ size = 20, color = '#F7F2F8' }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24">
-    <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth={1.8} fill="none" />
     <Path
-      d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M18 6l-1.6 1.6M7.6 16.4 6 18M18 18l-1.6-1.6M7.6 7.6 6 6"
+      d="M10.3 3.5h3.4l.5 2.4 1.7.7 2-1.4 2.4 2.4-1.4 2 .7 1.7 2.4.5v3.4l-2.4.5-.7 1.7 1.4 2-2.4 2.4-2-1.4-1.7.7-.5 2.4h-3.4l-.5-2.4-1.7-.7-2 1.4-2.4-2.4 1.4-2-.7-1.7-2.4-.5v-3.4l2.4-.5.7-1.7-1.4-2 2.4-2.4 2 1.4 1.7-.7.5-2.4Z"
       stroke={color}
-      strokeWidth={1.8}
-      strokeLinecap="round"
+      strokeWidth={1.6}
+      fill="none"
+      strokeLinejoin="round"
     />
+    <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth={1.6} fill="none" />
   </Svg>
 );
 

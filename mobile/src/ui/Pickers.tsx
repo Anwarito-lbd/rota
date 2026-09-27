@@ -445,3 +445,84 @@ export function FitSlider({ value, onChange }: { value: number; onChange: (v: nu
     </View>
   );
 }
+
+// ── Parcel size ────────────────────────────────────────────────
+
+export type ParcelSize = 's' | 'm' | 'l';
+export const PARCEL_SIZES: ParcelSize[] = ['s', 'm', 'l'];
+
+/** Shoes, coats and bags travel in a box; evening and bridal wear can be big. */
+export function recommendedParcel(categoryId: string | null): ParcelSize {
+  if (!categoryId) return 's';
+  if (/wedding|bridal|mariage/.test(categoryId)) return 'l';
+  if (/shoes|coat|jacket|bags/.test(categoryId)) return 'm';
+  return 's';
+}
+
+export function ParcelPicker({
+  visible,
+  value,
+  recommended,
+  onClose,
+  onPick,
+}: {
+  visible: boolean;
+  value: ParcelSize | null;
+  recommended: ParcelSize;
+  onClose: () => void;
+  onPick: (size: ParcelSize) => void;
+}) {
+  const { c } = useTheme();
+  const { t } = useT();
+  const insets = useSafeAreaInsets();
+  const current = value ?? recommended;
+  return (
+    <PickerModal visible={visible} title={t('list.parcel')} onBack={onClose}>
+      <View style={{ flex: 1 }}>
+        {PARCEL_SIZES.map((size) => (
+          <Pressable
+            key={size}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: current === size }}
+            onPress={() => onPick(size)}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 18, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: c.line }}
+          >
+            <View style={{ flex: 1 }}>
+              {size === recommended ? (
+                <View style={{ alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 99, backgroundColor: c.accent, marginBottom: 6 }}>
+                  <Txt size={12} weight="bold" color={c.onAccent}>
+                    {t('list.recommended')}
+                  </Txt>
+                </View>
+              ) : null}
+              <Txt size={17} weight="semi">
+                {t(`list.parcel.${size}` as 'list.parcel.s')}
+              </Txt>
+              <Txt size={15} color={c.ink3} style={{ marginTop: 3 }}>
+                {t(`list.parcel.${size}Body` as 'list.parcel.sBody')}
+              </Txt>
+            </View>
+            <Radio on={current === size} />
+          </Pressable>
+        ))}
+        <Txt size={13} color={c.ink3} style={{ paddingHorizontal: 18, paddingTop: 14 }}>
+          {t('list.parcelHint')}
+        </Txt>
+      </View>
+      <View style={{ paddingHorizontal: 18, paddingBottom: insets.bottom + 12 }}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            if (!value) onPick(recommended);
+            onClose();
+          }}
+          style={{ height: 52, borderRadius: 999, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Txt size={16} weight="bold" color={c.onAccent}>
+            {t('list.done')}
+          </Txt>
+        </Pressable>
+      </View>
+    </PickerModal>
+  );
+}

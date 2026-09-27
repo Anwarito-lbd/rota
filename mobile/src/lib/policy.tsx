@@ -92,7 +92,7 @@ export const DEFAULT_POLICY: Policy = {
   maxRentalDays: 14,
   paymentWindowMinutes: 30,
 
-  authenticityPricePerDay: 50,
+  authenticityPricePerDay: 30,
   luxuryBrands: [],
 
   flagIdStepUp: false,
