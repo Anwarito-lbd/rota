@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { CheckIcon } from '../ui/icons';
-import { ActivityIndicator, Linking, Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
+import { CalendarIcon, CheckIcon, GearIcon } from '../ui/icons';
 import { useMyListings, type Listing } from '../data/listings';
 import { DEMO_ME } from '../data/demo';
 import { useSocial } from '../data/social';
 import { useT } from '../i18n';
 import { useAuth } from '../lib/auth';
-import { BRAND } from '../lib/config';
 import { useStore } from '../state/store';
 import { useTheme } from '../theme/useTheme';
-import { Amount, Card, CertifiedMark, Group, PrimaryButton, Row, Screen, SectionLabel, Txt } from '../ui/kit';
+import { Amount, Card, CertifiedMark, Display, Group, PrimaryButton, Row, Screen, SectionLabel, Txt } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
 import { AppealSheet, DistributionStatus } from '../ui/Moderation';
 
@@ -32,6 +31,9 @@ export function Closet() {
 
   return (
     <Screen>
+      <Display size={34} style={{ marginTop: 8, marginBottom: 16 }}>
+        {t('tab.closet')}
+      </Display>
       <Pressable
         accessibilityRole="button"
         onPress={() => go('set.profile')}
@@ -50,7 +52,7 @@ export function Closet() {
             {profile?.certified ? <CertifiedMark /> : null}
           </View>
           <Txt size={13} color={c.ink3} style={{ marginTop: 4 }}>
-            {profile?.city && profile.showCity ? profile.city : t('closet.editProfile')}
+            {session?.user.email ?? (social.demo ? 'demo@therotaapp.com' : t('closet.editProfile'))}
           </Txt>
         </View>
       </Pressable>
@@ -97,26 +99,11 @@ export function Closet() {
 
       <PrimaryButton label={t('closet.addPiece')} onPress={() => go('list')} style={{ marginTop: 12 }} />
 
+      {/* Figma 07: two rows only. Fees, rules and help live in Réglages. */}
       <View style={{ height: 12 }} />
       <Group>
-        <Row label={t('rentals.title')} onPress={() => go('rentals')} last />
-      </Group>
-
-      <View style={{ height: 4 }} />
-      <Group>
-        <Row label={t('closet.feesProtection')} onPress={() => go('fees')} />
-        <Row label={t('settings.guidelines')} onPress={() => go('guidelines')} />
-        <Row
-          label={t('closet.help')}
-          external
-          onPress={() => Linking.openURL(`mailto:${BRAND.supportEmail}`).catch(() => undefined)}
-          last
-        />
-      </Group>
-
-      <View style={{ height: 4 }} />
-      <Group>
-        <Row label={t('settings.title')} onPress={() => go('settings')} last />
+        <Row label={t('rentals.title')} icon={<CalendarIcon color={c.accent} />} onPress={() => go('rentals')} />
+        <Row label={t('settings.title')} icon={<GearIcon color={c.accent} />} onPress={() => go('settings')} last />
       </Group>
 
       <SectionLabel>{t('closet.myPieces')}</SectionLabel>

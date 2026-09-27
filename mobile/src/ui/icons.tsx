@@ -311,3 +311,22 @@ export const KidsIcon = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
     <Path d="M6.5 21v-5.5a5.5 5.5 0 0 1 11 0V21M9.5 21v-3.5M14.5 21v-3.5" stroke={color} strokeWidth={1.7} fill="none" strokeLinecap="round" />
   </Svg>
 );
+
+export const CalendarIcon = ({ size = 20, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Rect x="4" y="5.5" width="16" height="14.5" rx="3" stroke={color} strokeWidth={1.8} fill="none" />
+    <Path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+  </Svg>
+);
+
+export const GearIcon = ({ size = 20, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth={1.8} fill="none" />
+    <Path
+      d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M18 6l-1.6 1.6M7.6 16.4 6 18M18 18l-1.6-1.6M7.6 7.6 6 6"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
