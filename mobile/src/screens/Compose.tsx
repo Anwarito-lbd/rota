@@ -2,7 +2,7 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View, useWindowDimensions } from 'react-native';
 import { useListings } from '../data/listings';
 import { useSocial, type PostKind, type PostTag } from '../data/social';
@@ -35,8 +35,14 @@ export function Compose() {
   const { listings } = useListings();
   const social = useSocial();
 
-  const [kind, setKind] = useState<PostKind>('fit');
-  const [media, setMedia] = useState<MediaItem[]>([]);
+  // Photos handed over by the camera screen, taken once.
+  const [kind, setKind] = useState<PostKind>((state.captured?.length ?? 0) > 1 ? 'dump' : 'fit');
+  const [media, setMedia] = useState<MediaItem[]>(state.captured ?? []);
+  useEffect(() => {
+    if (state.captured) set({ captured: null });
+    // Only on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [active, setActive] = useState(0);
   const [tags, setTags] = useState<PostTag[]>([]);
   const [pending, setPending] = useState<{ x: number; y: number } | null>(null);

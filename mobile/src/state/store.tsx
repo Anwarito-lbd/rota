@@ -103,6 +103,7 @@ const initialState: AppState = {
   commentsFor: null,
   saveTarget: null,
   createSheet: false,
+  captured: null,
   socialReport: null,
   tryOnListingId: null,
   afterVerify: null,

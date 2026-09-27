@@ -330,3 +330,16 @@ export const GearIcon = ({ size = 20, color = '#F7F2F8' }: IconProps) => (
     />
   </Svg>
 );
+
+export const FlipIcon = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3" stroke={color} strokeWidth={1.8} fill="none" strokeLinecap="round" />
+    <Path d="M20 4v4.7h-4.7M4 20v-4.7h4.7" stroke={color} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+export const MenuIcon = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="M4 7h16M4 12h16M4 17h16" stroke={color} strokeWidth={2} strokeLinecap="round" />
+  </Svg>
+);

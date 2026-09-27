@@ -30,6 +30,7 @@ import { Rentals } from './src/screens/Rentals';
 import { Compose } from './src/screens/Compose';
 import { Guidelines } from './src/screens/Guidelines';
 import { NearMap } from './src/screens/NearMap';
+import { Camera } from './src/screens/Camera';
 import { Settings } from './src/screens/Settings';
 import { Blocked, Boards, PostScreen, UserProfile } from './src/screens/Social';
 import { TryOn } from './src/screens/TryOn';
@@ -101,6 +102,7 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   user: UserProfile,
   profile: UserProfile,
   map: NearMap,
+  camera: Camera,
   compose: Compose,
   tryon: TryOn,
   verify: Verify,
@@ -111,7 +113,7 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
 };
 
 /** Full-screen flows that hide the tab bar. */
-const NO_TABS: ScreenKey[] = ['onboard', 'map', 'compose', 'tryon', 'verify'];
+const NO_TABS: ScreenKey[] = ['onboard', 'map', 'compose', 'tryon', 'verify', 'camera'];
 /** Screens whose photos run under the floating tab bar. */
 const FULL_BLEED: ScreenKey[] = ['feed', 'post'];
 

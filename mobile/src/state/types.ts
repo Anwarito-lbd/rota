@@ -50,7 +50,8 @@ export type Screen =
   | 'map'
   | 'compose'
   | 'tryon'
-  | 'verify';
+  | 'verify'
+  | 'camera';
 
 /**
  * 0 welcome · 'auth' credentials · 'otp' e-mail code · 1 guidelines gate
@@ -195,6 +196,8 @@ export interface AppState {
   saveTarget: { kind: 'post' | 'listing'; id: string } | null;
   /** The "+" tab's chooser: publish a fit or list a piece. */
   createSheet: boolean;
+  /** Photos taken on the camera screen, waiting for the post composer. */
+  captured: MediaItem[] | null;
   /** What "Signaler" was opened on, beyond listings. */
   socialReport: { kind: 'post' | 'comment' | 'member' | 'message'; id: string; memberId: string } | null;
   /** Listing the try-on screen dresses you in. */
