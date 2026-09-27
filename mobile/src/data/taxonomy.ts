@@ -17,7 +17,7 @@ export type SizeKind = 'letters' | 'shoes' | 'kids' | 'baby' | 'one';
 export interface CategoryNode {
   id: string;
   label: Label;
-  icon?: string;
+  icon?: 'dress' | 'shirt' | 'kids';
   sizeKind?: SizeKind;
   children?: CategoryNode[];
 }
@@ -33,7 +33,7 @@ export const CATEGORY_TREE: CategoryNode[] = [
   {
     id: 'women',
     label: L('Femmes', 'Women', 'Mujer'),
-    icon: '👗',
+    icon: 'dress',
     children: [
       group('women.clothing', L('Vêtements', 'Clothing', 'Ropa'), 'letters', [
         ['evening', L('Robes de soirée', 'Evening dresses', 'Vestidos de noche')],
@@ -92,7 +92,7 @@ export const CATEGORY_TREE: CategoryNode[] = [
   {
     id: 'men',
     label: L('Hommes', 'Men', 'Hombre'),
-    icon: '👔',
+    icon: 'shirt',
     children: [
       group('men.clothing', L('Vêtements', 'Clothing', 'Ropa'), 'letters', [
         ['suits', L('Costumes et blazers', 'Suits and blazers', 'Trajes y blazers')],
@@ -134,7 +134,7 @@ export const CATEGORY_TREE: CategoryNode[] = [
   {
     id: 'kids',
     label: L('Enfants', 'Kids', 'Niños'),
-    icon: '🧒',
+    icon: 'kids',
     children: [
       group('kids.girls', L('Filles', 'Girls', 'Niñas'), 'kids', [
         ['ceremony', L('Robes et tenues de cérémonie', 'Ceremony dresses and outfits', 'Vestidos y trajes de ceremonia')],

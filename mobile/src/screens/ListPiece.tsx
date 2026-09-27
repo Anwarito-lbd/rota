@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CheckIcon } from '../ui/icons';
 import { Pressable, View } from 'react-native';
 import { OCCASIONS } from '../data/catalog';
 import { useListings } from '../data/listings';
@@ -226,9 +227,7 @@ export function ListPiece() {
             justifyContent: 'center',
           }}
         >
-          <Txt size={26} weight="bold" color={c.onAccent}>
-            ✓
-          </Txt>
+          <CheckIcon size={30} color={c.onAccent} />
         </View>
         <Display size={34} style={{ marginTop: 20, textAlign: 'center' }}>
           {t('list.published')}
@@ -542,7 +541,7 @@ export function ListPiece() {
       </Screen>
 
       <FooterBar>
-        <View style={{ flexDirection: 'row', gap: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10 }}>
           {step > 0 ? (
             <GhostButton
               label={t('common.back')}

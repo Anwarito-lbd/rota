@@ -8,7 +8,7 @@ import * as WebBrowser from 'expo-web-browser';
 import Svg, { Path } from 'react-native-svg';
 import { appleSignInAvailable, backendConfigured, useAuth } from '../lib/auth';
 import { LEGAL_URLS } from '../lib/config';
-import { AppleIcon } from '../ui/icons';
+import { AppleIcon, CheckIcon } from '../ui/icons';
 import { usePermissions, type PermStatus } from '../lib/permissions';
 import { emailValid, passwordChecks, passwordValid, usernameError } from '../state/auth';
 import { useStore } from '../state/store';
@@ -296,9 +296,7 @@ function PasswordMeter({ pw }: { pw: string }) {
               }}
             >
               {checks[key] ? (
-                <Txt size={9} weight="bold" color={c.onAccent}>
-                  ✓
-                </Txt>
+                <CheckIcon size={11} color={c.onAccent} />
               ) : null}
             </View>
             <Txt size={12} color={checks[key] ? c.ink2 : c.ink3}>
@@ -522,7 +520,7 @@ function EmailOtp() {
           style={{ minHeight: 44, justifyContent: 'center', marginTop: 10 }}
         >
           <Txt size={14} weight="bold" color={c.accent}>
-            {resent ? 'Nouveau code envoyé ✓' : 'Renvoyer le code'}
+            {resent ? 'Nouveau code envoyé' : 'Renvoyer le code'}
           </Txt>
         </Pressable>
 
@@ -691,9 +689,7 @@ function Perms() {
                   }}
                 >
                   {on ? (
-                    <Txt size={14} weight="bold" color={c.accent}>
-                      ✓
-                    </Txt>
+                    <CheckIcon size={15} color={c.accent} />
                   ) : null}
                   <Txt size={14} weight="bold" color={c.accent}>
                     {on ? t('perm.active') : blocked ? t('perm.settings') : t('perm.activate')}

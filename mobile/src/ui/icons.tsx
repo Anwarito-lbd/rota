@@ -248,3 +248,66 @@ export const ChevronLeft = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
     <Path d="M15 5 8 12l7 7" stroke={color} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
   </Svg>
 );
+
+export const ChevronRight = ({ size = 16, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="m9 5 7 7-7 7" stroke={color} strokeWidth={2.2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+export const CheckIcon = ({ size = 18, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="m5 12.5 4.5 4.5L19 7.5" stroke={color} strokeWidth={2.4} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+export const ArrowUpRightIcon = ({ size = 16, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="M7 17 17 7M9 7h8v8" stroke={color} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+export const PencilIcon = ({ size = 18, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" stroke={color} strokeWidth={1.8} fill="none" strokeLinejoin="round" />
+  </Svg>
+);
+
+export const MinusIcon = ({ size = 20, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="M5 12h14" stroke={color} strokeWidth={2} strokeLinecap="round" />
+  </Svg>
+);
+
+/** Top-level category marks (Women, Men, Kids) — line drawings, no emoji. */
+export const DressIcon = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path
+      d="M9 3v3.5L7.5 10 5 21h14l-2.5-11L15 6.5V3M9 3c1 1 5 1 6 0M7.5 10h9"
+      stroke={color}
+      strokeWidth={1.7}
+      fill="none"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+export const ShirtIcon = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path
+      d="M8.5 3 3 6l2 4.5 2.5-1V21h9V9.5l2.5 1L21 6l-5.5-3c-.5 1.6-1.9 2.6-3.5 2.6S9 4.6 8.5 3Z"
+      stroke={color}
+      strokeWidth={1.7}
+      fill="none"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+export const KidsIcon = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Circle cx="12" cy="6.5" r="3" stroke={color} strokeWidth={1.7} fill="none" />
+    <Path d="M6.5 21v-5.5a5.5 5.5 0 0 1 11 0V21M9.5 21v-3.5M14.5 21v-3.5" stroke={color} strokeWidth={1.7} fill="none" strokeLinecap="round" />
+  </Svg>
+);

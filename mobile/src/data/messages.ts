@@ -73,7 +73,7 @@ const demoMessages: Record<string, Message[]> = {
     },
   ],
   c2: [
-    { id: 'c2m1', senderId: 'u_juliette', kind: 'text', body: 'Merci pour le retour, la robe était impeccable ✨', meta: null, createdAt: iso(1500) },
+    { id: 'c2m1', senderId: 'u_juliette', kind: 'text', body: 'Merci pour le retour, la robe était impeccable', meta: null, createdAt: iso(1500) },
   ],
 };
 

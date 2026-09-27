@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CheckIcon } from '../ui/icons';
 import { Pressable, View } from 'react-native';
 import { useListing } from '../data/listings';
 import { useUnavailableDays } from '../data/rentals';
@@ -168,9 +169,7 @@ function HandoverOption({
         </Txt>
       </View>
       <Amount size={15}>{price}</Amount>
-      <Txt size={17} weight="bold" color={c.accent} style={{ width: 18, textAlign: 'right' }}>
-        {selected ? '✓' : ''}
-      </Txt>
+      <View style={{ width: 20, alignItems: 'flex-end' }}>{selected ? <CheckIcon size={20} color={c.accent} /> : null}</View>
     </Pressable>
   );
 }

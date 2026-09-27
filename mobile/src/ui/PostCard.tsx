@@ -21,6 +21,7 @@ import {
   ShareIcon,
   SparkleIcon,
   TagIcon,
+  CheckIcon,
 } from './icons';
 import { Txt } from './kit';
 import { TAB_BAR_SPACE } from './TabBar';
@@ -331,9 +332,7 @@ export function PostCard({ post, height, distanceKm }: { post: Post; height: num
               }}
             >
               {following ? (
-                <Txt size={12} weight="bold" color="#2A1033">
-                  ✓
-                </Txt>
+                <CheckIcon size={13} color="#2A1033" />
               ) : (
                 <PlusIcon size={14} color="#2A1033" />
               )}

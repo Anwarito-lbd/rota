@@ -77,7 +77,7 @@ function Inbox() {
                   </View>
                   <Txt size={14} color={th.unread ? c.ink : c.ink2} numberOfLines={1} weight={th.unread ? 'semi' : 'reg'}>
                     {th.lastMine ? `${t('msg.you')} : ` : ''}
-                    {th.lastKind === 'meetpoint' ? `📍 ${th.lastBody}` : (th.lastBody ?? '')}
+                    {th.lastKind === 'meetpoint' ? th.lastBody : (th.lastBody ?? '')}
                   </Txt>
                 </View>
                 {th.unread ? (

@@ -11,7 +11,7 @@ import { useStore } from '../state/store';
 import type { MediaItem } from '../state/types';
 import { BRAND_LAVENDER, FONT, OVER_INK, ff } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
-import { CameraIcon, CloseIcon, ImagesIcon, PinIcon, SearchIcon, ShieldCheckIcon, TagIcon } from '../ui/icons';
+import { CameraIcon, CheckIcon, CloseIcon, ImagesIcon, PinIcon, SearchIcon, ShieldCheckIcon, TagIcon } from '../ui/icons';
 import { Display, Field, Header, Note, PrimaryButton, Screen, SectionLabel, Sheet, Toggle, Txt } from '../ui/kit';
 import { FadeIn, Pop, PressScale, Pulse, Segmented, tap } from '../ui/motion';
 
@@ -133,7 +133,7 @@ export function Compose() {
                 justifyContent: 'center',
               }}
             >
-              {done.live ? <Txt size={40} weight="bold" color={c.onAccent}>✓</Txt> : <ShieldCheckIcon size={40} color={c.plum} />}
+              {done.live ? <CheckIcon size={44} color={c.onAccent} /> : <ShieldCheckIcon size={40} color={c.plum} />}
             </View>
           </Pop>
           <Display size={34} style={{ marginTop: 20, textAlign: 'center' }}>

@@ -245,7 +245,7 @@ export const DEMO_POSTS: DemoPostSeed[] = [
 
 export const DEMO_COMMENTS: Record<string, { authorId: string; body: string; minutesAgo: number }[]> = {
   p1: [
-    { authorId: 'u_juliette', body: 'La coupe en biais 😍 tu la reprends quand ?', minutesAgo: 40 },
+    { authorId: 'u_juliette', body: 'La coupe en biais tu la reprends quand ?', minutesAgo: 40 },
     { authorId: 'u_lea', body: 'Je l’ai louée le mois dernier, la soie est incroyable.', minutesAgo: 22 },
   ],
   p2: [

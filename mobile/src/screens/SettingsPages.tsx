@@ -545,7 +545,7 @@ function PasswordForm() {
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 4 }}>
         {(['length', 'upper', 'digit', 'symbol'] as const).map((k) => (
           <Txt key={k} size={12} color={checks[k] ? c.accent : c.ink3}>
-            {checks[k] ? '✓' : '·'} {t(`set.rule.${k}` as TranslationKey)}
+            {t(`set.rule.${k}` as TranslationKey)}
           </Txt>
         ))}
       </View>

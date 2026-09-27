@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CheckIcon } from '../ui/icons';
 import { ActivityIndicator, Linking, Pressable, View } from 'react-native';
 import { useMyListings, type Listing } from '../data/listings';
 import { DEMO_ME } from '../data/demo';
@@ -85,9 +86,7 @@ export function Closet() {
                 backgroundColor: check.done ? c.accentSoft : c.surf2,
               }}
             >
-              <Txt size={12} weight="bold" color={check.done ? c.accent : c.ink3}>
-                {check.done ? '✓' : '○'}
-              </Txt>
+              {check.done ? <CheckIcon size={13} color={c.accent} /> : <View style={{ width: 9, height: 9, borderRadius: 99, borderWidth: 1.5, borderColor: c.ink3 }} />}
               <Txt size={12} weight="semi" color={check.done ? c.accent : c.ink2}>
                 {check.label}
               </Txt>

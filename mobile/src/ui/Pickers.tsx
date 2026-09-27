@@ -19,7 +19,10 @@ import {
 import { useT } from '../i18n';
 import { useTheme } from '../theme/useTheme';
 import { FONT, ff } from '../theme/tokens';
-import { Radio, Txt } from './kit';
+import { ChevronRight, DressIcon, KidsIcon, PencilIcon, PlusIcon, SearchIcon, ShirtIcon } from './icons';
+import { BackButton, Radio, Txt } from './kit';
+
+const CATEGORY_ICONS = { dress: DressIcon, shirt: ShirtIcon, kids: KidsIcon } as const;
 
 /** The bordered "Catégorie  ＋" row from Vinted's listing form. */
 export function PickerRow({ label, value, onPress }: { label: string; value?: string | null; onPress: () => void }) {
@@ -44,9 +47,7 @@ export function PickerRow({ label, value, onPress }: { label: string; value?: st
       <Txt size={14} color={c.ink3} numberOfLines={1} style={{ flex: 1, textAlign: 'right' }}>
         {value ?? ''}
       </Txt>
-      <Txt size={value ? 16 : 22} color={c.ink2}>
-        {value ? '✎' : '+'}
-      </Txt>
+      {value ? <PencilIcon size={18} color={c.ink2} /> : <PlusIcon size={20} color={c.ink2} />}
     </Pressable>
   );
 }
@@ -67,14 +68,12 @@ function PickerModal({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onBack}>
       <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-        <View style={{ height: 52, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 }}>
-          <Pressable onPress={onBack} hitSlop={12} accessibilityRole="button" style={{ width: 40 }}>
-            <Txt size={24}>←</Txt>
-          </Pressable>
+        <View style={{ height: 60, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 }}>
+          <BackButton onPress={onBack} />
           <Txt size={17} weight="bold" center style={{ flex: 1 }} numberOfLines={1}>
             {title}
           </Txt>
-          <View style={{ width: 40 }} />
+          <View style={{ width: 44 }} />
         </View>
         {children}
       </View>
@@ -86,7 +85,7 @@ function SearchBox({ value, onChange, placeholder, autoFocus }: { value: string;
   const { c, fs } = useTheme();
   return (
     <View style={{ marginHorizontal: 16, marginBottom: 8, paddingHorizontal: 14, height: 46, borderRadius: 12, backgroundColor: c.surf2, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-      <Txt color={c.ink3}>⌕</Txt>
+      <SearchIcon size={16} color={c.ink3} />
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -105,21 +104,29 @@ function ListRow({
   subtitle,
   right,
   selected,
+  icon,
   onPress,
 }: {
   title: string;
   subtitle?: string;
   right: 'chevron' | 'radio';
   selected?: boolean;
+  icon?: keyof typeof CATEGORY_ICONS;
   onPress: () => void;
 }) {
   const { c } = useTheme();
+  const Icon = icon ? CATEGORY_ICONS[icon] : null;
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 58, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.line }}
     >
+      {Icon ? (
+        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: c.surf2, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon size={20} color={c.ink} />
+        </View>
+      ) : null}
       <View style={{ flex: 1 }}>
         <Txt size={16}>{title}</Txt>
         {subtitle ? (
@@ -128,7 +135,7 @@ function ListRow({
           </Txt>
         ) : null}
       </View>
-      {right === 'chevron' ? <Txt size={20} color={c.ink3}>›</Txt> : <Radio on={!!selected} />}
+      {right === 'chevron' ? <ChevronRight size={16} color={c.ink3} /> : <Radio on={!!selected} />}
     </Pressable>
   );
 }
@@ -198,7 +205,8 @@ export function CategoryPicker({
             const within = selected && selected.id.startsWith(`${item.id}.`);
             return item.children ? (
               <ListRow
-                title={`${item.icon ? `${item.icon}  ` : ''}${item.label[lang]}`}
+                icon={item.icon}
+                title={item.label[lang]}
                 subtitle={within ? selected.label[lang] : undefined}
                 right="chevron"
                 onPress={() => setTrail((tr) => [...tr, item])}

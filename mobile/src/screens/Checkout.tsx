@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CheckIcon } from '../ui/icons';
 import { View } from 'react-native';
 import { useListing } from '../data/listings';
 import { paymentsConfigured, usePayRental } from '../data/payments';
@@ -43,9 +44,7 @@ function Confirmation() {
           justifyContent: 'center',
         }}
       >
-        <Txt size={26} weight="bold" color={c.onAccent}>
-          ✓
-        </Txt>
+        <CheckIcon size={30} color={c.onAccent} />
       </View>
       <Display size={38} style={{ marginTop: 20, textAlign: 'center' }}>
         {t('checkout.confirmedTitle')}
