@@ -530,10 +530,13 @@ export function Field({
   const { c, fs } = useTheme();
   return (
     <View style={{ padding: 12, borderRadius: 14, backgroundColor: c.surf, borderWidth: 1, borderColor: c.line }}>
-      <Txt size={11} weight="semi" upper color={c.ink3}>
-        {label}
-      </Txt>
+      {label ? (
+        <Txt size={11} weight="semi" upper color={c.ink3}>
+          {label}
+        </Txt>
+      ) : null}
       <TextInput
+        accessibilityLabel={label || placeholder}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -545,9 +548,10 @@ export function Field({
         multiline={multiline}
         textAlignVertical={multiline ? 'top' : 'auto'}
         style={{
-          marginTop: 4,
+          marginTop: label ? 4 : 0,
           minHeight: multiline ? 96 : 32,
-          ...ff('semi'),
+          // Placeholders in the regular weight so they never read as a value.
+          ...ff(value ? 'semi' : 'reg'),
           fontSize: fs(16),
           color: c.ink,
           padding: 0,
