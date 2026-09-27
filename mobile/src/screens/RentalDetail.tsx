@@ -34,6 +34,7 @@ import {
   Txt,
 } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
+import { MessageButton } from '../ui/MessageButton';
 
 const SLOT_COUNT = 3;
 const slotIds = (rentalId: string, phase: ConditionPhase) =>
@@ -408,6 +409,12 @@ export function RentalDetail() {
         {rangeLabel(rental.startDate, rental.endDate, lang)} · {rental.days} {t('common.days')} ·{' '}
         {isOwner ? t('rentals.lending') : t('rentals.renting')}
       </Txt>
+
+      <MessageButton
+        memberId={isOwner ? rental.renterId : rental.ownerId}
+        listingId={rental.listingId}
+        style={{ marginTop: 14 }}
+      />
 
       <PaymentCard rental={rental} isOwner={isOwner} onPaid={refresh} />
       <ShippingCard rental={rental} isOwner={isOwner} />

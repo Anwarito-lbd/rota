@@ -196,7 +196,7 @@ export interface AppState {
   /** The "+" tab's chooser: publish a fit or list a piece. */
   createSheet: boolean;
   /** What "Signaler" was opened on, beyond listings. */
-  socialReport: { kind: 'post' | 'comment' | 'member'; id: string; memberId: string } | null;
+  socialReport: { kind: 'post' | 'comment' | 'member' | 'message'; id: string; memberId: string } | null;
   /** Listing the try-on screen dresses you in. */
   tryOnListingId: string | null;
   /** Where to send the member once their identity is verified. */

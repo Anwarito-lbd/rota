@@ -14,8 +14,8 @@ import { useStore } from '../state/store';
 import { useTheme } from '../theme/useTheme';
 import { Card, Chip, Field, GhostButton, Header, PrimaryButton, Screen, Txt } from '../ui/kit';
 
-type Tab = 'moderation' | 'claims' | 'rentals' | 'safety';
-const TABS: Tab[] = ['moderation', 'claims', 'rentals', 'safety'];
+type Tab = 'moderation' | 'social' | 'claims' | 'rentals' | 'safety';
+const TABS: Tab[] = ['moderation', 'social', 'claims', 'rentals', 'safety'];
 const PHAROS = 'https://www.internet-signalement.gouv.fr';
 
 function db() {
@@ -25,7 +25,7 @@ function db() {
 
 /** Private files (frames, evidence, receipts) open through short-lived links. */
 async function fileUrl(bucket: string, path: string) {
-  if (bucket === 'listing-media') return db().storage.from(bucket).getPublicUrl(path).data.publicUrl;
+  if (bucket === 'listing-media' || bucket === 'post-media') return db().storage.from(bucket).getPublicUrl(path).data.publicUrl;
   const { data } = await db().storage.from(bucket).createSignedUrl(path, 600);
   return data?.signedUrl ?? null;
 }
@@ -215,6 +215,107 @@ function Moderation() {
             </Buttons>
           </Card>
         )}
+      </List>
+    </>
+  );
+}
+
+// ── Social (posts, comments, messages, profiles — migration 010) ──
+
+interface SocialRow {
+  kind: 'post' | 'comment' | 'message' | 'member';
+  target_id: string;
+  member_id: string;
+  member_username: string;
+  body: string | null;
+  media_paths: string[];
+  distribution: string;
+  report_count: number;
+  report_reasons: string[];
+  report_notes: string[];
+  waiting_since: string | null;
+}
+
+const SOCIAL_ACTIONS: Record<SocialRow['kind'], { action: string; label: TranslationKey; primary?: boolean; danger?: boolean }[]> = {
+  post: [
+    { action: 'publish', label: 'admin.publish', primary: true },
+    { action: 'limit', label: 'admin.limit' },
+    { action: 'remove', label: 'admin.remove', danger: true },
+    { action: 'dismiss', label: 'admin.dismiss' },
+  ],
+  comment: [
+    { action: 'hide', label: 'admin.hide', danger: true },
+    { action: 'dismiss', label: 'admin.dismiss' },
+  ],
+  message: [
+    { action: 'hide', label: 'admin.hide', danger: true },
+    { action: 'dismiss', label: 'admin.dismiss' },
+  ],
+  member: [
+    { action: 'suspend', label: 'admin.suspend', danger: true },
+    { action: 'dismiss', label: 'admin.dismiss' },
+  ],
+};
+
+function Social() {
+  const { c } = useTheme();
+  const { t } = useT();
+  const { rows, error, refresh } = useQueue<SocialRow>('staff_social_queue');
+  const { busy, error: actionError, run } = useAction(refresh);
+  const hours = (iso: string | null) => (iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 36e5)) : 0);
+
+  return (
+    <>
+      {actionError ? <Txt color={c.plum} style={{ marginTop: 10 }}>{actionError}</Txt> : null}
+      <List rows={rows} error={error} empty={t('admin.emptySocial')}>
+        {(row) => {
+          const h = hours(row.waiting_since);
+          return (
+            <Card key={`${row.kind}-${row.target_id}`} accent={h >= 20}>
+              <Txt weight="bold">
+                {t(`admin.kind.${row.kind}` as TranslationKey)} · @{row.member_username}
+              </Txt>
+              <Meta>
+                {t('admin.waiting')} {h} h · {row.distribution}
+                {row.report_count > 0
+                  ? ` · ${t('admin.reports').replace('{n}', String(row.report_count))} · ${row.report_reasons
+                      .map((r) => (r === 'harassment' ? t('sreport.reason.harassment') : t(`report.reason.${r}` as TranslationKey)))
+                      .join(', ')}`
+                  : ''}
+              </Meta>
+              {row.media_paths.length ? (
+                <Thumbs items={row.media_paths.map((p) => ({ bucket: 'post-media', path: p }))} />
+              ) : null}
+              {row.body ? (
+                <Txt size={14} color={c.ink2} style={{ marginTop: 8 }}>
+                  « {row.body} »
+                </Txt>
+              ) : null}
+              {row.report_notes.map((n, i) => (
+                <Meta key={i}>— {n}</Meta>
+              ))}
+              <Buttons>
+                {SOCIAL_ACTIONS[row.kind].map((a) => (
+                  <Chip
+                    key={a.action}
+                    label={t(a.label)}
+                    on={!!a.primary}
+                    tone={a.danger ? 'plum' : undefined}
+                    onPress={() =>
+                      run(`${row.kind}-${row.target_id}`, 'staff_decide_social', {
+                        p_kind: row.kind,
+                        p_target: row.target_id,
+                        p_action: a.action,
+                        p_note: null,
+                      })
+                    }
+                  />
+                ))}
+                {busy === `${row.kind}-${row.target_id}` ? <ActivityIndicator color={c.accent} /> : null}
+              </Buttons>
+            </Card>
+          );
+        }}
       </List>
     </>
   );
@@ -444,6 +545,7 @@ export function Admin() {
       </ScrollView>
       <View key={`${tab}-${nonce}`}>
         {tab === 'moderation' ? <Moderation /> : null}
+        {tab === 'social' ? <Social /> : null}
         {tab === 'claims' ? <Claims /> : null}
         {tab === 'rentals' ? <Rentals /> : null}
         {tab === 'safety' ? <Safety /> : null}

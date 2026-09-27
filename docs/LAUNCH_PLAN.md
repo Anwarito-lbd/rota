@@ -34,9 +34,11 @@ SystemBootTime 35F9.1, DiskSpace E174.1).
 - **User-generated content (Apple 1.2):** report on every post, comment and
   profile; block works both ways; posts from unverified members wait for
   review; three reports pull a post or hide a comment (migration 009).
-  **To do:** Terms must forbid objectionable content and commit to acting
-  within 24 h; the back office needs a queue for `social_reports` and
-  pending posts.
+  Done in migration 010: the back office has a Social queue (pending
+  posts, reported posts / comments / messages / profiles, oldest first,
+  audited decisions), and the in-app Community rules screen states the
+  rules and the 24 h review commitment. **To do:** the Terms must say the
+  same (lawyer review), and staff must actually work the queue daily.
 - **AI try-on (Apple 5.1.2(i), EU AI Act art. 50):** a consent screen names
   Decart and the data sent before anything leaves the phone; outputs are
   labelled "Image générée par IA · Decart"; 16+ notice. **To do:** add
@@ -68,8 +70,9 @@ SystemBootTime 35F9.1, DiskSpace E174.1).
 3. Host the two `.well-known` files for app links.
 4. Build with EAS (`eas build`): `react-native-maps`, `expo-blur` and
    `expo-haptics` are native; Expo Go already includes them.
-5. Moderation back office: add pending posts and `social_reports` to Admin.
-6. Build the rest of [DELIVERY.md](DELIVERY.md) (labels, carrier webhook, QR).
+5. Apply migration 010 (messaging, social moderation queue, delivery switch).
+6. Build the rest of [DELIVERY.md](DELIVERY.md) (labels, carrier webhook, QR),
+   then set `flag_rota_delivery` to true in `policy_config`.
 
 ## How to audit
 

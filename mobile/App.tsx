@@ -28,6 +28,7 @@ import { Onboarding } from './src/screens/Onboarding';
 import { RentalDetail } from './src/screens/RentalDetail';
 import { Rentals } from './src/screens/Rentals';
 import { Compose } from './src/screens/Compose';
+import { Guidelines } from './src/screens/Guidelines';
 import { NearMap } from './src/screens/NearMap';
 import { Settings } from './src/screens/Settings';
 import { Boards, PostScreen, UserProfile } from './src/screens/Social';
@@ -102,6 +103,7 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   compose: Compose,
   tryon: TryOn,
   verify: Verify,
+  guidelines: Guidelines,
   boards: Boards,
   board: Boards,
 };

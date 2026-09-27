@@ -171,9 +171,12 @@ export function Booking() {
   const [start, end] = state.dates;
   const datesValid = start >= todayISO() && !taken(start) && !taken(end);
   const isHighValue = !!listing && (listing.approvedValue ?? listing.retail ?? 0) >= HIGH_VALUE_EUR;
+  // Rota Delivery only when the server has it switched on (migration 010),
+  // and never for very high-value pieces.
+  const canShip = policy.flagRotaDelivery && !isHighValue;
   useEffect(() => {
-    if (isHighValue && state.delivery === 'ship') set({ delivery: 'meet' });
-  }, [isHighValue, state.delivery, set]);
+    if (!canShip && state.delivery === 'ship') set({ delivery: 'meet' });
+  }, [canShip, state.delivery, set]);
 
   if (!listing) {
     return (
@@ -186,7 +189,6 @@ export function Booking() {
 
   const hasRules = listing.rules.length > 0;
   // Very high-value pieces don't go by ordinary parcel (docs/DELIVERY.md).
-  const highValue = isHighValue;
   const canContinue = datesValid && (!hasRules || state.rulesAccepted);
   const size = listing.sizes.includes(state.size) ? state.size : listing.sizes[0];
 
@@ -213,15 +215,10 @@ export function Booking() {
             selected={state.delivery === 'meet'}
             onPress={() => set({ delivery: 'meet' })}
             title="Rencontre à Paris"
-            body="Point public choisi dans Rota, adresse jamais partagée. Photos d’état et QR à la remise."
+            body="Lieu public choisi dans les messages, adresse jamais partagée. Photos d’état et code de remise confirment l’échange."
             price="Offert"
           />
-          {highValue ? (
-            <Note>
-              Pièce de grande valeur : remise en main propre uniquement pour l’instant. La livraison assurée
-              renforcée arrive bientôt.
-            </Note>
-          ) : (
+          {canShip ? (
             <HandoverOption
               selected={state.delivery === 'ship'}
               onPress={() => set({ delivery: 'ship' })}
@@ -229,7 +226,7 @@ export function Booking() {
               body="Suivi et protégé · étiquettes aller et retour prépayées. Le retour compte dès le premier scan du transporteur."
               price={m(policy.shippingFee)}
             />
-          )}
+          ) : null}
         </View>
 
         {hasRules ? (

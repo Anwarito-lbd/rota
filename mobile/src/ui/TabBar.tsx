@@ -8,6 +8,7 @@ import { BlurView } from 'expo-blur';
 import { useEffect, useState, type ReactElement } from 'react';
 import { AccessibilityInfo, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useInbox } from '../data/messages';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
 import type { Screen } from '../state/types';
@@ -76,6 +77,7 @@ export function TabBar() {
   const { t } = useT();
   const insets = useSafeAreaInsets();
   const solid = useReduceTransparency();
+  const { unread } = useInbox();
 
   const bar = (
     <View style={{ flexDirection: 'row', padding: 6, gap: 2 }}>
@@ -103,7 +105,7 @@ export function TabBar() {
           >
             <View style={{ width: 26, height: 24, alignItems: 'center', justifyContent: 'center' }}>
               <Icon color={color} />
-              {key === 'messages' ? (
+              {key === 'messages' && unread > 0 ? (
                 <View
                   style={{
                     position: 'absolute',

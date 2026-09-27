@@ -12,6 +12,7 @@ import { useTheme } from '../theme/useTheme';
 import { ChevronLeft, DotsIcon, GridIcon, ShieldCheckIcon, TagIcon } from '../ui/icons';
 import { Amount, CertifiedMark, Display, GhostButton, Header, PrimaryButton, Screen, Txt } from '../ui/kit';
 import { Avatar, FadeIn, IdBadge, Pop, PressScale, Segmented, Skeleton, compact, tap } from '../ui/motion';
+import { MessageButton } from '../ui/MessageButton';
 import { PostCard } from '../ui/PostCard';
 
 function FloatingBack({ onPress }: { onPress: () => void }) {
@@ -181,7 +182,7 @@ export function UserProfile() {
                   </Txt>
                 </Pop>
               </PressScale>
-              <GhostButton label={t('tab.messages')} onPress={() => go('messages')} style={{ flex: 1, minHeight: 46 }} />
+              {memberId ? <MessageButton memberId={memberId} style={{ flex: 1 }} /> : null}
             </View>
           )}
         </FadeIn>

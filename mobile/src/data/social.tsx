@@ -154,7 +154,7 @@ interface SocialValue {
   block: (memberId: string) => Promise<void>;
   unblock: (memberId: string) => Promise<void>;
 
-  report: (target: { kind: 'post' | 'comment' | 'member'; id: string }, reason: SocialReportReason, note?: string) => Promise<void>;
+  report: (target: { kind: 'post' | 'comment' | 'member' | 'message'; id: string }, reason: SocialReportReason, note?: string) => Promise<void>;
 
   publish: (input: PublishInput) => Promise<{ id: string; live: boolean }>;
   deletePost: (postId: string) => Promise<void>;
@@ -501,7 +501,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   const report = useCallback<SocialValue['report']>(
     async (target, reason, note) => {
       if (demo || !supabase) return;
-      const column = target.kind === 'post' ? 'post_id' : target.kind === 'comment' ? 'comment_id' : 'member_id';
+      const column = { post: 'post_id', comment: 'comment_id', member: 'member_id', message: 'message_id' }[target.kind];
       const { error: e } = await supabase
         .from('social_reports')
         .insert({ [column]: target.id, reason, note: note?.trim() || null });

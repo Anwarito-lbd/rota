@@ -70,8 +70,16 @@ Copy `mobile/.env.example` to `mobile/.env` for the app's public keys;
   `lucy-image-2` on a photo), behind an AI consent screen
 - **ID verification gate**: Stripe Identity required to rent and to list;
   verified members post without review
-- Delivery: "Rencontre à Paris — Offert" by default, "Rota Delivery" as the
-  paid option (see [docs/DELIVERY.md](docs/DELIVERY.md))
+- **Messages**: one conversation per pair of members, real time, meeting
+  points picked from a list of public places, a "keep it in Rota" nudge on
+  phone numbers / e-mails / payment apps, report and block on every thread
+- **Community rules** screen (Dressing → Règles de la communauté): what is
+  allowed, how moderation works (a person reviews reports, usually within 24 h)
+- **Back office → Social**: pending posts and every report on posts,
+  comments, messages and profiles, oldest first, each decision audited
+- Delivery: "Rencontre à Paris — Offert" only, for now. "Rota Delivery" is
+  built into booking but switched off server-side (`flag_rota_delivery`)
+  until labels and tracking exist (see [docs/DELIVERY.md](docs/DELIVERY.md))
 
 ## App Store
 
@@ -114,12 +122,25 @@ proper Figma frames built from the file's components.
 - Web preview: `metro.config.js` swaps `@stripe/stripe-react-native` for
   `web-shims/` on web only.
 
-**Not done yet.** Apply migration 009 and deploy `tryon-token` (+
-`DECART_API_KEY`); admin queue for pending posts and social reports; the
-delivery pieces listed in `docs/DELIVERY.md` (labels, carrier webhook, QR,
-meeting points); `.well-known` files for app links; Figma frames for the
-social screens; iOS guard run on a Mac/EAS build. See
-[docs/LAUNCH_PLAN.md](docs/LAUNCH_PLAN.md).
+**Done since (branch `feat/finish-core`, migration 010).** Staff queue for
+the social layer (`staff_social_queue`, `staff_decide_social`), in-app
+messaging (`conversations`, `messages`, `start_conversation`,
+`my_conversations`, Realtime), the community rules screen, and a server
+switch that refuses `delivery = 'ship'` while `flag_rota_delivery` is false.
+Client: `src/data/messages.ts`, `screens/Messages.tsx`, `screens/Guidelines.tsx`,
+`ui/MessageButton.tsx` (profile, listing, rental), Admin → Social.
+
+**Not done yet.** Apply migrations 009 and 010 to the real Supabase project
+and test them (never run against a database yet); deploy `tryon-token`
+(+ `DECART_API_KEY`); lawyer-reviewed terms and privacy policy covering
+posts, messages, approximate location, Decart and Stripe Identity; the
+delivery pieces in `docs/DELIVERY.md` (labels, carrier webhook, QR) before
+turning `flag_rota_delivery` on; `.well-known` files for app links; Figma
+frames for the social screens; a store build tested on a phone and the iOS
+guard run. See [docs/LAUNCH_PLAN.md](docs/LAUNCH_PLAN.md).
+
+**Develop outside OneDrive.** Metro fails with `EINVAL: readlink … app.json`
+on files OneDrive has synced; clone the repo to a normal folder.
 
 **Research.** [docs/research/2026-09-paris-launch-deep-research.md](docs/research/2026-09-paris-launch-deep-research.md)
 (market, hybrid fulfilment, escrow, protection, French law, copy, KPIs, rollout).

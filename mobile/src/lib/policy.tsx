@@ -61,6 +61,8 @@ export interface Policy {
   flagIdStepUp: boolean;
   flagTrustTiers: boolean;
   flagRiskScoring: boolean;
+  /** Rota Delivery (labels + tracking). Off until the carrier integration ships (migration 010). */
+  flagRotaDelivery: boolean;
 }
 
 /** Mirrors the seed rows in supabase/migrations/002_trust_protection.sql. */
@@ -96,6 +98,7 @@ export const DEFAULT_POLICY: Policy = {
   flagIdStepUp: false,
   flagTrustTiers: false,
   flagRiskScoring: false,
+  flagRotaDelivery: false,
 };
 
 /** policy_config.key → Policy field. Anything unknown is ignored. */
@@ -125,6 +128,7 @@ const KEYS: Record<string, keyof Policy> = {
   flag_id_step_up: 'flagIdStepUp',
   flag_trust_tiers: 'flagTrustTiers',
   flag_risk_scoring: 'flagRiskScoring',
+  flag_rota_delivery: 'flagRotaDelivery',
 };
 
 type ConfigRow = { key: string; value: unknown };

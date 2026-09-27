@@ -357,7 +357,7 @@ export function Feed() {
           >
             <PlusIcon size={16} />
             <Txt size={14} weight="bold" color={OVER_INK}>
-              {t('feed.rent')}
+              {t('create.title')}
             </Txt>
           </PressScale>
           <PressScale

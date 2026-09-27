@@ -22,6 +22,8 @@ import {
   Txt,
 } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
+import { usePolicy } from '../lib/policy';
+import { MessageButton } from '../ui/MessageButton';
 import { PressScale } from '../ui/motion';
 
 function RoundOverlayButton({
@@ -59,6 +61,7 @@ export function Detail() {
   const insets = useSafeAreaInsets();
   const listing = useListing(state.activeId);
   const { days, quote } = useBooking(listing);
+  const policy = usePolicy();
 
   if (!listing) {
     return (
@@ -212,6 +215,8 @@ export function Detail() {
             </Txt>
           </PressScale>
 
+          <MessageButton memberId={listing.ownerId} listingId={listing.id} label={t('msg.ask')} style={{ marginTop: 12 }} />
+
           <Card
             onPress={() => set({ screen: 'user', profileId: listing.ownerId })}
             style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}
@@ -326,7 +331,7 @@ export function Detail() {
           <View style={{ marginTop: 12 }}>
             <Note tone="accent">
               {listing.cleaning.byLender ? `Nettoyage ${m(listing.cleaning.fee)}` : 'Nettoyage à votre charge'} ·
-              livraison {m(FEES.shipping)} ·{' '}
+              {policy.flagRotaDelivery ? `livraison ${m(FEES.shipping)} · ` : 'remise en main propre offerte · '}
               {quote.hold.required ? `caution ${m(quote.hold.amount)}` : t('protect.noDepositShort').toLowerCase()}.
               Tout est affiché avant paiement.
             </Note>
