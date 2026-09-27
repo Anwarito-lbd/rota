@@ -6,14 +6,15 @@ import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { useListings } from '../data/listings';
-import { SOCIAL_REPORT_REASONS, useComments, useSocial, type SocialReportReason } from '../data/social';
+import { SOCIAL_REPORT_REASONS, useComments, useMember, useSocial, type SocialReportReason } from '../data/social';
 import { useT, type TranslationKey } from '../i18n';
 import { useStore } from '../state/store';
 import { FONT, ff } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { BookmarkIcon, CameraIcon, PlusIcon, SendIcon, TabAddIcon } from './icons';
-import { Check, Display, Field, GhostButton, PrimaryButton, Radio, Sheet, Txt } from './kit';
+import { Check, Display, Field, GhostButton, PrimaryButton, Row, Sheet, Txt } from './kit';
 import { Avatar, FadeIn, PressScale, tap, timeAgo } from './motion';
+import { BlockRow } from './Moderation';
 
 // ─── Comments ──────────────────────────────────────────────────
 
@@ -304,6 +305,7 @@ export function SocialReportSheet() {
   const { t } = useT();
   const social = useSocial();
   const target = state.socialReport;
+  const member = useMember(target?.memberId ?? null);
   const [reason, setReason] = useState<SocialReportReason | null>(null);
   const [note, setNote] = useState('');
   const [alsoBlock, setAlsoBlock] = useState(false);
@@ -357,20 +359,15 @@ export function SocialReportSheet() {
         </FadeIn>
       ) : (
         <>
-          <View style={{ marginTop: 10, gap: 2 }}>
-            {SOCIAL_REPORT_REASONS.map((r) => (
-              <Pressable
+          <View style={{ marginTop: 12, borderRadius: 20, backgroundColor: c.surf2, overflow: 'hidden' }}>
+            {SOCIAL_REPORT_REASONS.map((r, i) => (
+              <Row
                 key={r}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: reason === r }}
+                label={reasonLabel(r)}
+                checked={reason === r}
                 onPress={() => setReason(r)}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 }}
-              >
-                <Radio on={reason === r} />
-                <Txt size={15} style={{ flex: 1 }}>
-                  {reasonLabel(r)}
-                </Txt>
-              </Pressable>
+                last={i === SOCIAL_REPORT_REASONS.length - 1}
+              />
             ))}
           </View>
           {reason ? (
@@ -383,15 +380,6 @@ export function SocialReportSheet() {
               multiline
             />
           ) : null}
-          <Pressable
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: alsoBlock }}
-            onPress={() => setAlsoBlock((v) => !v)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 }}
-          >
-            <Check on={alsoBlock} />
-            <Txt size={15}>{t('sreport.block')}</Txt>
-          </Pressable>
           {error ? (
             <Txt size={13} color={c.plum}>
               {error}
@@ -401,8 +389,9 @@ export function SocialReportSheet() {
             label={busy ? t('common.loading') : t('report.send')}
             onPress={send}
             disabled={!reason || busy}
-            style={{ marginTop: 6 }}
+            style={{ marginTop: 14 }}
           />
+          {target ? <BlockRow memberId={target.memberId} username={member?.username ?? '…'} onDone={close} /> : null}
         </>
       )}
     </Sheet>

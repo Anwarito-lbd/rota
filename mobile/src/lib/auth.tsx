@@ -1,4 +1,9 @@
 import type { Session } from '@supabase/supabase-js';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { usernameError } from '../state/auth';
 import { backendConfigured, supabase } from './supabase';
@@ -12,6 +17,8 @@ export interface Profile {
   city: string | null;
   bio: string | null;
   showCity: boolean;
+  /** False after Apple/Google sign-in until the member picks a username (migration 011). */
+  usernameConfirmed: boolean;
 }
 
 interface AuthValue {
@@ -34,6 +41,10 @@ interface AuthValue {
   confirmEmail: (input: { email: string; code: string }) => Promise<string | null>;
   resendCode: (email: string) => Promise<string | null>;
   signIn: (input: { email: string; password: string }) => Promise<string | null>;
+  /** Native Apple sheet (iOS only). Resolves to an error message, 'cancelled', or null. */
+  signInWithApple: () => Promise<string | null>;
+  /** Google in an auth browser session. Same return convention. */
+  signInWithGoogle: () => Promise<string | null>;
   signOut: () => Promise<void>;
 }
 
@@ -122,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           city: data.city,
           bio: data.bio ?? null,
           showCity: data.show_city ?? true,
+          usernameConfirmed: data.username_confirmed ?? true,
         });
       });
     return () => {
@@ -165,6 +177,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error ? toFrench(error.message) : null;
   }, []);
 
+  const signInWithApple = useCallback<AuthValue['signInWithApple']>(async () => {
+    if (!supabase) return NOT_CONFIGURED;
+    try {
+      // Apple gets the hash of a one-time value; Supabase checks the original.
+      const rawNonce = Crypto.randomUUID();
+      const hashed = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashed,
+      });
+      if (!credential.identityToken) return 'Apple n’a pas renvoyé d’identifiant. Réessayez.';
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+        nonce: rawNonce,
+      });
+      return error ? toFrench(error.message) : null;
+    } catch (e) {
+      if ((e as { code?: string }).code === 'ERR_REQUEST_CANCELED') return 'cancelled';
+      return 'Connexion avec Apple impossible. Réessayez.';
+    }
+  }, []);
+
+  const signInWithGoogle = useCallback<AuthValue['signInWithGoogle']>(async () => {
+    if (!supabase) return NOT_CONFIGURED;
+    const redirectTo = Linking.createURL('auth-callback');
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo, skipBrowserRedirect: true },
+    });
+    if (error || !data?.url) return toFrench(error?.message ?? 'oauth');
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (result.type !== 'success') return 'cancelled';
+    // PKCE returns ?code=…, the implicit flow returns #access_token=….
+    const url = result.url;
+    const query = new URLSearchParams(url.split('?')[1]?.split('#')[0] ?? '');
+    const hash = new URLSearchParams(url.split('#')[1] ?? '');
+    const code = query.get('code');
+    if (code) {
+      const { error: e } = await supabase.auth.exchangeCodeForSession(code);
+      return e ? toFrench(e.message) : null;
+    }
+    const access_token = hash.get('access_token');
+    const refresh_token = hash.get('refresh_token');
+    if (access_token && refresh_token) {
+      const { error: e } = await supabase.auth.setSession({ access_token, refresh_token });
+      return e ? toFrench(e.message) : null;
+    }
+    return 'Connexion avec Google impossible. Réessayez.';
+  }, []);
+
   const signOut = useCallback(async () => {
     await supabase?.auth.signOut();
   }, []);
@@ -182,9 +248,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       confirmEmail,
       resendCode,
       signIn,
+      signInWithApple,
+      signInWithGoogle,
       signOut,
     }),
-    [loading, session, profile, isStaff, refreshProfile, needsMfa, refreshMfa, signUp, confirmEmail, resendCode, signIn, signOut],
+    [
+      loading, session, profile, isStaff, refreshProfile, needsMfa, refreshMfa, signUp, confirmEmail, resendCode,
+      signIn, signInWithApple, signInWithGoogle, signOut,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -197,3 +268,9 @@ export function useAuth(): AuthValue {
 }
 
 export { backendConfigured };
+
+/** Sign in with Apple is offered on iOS only (Apple 4.8 pairs it with Google there). */
+export async function appleSignInAvailable() {
+  if (Platform.OS !== 'ios') return false;
+  return AppleAuthentication.isAvailableAsync().catch(() => false);
+}

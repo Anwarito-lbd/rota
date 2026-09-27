@@ -49,6 +49,8 @@ decided on.
 | Piece | Status |
 |---|---|
 | Two options at booking, meet first and free by default | Done: `mobile/src/screens/Booking.tsx`, `state.delivery` defaults to `'meet'` |
+| Rota Delivery switched off until labels exist | Done: `policy_config.flag_rota_delivery = false` hides it in the app, and a trigger on `rentals` refuses `delivery = 'ship'` (migration 010) |
+| Public meeting points | Done: members propose one from a curated list inside Messages (`MEETING_PLACES` in `mobile/src/data/messages.ts`), never a typed address |
 | Copy hides the mechanics ("Suivi et protégé", "adresse jamais partagée") | Done |
 | Pieces ≥ 1 500 € (approved or declared value) are hand-to-hand only | Done (`HIGH_VALUE_EUR` in Booking.tsx) |
 | Handover and return confirmed by code | Exists already (rental screens, migration 004) |
@@ -56,6 +58,5 @@ decided on.
 | Lateness waived once the carrier scans the return | **To build**: carrier webhook → `rentals.returned_at` |
 | Prepaid labels (outbound + return) | **To build**: carrier API (Mondial Relay / Colissimo / Boxtal); `payments` function creates the label after the charge succeeds |
 | Protection tier by value | **To build**: pick the carrier insurance option from `approved_value` server-side |
-| Public meeting-point picker | **To build**: curated list of public places per arrondissement, chosen in chat, never a home address |
 | QR instead of typed code | **To build**: render the existing handover code as a QR (`react-native-qrcode-svg`) and scan it with `expo-camera` |
 | Rota concierge for very high value | Later |

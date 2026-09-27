@@ -1,9 +1,14 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Linking, Pressable, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { permissions, rules } from '../data/catalog';
-import { backendConfigured, useAuth } from '../lib/auth';
+import { Image } from 'expo-image';
+import * as WebBrowser from 'expo-web-browser';
+import Svg, { Path } from 'react-native-svg';
+import { appleSignInAvailable, backendConfigured, useAuth } from '../lib/auth';
+import { LEGAL_URLS } from '../lib/config';
+import { AppleIcon } from '../ui/icons';
 import { usePermissions, type PermStatus } from '../lib/permissions';
 import { emailValid, passwordChecks, passwordValid, usernameError } from '../state/auth';
 import { useStore } from '../state/store';
@@ -23,7 +28,7 @@ import {
 } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
 import { FadeIn, Logo, PressScale } from '../ui/motion';
-import { useT } from '../i18n';
+import { useT, type TranslationKey } from '../i18n';
 
 function SocialButton({
   label,
@@ -62,10 +67,35 @@ function SocialButton({
   );
 }
 
+/**
+ * Welcome (Figma 01): app tile, brand lines, Apple (iOS) and Google sign-in,
+ * e-mail sign-up, sign-in, and the legal links, over our hero photo.
+ */
 function Welcome() {
   const { set } = useStore();
   const { t } = useT();
   const insets = useSafeAreaInsets();
+  const { signInWithApple, signInWithGoogle } = useAuth();
+  const [apple, setApple] = useState(false);
+  const [busy, setBusy] = useState<'apple' | 'google' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    appleSignInAvailable().then(setApple);
+  }, []);
+
+  const social = async (provider: 'apple' | 'google') => {
+    setBusy(provider);
+    setError(null);
+    // New members go through the community rules and permissions next.
+    set({ obStep: 1, authErr: null });
+    const result = provider === 'apple' ? await signInWithApple() : await signInWithGoogle();
+    setBusy(null);
+    if (result) {
+      set({ obStep: 0 });
+      if (result !== 'cancelled') setError(result);
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0C0A0D' }}>
@@ -79,66 +109,104 @@ function Welcome() {
         />
       </View>
       <LinearGradient
-        colors={['rgba(12,10,13,0.5)', 'rgba(12,10,13,0.05)', 'rgba(12,10,13,0.92)', '#0C0A0D']}
-        locations={[0, 0.3, 0.74, 1]}
+        colors={['rgba(12,10,13,0.35)', 'rgba(12,10,13,0.2)', 'rgba(12,10,13,0.88)', '#0C0A0D']}
+        locations={[0, 0.28, 0.62, 1]}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
-      <FadeIn style={{ paddingTop: insets.top + 28, alignItems: 'center' }}>
-        <Logo width={150} />
-      </FadeIn>
       <View style={{ flex: 1, minHeight: 0 }} />
-      <View style={{ justifyContent: 'flex-end', paddingHorizontal: 26, paddingBottom: insets.bottom + 24 }}>
-        <View
-          style={{
-            alignSelf: 'flex-start',
-            paddingHorizontal: 11,
-            paddingVertical: 7,
-            borderRadius: 8,
-            backgroundColor: '#E2A9F1',
-          }}
-        >
-          <Txt size={11} weight="bold" upper color="#2A1033">
-            Paris · location entre particuliers
-          </Txt>
-        </View>
-
-        <Display brand size={48} color={OVER_INK} style={{ marginTop: 16 }}>
+      <FadeIn style={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 18 }}>
+        <Image
+          source={require('../../assets/icon.png')}
+          accessibilityLabel="Rota"
+          style={{ width: 72, height: 72, borderRadius: 18 }}
+        />
+        <Txt size={13} weight="semi" color="#E2A9F1" style={{ marginTop: 14 }}>
+          {t('welcome.eyebrow')}
+        </Txt>
+        <Display brand size={46} color={OVER_INK} style={{ marginTop: 10 }}>
           Wear it once.
         </Display>
-        <Display size={48} color="#E2A9F1" italic>
+        <Display size={46} color="#E2A9F1" italic>
           Pass it on.
         </Display>
-
-        <Txt size={15} color="#D6CEC5" style={{ marginTop: 12 }}>
-          Empruntez dans les dressings près de chez vous, pour un soir ou une semaine. Mettez le vôtre en location et il
-          commence à se rembourser.
+        <Txt size={15} color="rgba(247,242,248,0.78)" style={{ marginTop: 12 }}>
+          {t('welcome.body')}
         </Txt>
 
-        <View style={{ marginTop: 24, gap: 10 }}>
-          <SocialButton
-            filled
-            label="S'inscrire avec un e-mail"
+        <View style={{ marginTop: 22, gap: 10 }}>
+          {apple ? (
+            <PressScale
+              haptic="light"
+              disabled={!!busy}
+              onPress={() => social('apple')}
+              accessibilityLabel={t('welcome.apple')}
+              style={{
+                minHeight: 54,
+                borderRadius: 999,
+                backgroundColor: OVER_INK,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+            >
+              <AppleIcon size={17} color="#0C0A0D" />
+              <Txt size={17} weight="semi" color="#0C0A0D">
+                {busy === 'apple' ? t('common.loading') : t('welcome.apple')}
+              </Txt>
+            </PressScale>
+          ) : null}
+          <PressScale
+            haptic="light"
+            disabled={!!busy}
+            onPress={() => social('google')}
+            accessibilityLabel={t('welcome.google')}
+            style={{
+              minHeight: 54,
+              borderRadius: 999,
+              backgroundColor: 'rgba(247,242,248,0.1)',
+              borderWidth: 1,
+              borderColor: 'rgba(247,242,248,0.22)',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            <GoogleIcon />
+            <Txt size={17} weight="semi" color={OVER_INK}>
+              {busy === 'google' ? t('common.loading') : t('welcome.google')}
+            </Txt>
+          </PressScale>
+          {error ? (
+            <Txt size={13} center color="#F2A0C4">
+              {error}
+            </Txt>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
             onPress={() => set({ obStep: 'auth', authMode: 'signup', authErr: null })}
-          />
+            style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Txt size={16} weight="semi" color="#E2A9F1">
+              {t('welcome.email')}
+            </Txt>
+          </Pressable>
           {!backendConfigured ? (
             <PressScale
               haptic="light"
               onPress={() => set({ signedIn: true, emailVerified: true, obStep: 1, authErr: null })}
               style={{
-                minHeight: 54,
-                borderRadius: 16,
+                minHeight: 48,
+                borderRadius: 999,
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: '#E2A9F1',
                 paddingHorizontal: 16,
-                paddingVertical: 8,
               }}
             >
-              <Txt size={17} weight="bold" center color="#2A1033">
+              <Txt size={16} weight="bold" center color="#2A1033">
                 {t('demo.enter')}
-              </Txt>
-              <Txt size={11} center color="#2A1033">
-                {t('demo.body')}
               </Txt>
             </PressScale>
           ) : null}
@@ -147,22 +215,44 @@ function Welcome() {
         <Pressable
           accessibilityRole="button"
           onPress={() => set({ obStep: 'auth', authMode: 'login', authErr: null })}
-          style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10 }}
+          style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 6 }}
         >
-          <Txt size={14} color="#D6CEC5">
-            Vous avez déjà un compte ?
+          <Txt size={14} color="rgba(247,242,248,0.7)">
+            {t('welcome.haveAccount')}
           </Txt>
-          <Txt size={14} weight="bold" color="#E2A9F1">
-            Se connecter
+          <Txt size={14} weight="bold" color={OVER_INK}>
+            {t('welcome.login')}
           </Txt>
         </Pressable>
 
-        <Txt size={12} center color="#BDB4AA" style={{ marginTop: 4 }}>
-          Rota est réservé aux 16 ans et plus. En continuant, vous acceptez nos Conditions et notre Politique de
-          confidentialité.
+        <Txt size={12} center color="rgba(247,242,248,0.55)" style={{ marginTop: 8 }}>
+          {t('welcome.legal')}
         </Txt>
-      </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 18, marginTop: 6 }}>
+          {[
+            [t('welcome.terms'), LEGAL_URLS.terms],
+            [t('welcome.privacy'), LEGAL_URLS.privacy],
+          ].map(([label, url]) => (
+            <Pressable key={url} accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(url)} hitSlop={8}>
+              <Txt size={12} weight="semi" color={OVER_INK} style={{ textDecorationLine: 'underline' }}>
+                {label}
+              </Txt>
+            </Pressable>
+          ))}
+        </View>
+      </FadeIn>
     </View>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24">
+      <Path
+        fill="#EA4335"
+        d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.9-5.5 3.9-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.5 14.6 2.5 12 2.5 6.8 2.5 2.5 6.8 2.5 12s4.3 9.5 9.5 9.5c5.5 0 9.1-3.9 9.1-9.3 0-.6-.1-1.1-.2-1.6H12z"
+      />
+    </Svg>
   );
 }
 
@@ -526,65 +616,97 @@ const PERM_LABEL: Record<PermStatus, string> = {
   blocked: 'Réglages',
 };
 
+const PERM_ICON: Record<'camera' | 'microphone' | 'photos' | 'location', string> = {
+  camera:
+    'M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.5-2h5.6l1.5 2h2.2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5zM12 16.4a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8z',
+  microphone: 'M12 3.5a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0v-5a3 3 0 0 1 3-3zM6 11.5a6 6 0 0 0 12 0M12 17.5v3',
+  photos: 'M4 5h16v14H4zM4 15l4.5-4.5 3.5 3.5 2.5-2.5L20 17',
+  location: 'M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.8 12 21 12 21zM12 12.1a2.3 2.3 0 1 0 0-4.6 2.3 2.3 0 0 0 0 4.6z',
+};
+
+/** Permissions, explained before the system asks (Figma 10). */
 function Perms() {
   const { go } = useStore();
-  const { c, fs } = useTheme();
+  const { c } = useTheme();
+  const { t } = useT();
   const { statuses, request } = usePermissions();
+  const keys = ['camera', 'microphone', 'photos', 'location'] as const;
 
   return (
     <View style={{ flex: 1 }}>
       <Screen bottomInset={140}>
-        <Txt size={12} weight="semi" upper color={c.accent}>
-          Étape 2 sur 2
+        <Txt size={13} weight="semi" color={c.accent}>
+          {t('perm.step')}
         </Txt>
-        <Display size={36} style={{ marginTop: 8 }}>
-          Ce qu'on demande, et pourquoi
+        <Display size={34} style={{ marginTop: 8 }}>
+          {t('perm.title')}
         </Display>
         <Txt size={15} color={c.ink2} style={{ marginTop: 10 }}>
-          Rien n'est nécessaire pour parcourir l'app. Activez au moment où vous en avez besoin — le téléphone
-          redemandera à ce moment-là.
+          {t('perm.body')}
         </Txt>
 
-        <View style={{ marginTop: 20, gap: 10 }}>
-          {permissions.map((p) => {
-            const status = statuses[p.key];
+        <View style={{ marginTop: 20, borderRadius: 20, backgroundColor: c.surf, overflow: 'hidden' }}>
+          {keys.map((key, i) => {
+            const status = statuses[key];
             const on = status === 'granted';
+            const blocked = status === 'blocked';
             return (
-              <Card key={p.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 13 }}>
+              <View
+                key={key}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                  borderBottomWidth: i === keys.length - 1 ? 0 : 1,
+                  borderBottomColor: c.line,
+                }}
+              >
+                <Svg width={22} height={22} viewBox="0 0 24 24">
+                  <Path d={PERM_ICON[key]} stroke={c.accent} strokeWidth={1.7} fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                </Svg>
                 <View style={{ flex: 1 }}>
-                  <Txt weight="bold">{p.title}</Txt>
-                  <Txt size={13} color={c.ink2} style={{ marginTop: 4 }}>
-                    {status === 'blocked'
-                      ? 'Refusé sur ce téléphone. Touchez « Réglages » pour l’autoriser.'
-                      : p.body}
+                  <Txt weight="semi">{t(`perm.${key}` as TranslationKey)}</Txt>
+                  <Txt size={13} color={c.ink2} style={{ marginTop: 2 }}>
+                    {blocked ? t('perm.blocked') : t(`perm.${key}Body` as TranslationKey)}
                   </Txt>
                 </View>
-                <Pressable
-                  accessibilityRole="button"
+                <PressScale
+                  haptic="light"
                   accessibilityState={{ selected: on, disabled: on }}
-                  onPress={() => !on && request(p.key)}
+                  onPress={() => {
+                    if (blocked) Linking.openSettings().catch(() => undefined);
+                    else if (!on) request(key);
+                  }}
                   style={{
-                    minHeight: 44,
-                    paddingHorizontal: 16,
+                    minHeight: 36,
+                    paddingHorizontal: 14,
+                    borderRadius: 999,
                     justifyContent: 'center',
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: on ? c.accent : c.line2,
-                    backgroundColor: on ? c.accent : 'transparent',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    backgroundColor: on ? c.accentSoft : c.surf2,
                   }}
                 >
-                  <Txt size={14} weight="bold" color={on ? c.onAccent : c.ink} style={{ fontSize: fs(14) }}>
-                    {PERM_LABEL[status]}
+                  {on ? (
+                    <Txt size={14} weight="bold" color={c.accent}>
+                      ✓
+                    </Txt>
+                  ) : null}
+                  <Txt size={14} weight="bold" color={c.accent}>
+                    {on ? t('perm.active') : blocked ? t('perm.settings') : t('perm.activate')}
                   </Txt>
-                </Pressable>
-              </Card>
+                </PressScale>
+              </View>
             );
           })}
         </View>
       </Screen>
 
       <FooterBar>
-        <PrimaryButton label="Commencer à parcourir" onPress={() => go('feed')} />
+        <PrimaryButton label={t('perm.start')} onPress={() => go('feed')} />
       </FooterBar>
     </View>
   );

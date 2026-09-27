@@ -12,6 +12,7 @@ import { useTheme } from '../theme/useTheme';
 import { ChevronLeft, DotsIcon, GridIcon, ShieldCheckIcon, TagIcon } from '../ui/icons';
 import { Amount, CertifiedMark, Display, GhostButton, Header, PrimaryButton, Screen, Txt } from '../ui/kit';
 import { Avatar, FadeIn, IdBadge, Pop, PressScale, Segmented, Skeleton, compact, tap } from '../ui/motion';
+import { MessageButton } from '../ui/MessageButton';
 import { PostCard } from '../ui/PostCard';
 
 function FloatingBack({ onPress }: { onPress: () => void }) {
@@ -181,7 +182,7 @@ export function UserProfile() {
                   </Txt>
                 </Pop>
               </PressScale>
-              <GhostButton label={t('tab.messages')} onPress={() => go('messages')} style={{ flex: 1, minHeight: 46 }} />
+              {memberId ? <MessageButton memberId={memberId} style={{ flex: 1 }} /> : null}
             </View>
           )}
         </FadeIn>
@@ -386,5 +387,67 @@ export function MemberRow({ id, username, avatar }: { id: string; username: stri
       <Avatar uri={avatar} size={32} />
       <Txt weight="semi">@{username}</Txt>
     </Pressable>
+  );
+}
+
+// ─── Blocked members ──────────────────────────────────────────
+
+function BlockedRow({ id, last }: { id: string; last: boolean }) {
+  const { c } = useTheme();
+  const { t } = useT();
+  const social = useSocial();
+  const member = useMember(id);
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderBottomWidth: last ? 0 : 1,
+        borderBottomColor: c.line,
+      }}
+    >
+      <Avatar uri={member?.avatar} size={40} />
+      <Txt weight="semi" style={{ flex: 1 }} numberOfLines={1}>
+        @{member?.username ?? '…'}
+      </Txt>
+      <PressScale
+        onPress={() => social.unblock(id)}
+        style={{ paddingHorizontal: 14, minHeight: 34, borderRadius: 999, backgroundColor: c.surf2, justifyContent: 'center' }}
+      >
+        <Txt size={14} weight="bold" color={c.accent}>
+          {t('profile.unblock')}
+        </Txt>
+      </PressScale>
+    </View>
+  );
+}
+
+export function Blocked() {
+  const { go } = useStore();
+  const { c } = useTheme();
+  const { t } = useT();
+  const social = useSocial();
+  const ids = social.blockedIds;
+  return (
+    <Screen>
+      <Header title={t('set.blocked')} onBack={() => go('settings')} />
+      <Txt size={14} color={c.ink2} style={{ marginTop: 10 }}>
+        {t('blocked.body')}
+      </Txt>
+      {ids.length === 0 ? (
+        <Txt color={c.ink3} style={{ marginTop: 24 }} center>
+          {t('blocked.empty')}
+        </Txt>
+      ) : (
+        <View style={{ marginTop: 16, borderRadius: 20, backgroundColor: c.surf, overflow: 'hidden' }}>
+          {ids.map((id, i) => (
+            <BlockedRow key={id} id={id} last={i === ids.length - 1} />
+          ))}
+        </View>
+      )}
+    </Screen>
   );
 }

@@ -1,3 +1,5 @@
+import { useSocial } from '../data/social';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useListing, type Listing } from '../data/listings';
@@ -6,7 +8,7 @@ import { useAuth } from '../lib/auth';
 import { appealListing, hasOpenAppeal, REPORT_REASONS, reportListing, type ReportReason } from '../lib/moderation';
 import { useStore } from '../state/store';
 import { useTheme } from '../theme/useTheme';
-import { Display, Field, GhostButton, PrimaryButton, Radio, Sheet, Txt } from './kit';
+import { Display, Field, GhostButton, PrimaryButton, Row, Sheet, Txt } from './kit';
 
 /** Why a listing is not in the feed, in the member's language. */
 function reasonText(t: (k: TranslationKey) => string, listing: Listing) {
@@ -184,18 +186,15 @@ export function ReportSheet() {
           <Txt size={14} color={c.ink2} style={{ marginTop: 6 }}>
             {t('report.help')}
           </Txt>
-          <View style={{ marginTop: 12, gap: 2 }}>
-            {REPORT_REASONS.map((r) => (
-              <Pressable
+          <View style={{ marginTop: 12, borderRadius: 20, backgroundColor: c.surf2, overflow: 'hidden' }}>
+            {REPORT_REASONS.map((r, i) => (
+              <Row
                 key={r}
+                label={t(`report.reason.${r}` as TranslationKey)}
+                checked={reason === r}
                 onPress={() => setReason(r)}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 }}
-              >
-                <Radio on={reason === r} />
-                <Txt size={15} style={{ flex: 1 }}>
-                  {t(`report.reason.${r}` as TranslationKey)}
-                </Txt>
-              </Pressable>
+                last={i === REPORT_REASONS.length - 1}
+              />
             ))}
           </View>
           {reason ? (
@@ -221,8 +220,40 @@ export function ReportSheet() {
             disabled={!reason || busy}
             style={{ marginTop: 16 }}
           />
+          <BlockRow memberId={listing.ownerId} username={listing.owner.username} onDone={close} />
         </>
       )}
     </Sheet>
+  );
+}
+
+/** "Bloquer @user" under a report (Figma 11). Immediate and mutual. */
+export function BlockRow({ memberId, username, onDone }: { memberId: string; username: string; onDone: () => void }) {
+  const { c } = useTheme();
+  const { t } = useT();
+  const social = useSocial();
+  if (!social.meId || memberId === social.meId || social.isBlocked(memberId)) return null;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={async () => {
+        await social.block(memberId).catch(() => undefined);
+        onDone();
+      }}
+      style={{ marginTop: 18, paddingTop: 16, borderTopWidth: 1, borderTopColor: c.line, flexDirection: 'row', gap: 12 }}
+    >
+      <Svg width={22} height={22} viewBox="0 0 24 24">
+        <Circle cx="12" cy="12" r="8.5" stroke={c.plum} strokeWidth={1.8} fill="none" />
+        <Path d="M6 6l12 12" stroke={c.plum} strokeWidth={1.8} />
+      </Svg>
+      <View style={{ flex: 1 }}>
+        <Txt weight="bold" color={c.plum}>
+          {t('report.blockMember').replace('{name}', username)}
+        </Txt>
+        <Txt size={13} color={c.ink3} style={{ marginTop: 2 }}>
+          {t('report.blockBody')}
+        </Txt>
+      </View>
+    </Pressable>
   );
 }
