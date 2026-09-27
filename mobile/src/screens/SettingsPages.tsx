@@ -43,7 +43,7 @@ import { passwordChecks, passwordValid, usernameError } from '../state/auth';
 import { useStore } from '../state/store';
 import type { Lang, ThemeMode } from '../state/types';
 import { useTheme } from '../theme/useTheme';
-import { Field, GhostButton, Group, Header, PrimaryButton, Radio, Row, Screen, SectionLabel, Toggle, Txt } from '../ui/kit';
+import { BackButton, Field, GhostButton, Group, Header, PrimaryButton, Radio, Row, Screen, SectionLabel, Toggle, Txt } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
 import { PayoutsCard } from '../ui/Payouts';
 
@@ -118,6 +118,126 @@ function Help({ children }: { children: ReactNode }) {
   const { c } = useTheme();
   return (
     <Txt size={12} color={c.ink3} style={{ marginTop: 8, paddingHorizontal: 4 }}>
+      {children}
+    </Txt>
+  );
+}
+
+// ── Flat lists (Vinted-style notification and privacy pages) ───
+
+/** Full-width page with a small centred title, like a system settings list. */
+function FlatPage({ title, children }: { title: string; children: ReactNode }) {
+  const { go } = useStore();
+  return (
+    <Screen padded={false} bottomInset={60}>
+      <View style={{ height: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 }}>
+        <BackButton onPress={() => go('settings')} />
+        <Txt size={17} weight="bold" center numberOfLines={1} style={{ flex: 1 }}>
+          {title}
+        </Txt>
+        <View style={{ width: 44 }} />
+      </View>
+      {children}
+    </Screen>
+  );
+}
+
+/** A section: a thick band above (except the first), a small grey title, rows. */
+function FlatSection({ title, first, children }: { title?: string; first?: boolean; children: ReactNode }) {
+  const { c } = useTheme();
+  return (
+    <View style={{ borderTopWidth: first ? 0 : 10, borderTopColor: c.surf }}>
+      {title ? (
+        <Txt size={14} color={c.ink3} style={{ paddingHorizontal: 18, paddingTop: 18, paddingBottom: 6 }}>
+          {title}
+        </Txt>
+      ) : null}
+      {children}
+    </View>
+  );
+}
+
+/** Title, optional explanation under it, switch on the right. */
+function FlatToggle({
+  label,
+  body,
+  on,
+  onPress,
+  disabled,
+  last,
+}: {
+  label: string;
+  body?: string;
+  on: boolean;
+  onPress: () => void;
+  disabled?: boolean;
+  last?: boolean;
+}) {
+  const { c } = useTheme();
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        minHeight: 60,
+        paddingHorizontal: 18,
+        paddingVertical: 14,
+        borderBottomWidth: last ? 0 : 1,
+        borderBottomColor: c.line,
+        opacity: disabled ? 0.45 : 1,
+      }}
+    >
+      <View style={{ flex: 1 }}>
+        <Txt size={16} weight="semi">
+          {label}
+        </Txt>
+        {body ? (
+          <Txt size={14} color={c.ink3} style={{ marginTop: 3 }}>
+            {body}
+          </Txt>
+        ) : null}
+      </View>
+      <Toggle on={on} onPress={() => !disabled && onPress()} label={label} />
+    </View>
+  );
+}
+
+/** A static line (title + value on the right), or a tappable one. */
+function FlatRow({ label, detail, onPress, last }: { label: string; detail?: string; onPress?: () => void; last?: boolean }) {
+  const { c } = useTheme();
+  return (
+    <Pressable
+      disabled={!onPress}
+      onPress={onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        minHeight: 56,
+        paddingHorizontal: 18,
+        backgroundColor: pressed ? c.surf2 : 'transparent',
+        borderBottomWidth: last ? 0 : 1,
+        borderBottomColor: c.line,
+      })}
+    >
+      <Txt size={16} style={{ flex: 1 }}>
+        {label}
+      </Txt>
+      {detail ? (
+        <Txt size={14} color={c.ink3}>
+          {detail}
+        </Txt>
+      ) : null}
+    </Pressable>
+  );
+}
+
+function FlatHelp({ children }: { children: ReactNode }) {
+  const { c } = useTheme();
+  return (
+    <Txt size={13} color={c.ink3} style={{ paddingHorizontal: 18, paddingVertical: 12 }}>
       {children}
     </Txt>
   );
@@ -717,66 +837,62 @@ export function PushSettings() {
   };
 
   const set = (patch: Parameters<typeof update>[0]) => update(patch).catch((e) => setError(friendlyError(e, t)));
+  const off = !prefs.pushEnabled;
   return (
-    <Page title={t('set.push')}>
-      <Group>
-        <ToggleRow label={t('set.pushAllow')} on={prefs.pushEnabled} onPress={toggleAll} disabled={loading} last />
-      </Group>
-      <SectionLabel>{t('set.pushWhat')}</SectionLabel>
-      <Group>
-        <ToggleRow
+    <FlatPage title={t('set.push')}>
+      <FlatSection first title={t('set.pushImportant')}>
+        <FlatToggle
           label={t('set.catBookings')}
           body={t('set.catBookingsBody')}
           on={prefs.pushBookings}
-          disabled={!prefs.pushEnabled}
+          disabled={off}
           onPress={() => set({ pushBookings: !prefs.pushBookings })}
         />
-        <ToggleRow
-          label={t('set.catReminders')}
-          body={t('set.catRemindersBody')}
-          on={prefs.pushReminders}
-          disabled={!prefs.pushEnabled}
-          onPress={() => set({ pushReminders: !prefs.pushReminders })}
-        />
-        <ToggleRow
+        <FlatToggle
           label={t('set.catClaims')}
           body={t('set.catClaimsBody')}
           on={prefs.pushClaims}
-          disabled={!prefs.pushEnabled}
+          disabled={off}
           onPress={() => set({ pushClaims: !prefs.pushClaims })}
           last
         />
-      </Group>
-      <GhostButton label={t('set.pushTest')} onPress={test} style={{ marginTop: 16 }} />
-      <Status ok={ok} error={error} />
-    </Page>
+      </FlatSection>
+      <FlatSection title={t('set.pushSecondary')}>
+        <FlatToggle
+          label={t('set.catReminders')}
+          body={t('set.catRemindersBody')}
+          on={prefs.pushReminders}
+          disabled={off}
+          onPress={() => set({ pushReminders: !prefs.pushReminders })}
+          last
+        />
+      </FlatSection>
+      <FlatSection title={t('set.pushGeneral')}>
+        <FlatToggle label={t('set.pushAllow')} on={prefs.pushEnabled} onPress={toggleAll} disabled={loading} />
+        <FlatRow label={t('set.pushTest')} onPress={test} last />
+      </FlatSection>
+      <View style={{ paddingHorizontal: 18 }}>
+        <Status ok={ok} error={error} />
+      </View>
+    </FlatPage>
   );
 }
 
 export function EmailSettings() {
-  const { c } = useTheme();
   const { t } = useT();
   const { session } = useAuth();
   const { prefs, loading, update } = usePreferences(!!session);
   const [error, setError] = useState<string | null>(null);
   return (
-    <Page title={t('set.email')}>
-      <SectionLabel>{t('set.emailAlways')}</SectionLabel>
-      <Group>
+    <FlatPage title={t('set.email')}>
+      <FlatSection first title={t('set.emailAlways')}>
         {(['set.catBookings', 'set.catClaims', 'set.catPayouts'] as const).map((k, i, all) => (
-          <Row
-            key={k}
-            label={t(k)}
-            detail={t('set.always')}
-            detailColor={c.ink3}
-            last={i === all.length - 1}
-          />
+          <FlatRow key={k} label={t(k)} detail={t('set.always')} last={i === all.length - 1} />
         ))}
-      </Group>
-      <Help>{t('set.emailAlwaysHelp')}</Help>
-      <SectionLabel>{t('set.emailOptional')}</SectionLabel>
-      <Group>
-        <ToggleRow
+        <FlatHelp>{t('set.emailAlwaysHelp')}</FlatHelp>
+      </FlatSection>
+      <FlatSection title={t('set.emailOptional')}>
+        <FlatToggle
           label={t('set.catReminders')}
           body={t('set.catRemindersBody')}
           on={prefs.emailReminders}
@@ -784,10 +900,12 @@ export function EmailSettings() {
           onPress={() => update({ emailReminders: !prefs.emailReminders }).catch((e) => setError(friendlyError(e, t)))}
           last
         />
-      </Group>
-      <Help>{t('set.noMarketing')}</Help>
-      <Status error={error} />
-    </Page>
+        <FlatHelp>{t('set.noMarketing')}</FlatHelp>
+      </FlatSection>
+      <View style={{ paddingHorizontal: 18 }}>
+        <Status error={error} />
+      </View>
+    </FlatPage>
   );
 }
 
@@ -858,8 +976,27 @@ export function ThemeSettings() {
 
 export function PrivacySettings() {
   const { t } = useT();
+  const { session, profile, refreshProfile } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCity, setShowCity] = useState(profile?.showCity ?? true);
+  useEffect(() => {
+    if (profile) setShowCity(profile.showCity);
+  }, [profile]);
+
+  const toggleCity = async () => {
+    const next = !showCity;
+    setShowCity(next);
+    if (!session) return;
+    try {
+      await saveProfile(session.user.id, { showCity: next });
+      refreshProfile();
+    } catch (e) {
+      setShowCity(!next);
+      setError(friendlyError(e, t));
+    }
+  };
+
   const exportData = async () => {
     setBusy(true);
     setError(null);
@@ -872,15 +1009,20 @@ export function PrivacySettings() {
     }
   };
   return (
-    <Page title={t('set.privacy')}>
-      <SectionLabel>{t('set.myData')}</SectionLabel>
-      <Group>
-        <Row label={busy ? t('common.loading') : t('set.downloadData')} onPress={exportData} last />
-      </Group>
-      <Help>{t('set.downloadHelp')}</Help>
-      <SectionLabel>{t('set.whoSees')}</SectionLabel>
-      <Help>{t('set.whoSeesBody')}</Help>
-      <Status error={error} />
-    </Page>
+    <FlatPage title={t('set.privacy')}>
+      <FlatSection first title={t('set.privacyProfile')}>
+        <FlatToggle label={t('set.showCity')} body={t('set.showCityBody')} on={showCity} onPress={toggleCity} last />
+      </FlatSection>
+      <FlatSection title={t('set.privacyData')}>
+        <FlatRow label={busy ? t('common.loading') : t('set.downloadData')} onPress={exportData} last />
+        <FlatHelp>{t('set.downloadHelp')}</FlatHelp>
+      </FlatSection>
+      <FlatSection title={t('set.whoSees')}>
+        <FlatHelp>{t('set.whoSeesBody')}</FlatHelp>
+      </FlatSection>
+      <View style={{ paddingHorizontal: 18 }}>
+        <Status error={error} />
+      </View>
+    </FlatPage>
   );
 }
