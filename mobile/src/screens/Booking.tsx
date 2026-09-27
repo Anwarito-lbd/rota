@@ -20,6 +20,7 @@ import {
   PrimaryButton,
   Radio,
   Screen,
+  SectionLabel,
   Txt,
 } from '../ui/kit';
 
@@ -145,16 +146,32 @@ function HandoverOption({
 }) {
   const { c } = useTheme();
   return (
-    <Card onPress={onPress} accent={selected} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-      <Radio on={selected} />
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected }}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        padding: 16,
+        borderRadius: 20,
+        backgroundColor: pressed ? c.surf2 : c.surf,
+      })}
+    >
       <View style={{ flex: 1 }}>
-        <Txt weight="bold">{title}</Txt>
-        <Txt size={13} color={c.ink2}>
+        <Txt size={16} weight="semi">
+          {title}
+        </Txt>
+        <Txt size={13} color={c.ink2} style={{ marginTop: 2 }}>
           {body}
         </Txt>
       </View>
-      <Amount size={14}>{price}</Amount>
-    </Card>
+      <Amount size={15}>{price}</Amount>
+      <Txt size={17} weight="bold" color={c.accent} style={{ width: 18, textAlign: 'right' }}>
+        {selected ? '✓' : ''}
+      </Txt>
+    </Pressable>
   );
 }
 
@@ -206,9 +223,7 @@ export function Booking() {
 
         <Calendar taken={taken} />
 
-        <Txt size={12} weight="semi" upper color={c.ink3} style={{ marginTop: 22 }}>
-          Remise
-        </Txt>
+        <SectionLabel>{t('booking.handover')}</SectionLabel>
         <View style={{ marginTop: 10, gap: 8 }}>
           {/* docs/DELIVERY.md: two choices, the mechanics stay behind Rota. */}
           <HandoverOption
@@ -231,9 +246,7 @@ export function Booking() {
 
         {hasRules ? (
           <>
-            <Txt size={12} weight="semi" upper color={c.ink3} style={{ marginTop: 22 }}>
-              {t('detail.rules')}
-            </Txt>
+            <SectionLabel>{t('detail.rules')}</SectionLabel>
             <Card
               accent={state.rulesAccepted}
               onPress={() => set((s) => ({ rulesAccepted: !s.rulesAccepted }))}

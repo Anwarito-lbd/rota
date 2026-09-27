@@ -151,6 +151,7 @@ interface SocialValue {
   createBoard: (name: string) => Promise<Board>;
 
   isBlocked: (memberId: string) => boolean;
+  blockedIds: string[];
   block: (memberId: string) => Promise<void>;
   unblock: (memberId: string) => Promise<void>;
 
@@ -646,6 +647,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       removeFrom,
       createBoard,
       isBlocked: (id) => blocked.has(id),
+      blockedIds: [...blocked],
       block,
       unblock,
       report,

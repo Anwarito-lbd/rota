@@ -139,6 +139,19 @@ turning `flag_rota_delivery` on; `.well-known` files for app links; Figma
 frames for the social screens; a store build tested on a phone and the iOS
 guard run. See [docs/LAUNCH_PLAN.md](docs/LAUNCH_PLAN.md).
 
+**Figma screens applied (branch `feat/figma-screens`, migration 011).**
+Welcome (app tile, Sign in with Apple on iOS, Google, e-mail), permissions
+(Figma 10), Dressing (07), Réglages (08) with Membres bloqués, account
+deletion sheet (09), report / block sheets (11), booking handover (05). The
+kit's `Row` / `Group` / `SectionLabel` / `BackButton` now draw iOS inset
+grouped lists, so every settings-style page follows. Apple / Google sign-ins
+get a placeholder username and are asked to choose one (`UsernamePrompt`).
+
+**Launch paperwork.** [docs/STORE_ACCOUNTS.md](docs/STORE_ACCOUNTS.md)
+(Apple, Google Play, Supabase auth providers, Stripe, Decart, app links,
+privacy declarations, review notes), [docs/BUILD.md](docs/BUILD.md) (EAS),
+and the lawyer pack [docs/legal/07-revue-avocat-social-2026-09.md](docs/legal/07-revue-avocat-social-2026-09.md).
+
 **Develop outside OneDrive.** Metro fails with `EINVAL: readlink … app.json`
 on files OneDrive has synced; clone the repo to a normal folder.
 

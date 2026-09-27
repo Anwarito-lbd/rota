@@ -1,28 +1,32 @@
 import { useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, View } from 'react-native';
 import { useMyListings, type Listing } from '../data/listings';
+import { DEMO_ME } from '../data/demo';
+import { useSocial } from '../data/social';
 import { useT } from '../i18n';
 import { useAuth } from '../lib/auth';
 import { BRAND } from '../lib/config';
 import { useStore } from '../state/store';
 import { useTheme } from '../theme/useTheme';
-import { Amount, Card, CertifiedMark, Display, GhostButton, Group, PrimaryButton, Row, Screen, Txt } from '../ui/kit';
+import { Amount, Card, CertifiedMark, Group, PrimaryButton, Row, Screen, SectionLabel, Txt } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
 import { AppealSheet, DistributionStatus } from '../ui/Moderation';
 
 export function Closet() {
-  const { go, m } = useStore();
+  const { set, go, m } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const { session, profile } = useAuth();
   const { listings, loading } = useMyListings(session?.user.id);
   const [appealFor, setAppealFor] = useState<Listing | null>(null);
 
+  const social = useSocial();
   const checks = [
-    { label: t('closet.emailVerified'), done: !!session?.user.email_confirmed_at },
-    { label: t('closet.identity'), done: profile?.identityStatus === 'verified' },
-    { label: t('closet.certified'), done: !!profile?.certified },
+    { label: t('closet.emailVerified'), done: !!session?.user.email_confirmed_at || social.demo, go: 'set.account' as const },
+    { label: t('closet.identity'), done: social.identity === 'verified', go: 'verify' as const },
+    { label: t('closet.certified'), done: !!profile?.certified, go: 'set.account' as const },
   ];
+  const username = profile?.username ?? (social.demo ? 'demo.rota' : '…');
   const done = checks.filter((x) => x.done).length;
 
   return (
@@ -34,13 +38,13 @@ export function Closet() {
       >
         <View style={{ width: 74, height: 74, borderRadius: 999, padding: 2, backgroundColor: c.accent }}>
           <View style={{ flex: 1, borderRadius: 999, overflow: 'hidden', borderWidth: 2, borderColor: c.bg }}>
-            <MediaSlot id="profile-avatar" shape="circle" remoteUri={profile?.avatarUrl ?? undefined} placeholder={t('set.photo')} />
+            <MediaSlot id="profile-avatar" shape="circle" remoteUri={profile?.avatarUrl ?? (social.demo ? DEMO_ME.avatar : undefined)} placeholder={t('set.photo')} />
           </View>
         </View>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Txt size={20} weight="bold">
-              @{profile?.username ?? '…'}
+              @{username}
             </Txt>
             {profile?.certified ? <CertifiedMark /> : null}
           </View>
@@ -56,7 +60,7 @@ export function Closet() {
         </Txt>
       ) : null}
 
-      <Card style={{ marginTop: 16 }} onPress={() => go('set.account')}>
+      <Card style={{ marginTop: 16 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Txt weight="bold" style={{ flex: 1 }}>
             {t('closet.verifications')}
@@ -65,43 +69,58 @@ export function Closet() {
             {`${done} / 3`}
           </Amount>
         </View>
-        <View style={{ marginTop: 10, flexDirection: 'row', gap: 4 }}>
+        <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
           {checks.map((check) => (
-            <View
+            <Pressable
               key={check.label}
-              style={{ flex: 1, height: 4, borderRadius: 99, backgroundColor: check.done ? c.accent : c.surf2 }}
-            />
+              accessibilityRole="button"
+              onPress={() => (check.go === 'verify' ? set({ screen: 'verify', afterVerify: 'closet' }) : go(check.go))}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 5,
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: 999,
+                backgroundColor: check.done ? c.accentSoft : c.surf2,
+              }}
+            >
+              <Txt size={12} weight="bold" color={check.done ? c.accent : c.ink3}>
+                {check.done ? '✓' : '○'}
+              </Txt>
+              <Txt size={12} weight="semi" color={check.done ? c.accent : c.ink2}>
+                {check.label}
+              </Txt>
+            </Pressable>
           ))}
         </View>
-        <Txt size={13} color={c.ink2} style={{ marginTop: 8 }}>
-          {checks.map((x) => x.label).join(' · ')}
-        </Txt>
       </Card>
 
       <PrimaryButton label={t('closet.addPiece')} onPress={() => go('list')} style={{ marginTop: 12 }} />
 
+      <View style={{ height: 12 }} />
       <Group>
         <Row label={t('rentals.title')} onPress={() => go('rentals')} last />
       </Group>
 
+      <View style={{ height: 4 }} />
       <Group>
         <Row label={t('closet.feesProtection')} onPress={() => go('fees')} />
         <Row label={t('settings.guidelines')} onPress={() => go('guidelines')} />
         <Row
           label={t('closet.help')}
-          detail={BRAND.supportEmail}
+          external
           onPress={() => Linking.openURL(`mailto:${BRAND.supportEmail}`).catch(() => undefined)}
           last
         />
       </Group>
 
+      <View style={{ height: 4 }} />
       <Group>
         <Row label={t('settings.title')} onPress={() => go('settings')} last />
       </Group>
 
-      <Txt size={12} weight="semi" upper color={c.ink3} style={{ marginTop: 24 }}>
-        {t('closet.myPieces')}
-      </Txt>
+      <SectionLabel>{t('closet.myPieces')}</SectionLabel>
 
       {loading ? (
         <ActivityIndicator color={c.accent} style={{ marginTop: 20 }} />

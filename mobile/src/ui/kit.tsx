@@ -327,17 +327,18 @@ export function BackButton({ onPress }: { onPress: () => void }) {
       accessibilityRole="button"
       accessibilityLabel="Retour"
       onPress={onPress}
-      style={{
+      hitSlop={6}
+      style={({ pressed }) => ({
         width: 44,
         height: 44,
         borderRadius: 999,
-        borderWidth: 1,
-        borderColor: c.line2,
+        backgroundColor: c.surf2,
         alignItems: 'center',
         justifyContent: 'center',
-      }}
+        opacity: pressed ? 0.7 : 1,
+      })}
     >
-      <Text style={{ fontSize: 22, color: c.ink, marginTop: -4 }}>‹</Text>
+      <Text style={{ ...ff('semi'), fontSize: 24, lineHeight: 26, color: c.ink, marginTop: -2, marginLeft: -2 }}>‹</Text>
     </Pressable>
   );
 }
@@ -364,64 +365,107 @@ export function Header({
   );
 }
 
+/** Grouped-list header, sentence case (Figma: "Compte", "Langue"…). */
 export function SectionLabel({ children }: { children: ReactNode }) {
   const { c } = useTheme();
   return (
-    <Txt size={12} weight="semi" upper color={c.ink3} style={{ marginTop: 22 }}>
+    <Txt size={13} weight="semi" color={c.ink3} style={{ marginTop: 24, marginLeft: 4 }}>
       {children}
     </Txt>
   );
 }
 
+/**
+ * One row of a grouped list. `checked` shows the iOS checkmark (selection
+ * by shape, not colour alone); `external` shows ↗ for links that leave the
+ * app; `tone` colours destructive (plum) or primary (accent) rows.
+ */
 export function Row({
   label,
   detail,
   detailColor,
   onPress,
   last,
+  icon,
+  checked,
+  external,
+  tone,
+  sub,
 }: {
   label: string;
   detail?: string;
   detailColor?: string;
   onPress?: () => void;
   last?: boolean;
+  icon?: ReactNode;
+  checked?: boolean;
+  external?: boolean;
+  tone?: 'plum' | 'accent';
+  sub?: string;
 }) {
   const { c } = useTheme();
+  const color = tone === 'plum' ? c.plum : tone === 'accent' ? c.accent : c.ink;
+  const chevron = onPress && checked === undefined && !tone;
   return (
     <Pressable
-      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityRole={onPress ? (checked !== undefined ? 'radio' : 'button') : undefined}
+      accessibilityState={checked !== undefined ? { checked } : undefined}
       onPress={onPress}
-      style={{
+      style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
         minHeight: 52,
-        paddingHorizontal: 15,
-        borderBottomWidth: last ? 0 : 1,
-        borderBottomColor: c.line,
-      }}
+        paddingLeft: 16,
+        backgroundColor: pressed && onPress ? c.surf2 : 'transparent',
+      })}
     >
-      <Txt style={{ flex: 1 }}>{label}</Txt>
-      {detail ? (
-        <Txt size={13} weight="semi" color={detailColor ?? c.ink3}>
-          {detail}
-        </Txt>
-      ) : null}
-      {onPress ? <Text style={{ color: c.ink3, fontSize: 18 }}>›</Text> : null}
+      {icon}
+      <View
+        style={{
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          minHeight: 52,
+          paddingRight: 16,
+          paddingVertical: sub ? 10 : 0,
+          borderBottomWidth: last ? 0 : 1,
+          borderBottomColor: c.line,
+        }}
+      >
+        <View style={{ flex: 1 }}>
+          <Txt size={16} color={color}>
+            {label}
+          </Txt>
+          {sub ? (
+            <Txt size={13} color={c.ink3} style={{ marginTop: 2 }}>
+              {sub}
+            </Txt>
+          ) : null}
+        </View>
+        {detail ? (
+          <Txt size={15} color={detailColor ?? c.ink3}>
+            {detail}
+          </Txt>
+        ) : null}
+        {checked ? <Text style={{ ...ff('bold'), color: c.accent, fontSize: 17 }}>✓</Text> : null}
+        {external ? <Text style={{ color: c.ink3, fontSize: 15 }}>↗</Text> : null}
+        {chevron && !external ? <Text style={{ color: c.ink3, fontSize: 20, marginTop: -2 }}>›</Text> : null}
+      </View>
     </Pressable>
   );
 }
 
+/** Inset grouped list (Figma radius lg 20, no border). */
 export function Group({ children }: { children: ReactNode }) {
   const { c } = useTheme();
   return (
     <View
       style={{
-        marginTop: 12,
-        borderRadius: 16,
+        marginTop: 8,
+        borderRadius: 20,
         backgroundColor: c.surf,
-        borderWidth: 1,
-        borderColor: c.line,
         overflow: 'hidden',
       }}
     >

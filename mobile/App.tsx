@@ -31,7 +31,7 @@ import { Compose } from './src/screens/Compose';
 import { Guidelines } from './src/screens/Guidelines';
 import { NearMap } from './src/screens/NearMap';
 import { Settings } from './src/screens/Settings';
-import { Boards, PostScreen, UserProfile } from './src/screens/Social';
+import { Blocked, Boards, PostScreen, UserProfile } from './src/screens/Social';
 import { TryOn } from './src/screens/TryOn';
 import { Verify } from './src/screens/Verify';
 import {
@@ -51,6 +51,7 @@ import type { Screen as ScreenKey } from './src/state/types';
 import { useTheme } from './src/theme/useTheme';
 import { GhostButton, Display, Screen, Txt } from './src/ui/kit';
 import { MfaChallenge } from './src/ui/Mfa';
+import { UsernamePrompt } from './src/ui/UsernamePrompt';
 import { ReportSheet } from './src/ui/Moderation';
 import { CommentsSheet, CreateSheet, SaveSheet, SocialReportSheet } from './src/ui/SocialSheets';
 import { TAB_BAR_SPACE, TabBar } from './src/ui/TabBar';
@@ -104,6 +105,7 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   tryon: TryOn,
   verify: Verify,
   guidelines: Guidelines,
+  blocked: Blocked,
   boards: Boards,
   board: Boards,
 };
@@ -116,7 +118,7 @@ const FULL_BLEED: ScreenKey[] = ['feed', 'post'];
 function Shell() {
   const { state, set } = useStore();
   const { c, dark } = useTheme();
-  const { loading, session, needsMfa } = useAuth();
+  const { loading, session, needsMfa, profile } = useAuth();
 
   // A stored session means the phone is already signed in: skip onboarding.
   useEffect(() => {
@@ -151,6 +153,16 @@ function Shell() {
       <View style={{ flex: 1, backgroundColor: c.bg }}>
         <StatusBar style={dark ? 'light' : 'dark'} />
         <MfaChallenge />
+      </View>
+    );
+  }
+
+  // Signed in with Apple / Google: pick a username first (migration 011).
+  if (session && profile && !profile.usernameConfirmed) {
+    return (
+      <View style={{ flex: 1, backgroundColor: c.bg }}>
+        <StatusBar style={dark ? 'light' : 'dark'} />
+        <UsernamePrompt />
       </View>
     );
   }
