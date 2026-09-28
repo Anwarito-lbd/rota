@@ -1,6 +1,6 @@
 import type { Listing } from '../data/listings';
 import { useFirstRental } from '../data/rentals';
-import { useAuth } from '../lib/auth';
+import { backendConfigured, useAuth } from '../lib/auth';
 import { FEES, quoteCheckout, type CheckoutQuote } from '../lib/fees';
 import { usePolicy } from '../lib/policy';
 import { useStore } from './store';
@@ -24,9 +24,15 @@ export function useBooking(listing: Listing | null): Booking {
   const firstRental = useFirstRental(session?.user.id);
   const [start, end] = state.dates;
   const ship = state.delivery === 'ship';
+  // An offer the lender accepted in messages. Only the demo applies it: the
+  // server still prices rentals from the listing, and what we show must be
+  // what is charged.
+  const agreed =
+    !backendConfigured && listing && state.agreedOffer?.listingId === listing.id ? state.agreedOffer.perDay : null;
+  const perDay = agreed ?? listing?.price ?? 0;
 
   const quote = quoteCheckout({
-    pricePerDay: listing?.price ?? 0,
+    pricePerDay: perDay,
     startDate: start,
     endDate: end,
     delivery: state.delivery,
@@ -38,7 +44,7 @@ export function useBooking(listing: Listing | null): Booking {
   });
 
   const breakdown = [
-    { label: `${m(listing?.price ?? 0)} × ${quote.days} ${quote.days > 1 ? 'jours' : 'jour'}`, value: m(quote.loyer) },
+    { label: `${m(perDay)}${agreed ? ' (offre acceptée)' : ''} ×${quote.days} ${quote.days > 1 ? 'jours' : 'jour'}`, value: m(quote.loyer) },
     { label: 'Frais de protection Rota', value: m(quote.serviceFeeBuyer) },
     {
       label: quote.showCleaning ? 'Nettoyage par la prêteuse' : 'Nettoyage',

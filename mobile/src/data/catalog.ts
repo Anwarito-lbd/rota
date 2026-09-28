@@ -219,20 +219,20 @@ export interface Rule {
 
 export const rules: Rule[] = [
   {
-    title: 'Send it back as it arrived',
-    body: 'Cleaning is priced into every booking. Stains happen — tell the lender instead of hiding them.',
+    title: 'Rendez la pièce comme vous l’avez reçue',
+    body: 'Le nettoyage est prévu dans chaque location. Une tache, ça arrive : dites-le à la prêteuse plutôt que de la cacher.',
   },
   {
-    title: 'Real pieces, real photos',
-    body: 'No counterfeits, no stock images, no listing something you do not own.',
+    title: 'De vraies pièces, de vraies photos',
+    body: 'Pas de contrefaçon, pas de photos trouvées en ligne, pas d’annonce pour une pièce qui n’est pas à vous.',
   },
   {
-    title: 'Keep it in the app',
-    body: 'Payments, offers and messages stay on Rota. Off-app deals lose all cover.',
+    title: 'Tout se passe dans l’app',
+    body: 'Paiements, offres et messages restent sur Rota. Un accord hors de l’app n’est plus couvert.',
   },
   {
-    title: 'Be kind at handover',
-    body: "No pressure, no comments on anyone's body. Meet in public places.",
+    title: 'Restez bienveillant·e à la remise',
+    body: 'Pas de pression, aucun commentaire sur le corps de quelqu’un. Retrouvez-vous dans un lieu public.',
   },
 ];
 

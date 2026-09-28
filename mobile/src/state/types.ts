@@ -106,6 +106,10 @@ export interface AppState {
   feedTab: FeedTab;
 
   authMode: AuthMode | null;
+  /** Which screen of the step-by-step sign-up is showing: username, e-mail, password. */
+  signupStep: 0 | 1 | 2;
+  /** True while a member goes through the e-mail sign-up, so later steps count from it. */
+  emailFlow: boolean;
   username: string;
   email: string;
   pw: string;
@@ -167,6 +171,8 @@ export interface AppState {
 
   offer: boolean;
   offerIdx: number;
+  /** A per-day price the lender accepted in messages; booking that piece uses it. */
+  agreedOffer: { listingId: string; perDay: number } | null;
   favs: Flags;
   pinSaves: Flags;
 
