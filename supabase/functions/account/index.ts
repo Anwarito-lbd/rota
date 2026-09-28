@@ -49,6 +49,9 @@ Deno.serve(async (req) => {
     return json({ error: reason }, reason === 'failed' ? 500 : 409);
   }
 
+  // Stories, reposts and comment likes (018); tolerated if not migrated yet.
+  await admin.rpc('close_member_social', { p_user: user.id }).then(() => undefined, () => undefined);
+
   // Their own photos. Condition photos of past rentals stay: the other
   // party may still need them as evidence.
   const removed: Record<string, number> = {};

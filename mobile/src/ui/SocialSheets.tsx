@@ -3,17 +3,17 @@
  * comments, save to a board, the "+" chooser, and report / block.
  */
 import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { useListings } from '../data/listings';
-import { SOCIAL_REPORT_REASONS, useComments, useMember, useSocial, type SocialReportReason } from '../data/social';
+import { SOCIAL_REPORT_REASONS, useComments, useMember, useSocial, type Comment, type SocialReportReason } from '../data/social';
 import { useT, type TranslationKey } from '../i18n';
 import { useStore } from '../state/store';
 import { FONT, ff } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
-import { BookmarkIcon, CameraIcon, PlusIcon, SendIcon, TabAddIcon } from './icons';
+import { BookmarkIcon, CameraIcon, CloseIcon, HeartIcon, PlusIcon, SendIcon, TabAddIcon } from './icons';
 import { Check, Display, Field, GhostButton, PrimaryButton, Row, Sheet, Txt } from './kit';
-import { Avatar, FadeIn, PressScale, tap, timeAgo } from './motion';
+import { Avatar, FadeIn, PressScale, compact, tap, timeAgo } from './motion';
 import { BlockRow } from './Moderation';
 
 // ─── Comments ──────────────────────────────────────────────────
@@ -24,25 +24,100 @@ export function CommentsSheet() {
   const { t, lang } = useT();
   const social = useSocial();
   const post = social.postById(state.commentsFor);
-  const { comments, add, remove } = useComments(state.commentsFor);
+  const { comments, add, remove, toggleLike } = useComments(state.commentsFor);
   const [draft, setDraft] = useState('');
+  const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [busy, setBusy] = useState(false);
+  const input = useRef<TextInput>(null);
 
-  useEffect(() => setDraft(''), [state.commentsFor]);
+  useEffect(() => {
+    setDraft('');
+    setReplyTo(null);
+  }, [state.commentsFor]);
 
   const send = async () => {
     if (!draft.trim() || busy) return;
     setBusy(true);
     try {
-      await add(draft);
+      // Replies stay one level deep: answering a reply answers its thread.
+      await add(draft, replyTo ? (replyTo.parentId ?? replyTo.id) : null);
       tap('light');
       setDraft('');
+      setReplyTo(null);
     } finally {
       setBusy(false);
     }
   };
 
   const close = () => set({ commentsFor: null });
+  const top = comments.filter((cm) => !cm.parentId);
+  const repliesOf = (id: string) => comments.filter((cm) => cm.parentId === id);
+
+  const renderOne = (cm: Comment, i: number, reply: boolean) => {
+    const mine = cm.authorId === social.meId;
+    const canDelete = mine || post?.authorId === social.meId;
+    return (
+      <FadeIn key={cm.id} delay={Math.min(i, 6) * 40} style={{ flexDirection: 'row', gap: 10, marginLeft: reply ? 44 : 0 }}>
+        <Pressable onPress={() => set({ commentsFor: null, screen: 'user', profileId: cm.authorId })}>
+          <Avatar uri={cm.author.avatar} size={reply ? 26 : 34} />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', gap: 6, alignItems: 'baseline' }}>
+            <Txt size={13} weight="bold">
+              {cm.author.username}
+            </Txt>
+            <Txt size={12} color={c.ink3}>
+              {timeAgo(cm.createdAt, lang)}
+            </Txt>
+          </View>
+          <Txt size={14} color={c.ink2} style={{ marginTop: 1 }}>
+            {cm.body}
+          </Txt>
+          <View style={{ flexDirection: 'row', gap: 16, marginTop: 4 }}>
+            <Pressable
+              hitSlop={8}
+              onPress={() => {
+                setReplyTo(cm);
+                input.current?.focus();
+              }}
+            >
+              <Txt size={12} weight="semi" color={c.ink3}>
+                {t('comments.reply')}
+              </Txt>
+            </Pressable>
+            {!mine ? (
+              <Pressable hitSlop={8} onPress={() => set({ commentsFor: null, socialReport: { kind: 'comment', id: cm.id, memberId: cm.authorId } })}>
+                <Txt size={12} weight="semi" color={c.ink3}>
+                  {t('comments.report')}
+                </Txt>
+              </Pressable>
+            ) : null}
+            {canDelete ? (
+              <Pressable hitSlop={8} onPress={() => remove(cm.id)}>
+                <Txt size={12} weight="semi" color={c.plum}>
+                  {t('comments.delete')}
+                </Txt>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+        <PressScale
+          haptic="light"
+          scaleTo={0.8}
+          onPress={() => toggleLike(cm.id)}
+          accessibilityLabel={t('post.like')}
+          style={{ alignItems: 'center', width: 32, paddingTop: 2 }}
+        >
+          <HeartIcon size={17} fill={cm.liked ? c.accent : 'none'} color={cm.liked ? c.accent : c.ink3} />
+          {cm.likeCount ? (
+            <Txt size={11} color={c.ink3}>
+              {compact(cm.likeCount, lang)}
+            </Txt>
+          ) : null}
+        </PressScale>
+      </FadeIn>
+    );
+  };
 
   return (
     <Sheet visible={!!state.commentsFor} onClose={close}>
@@ -57,60 +132,34 @@ export function CommentsSheet() {
       </Txt>
 
       <View style={{ marginTop: 14, gap: 14 }}>
-        {comments.length === 0 ? (
+        {top.length === 0 ? (
           <Txt color={c.ink2} style={{ paddingVertical: 20 }} center>
             {t('comments.empty')}
           </Txt>
         ) : (
-          comments.map((cm, i) => {
-            const mine = cm.authorId === social.meId;
-            const canDelete = mine || post?.authorId === social.meId;
-            return (
-              <FadeIn key={cm.id} delay={Math.min(i, 6) * 40} style={{ flexDirection: 'row', gap: 10 }}>
-                <Pressable onPress={() => set({ commentsFor: null, screen: 'user', profileId: cm.authorId })}>
-                  <Avatar uri={cm.author.avatar} size={34} />
-                </Pressable>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', gap: 6, alignItems: 'baseline' }}>
-                    <Txt size={13} weight="bold">
-                      {cm.author.username}
-                    </Txt>
-                    <Txt size={12} color={c.ink3}>
-                      {timeAgo(cm.createdAt, lang)}
-                    </Txt>
-                  </View>
-                  <Txt size={14} color={c.ink2} style={{ marginTop: 1 }}>
-                    {cm.body}
-                  </Txt>
-                  <View style={{ flexDirection: 'row', gap: 14, marginTop: 3 }}>
-                    {!mine ? (
-                      <Pressable
-                        hitSlop={8}
-                        onPress={() => set({ commentsFor: null, socialReport: { kind: 'comment', id: cm.id, memberId: cm.authorId } })}
-                      >
-                        <Txt size={12} weight="semi" color={c.ink3}>
-                          {t('comments.report')}
-                        </Txt>
-                      </Pressable>
-                    ) : null}
-                    {canDelete ? (
-                      <Pressable hitSlop={8} onPress={() => remove(cm.id)}>
-                        <Txt size={12} weight="semi" color={c.plum}>
-                          {t('comments.delete')}
-                        </Txt>
-                      </Pressable>
-                    ) : null}
-                  </View>
-                </View>
-              </FadeIn>
-            );
-          })
+          top.map((cm, i) => (
+            <View key={cm.id} style={{ gap: 12 }}>
+              {renderOne(cm, i, false)}
+              {repliesOf(cm.id).map((r, j) => renderOne(r, j, true))}
+            </View>
+          ))
         )}
       </View>
 
+      {replyTo ? (
+        <View style={{ marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Txt size={13} color={c.ink3} style={{ flex: 1 }}>
+            {t('comments.replyingTo').replace('{name}', replyTo.author.username)}
+          </Txt>
+          <Pressable hitSlop={8} onPress={() => setReplyTo(null)} accessibilityLabel={t('common.cancel')}>
+            <CloseIcon size={16} color={c.ink3} />
+          </Pressable>
+        </View>
+      ) : null}
+
       <View
         style={{
-          marginTop: 18,
+          marginTop: replyTo ? 8 : 18,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 8,
@@ -122,9 +171,10 @@ export function CommentsSheet() {
         }}
       >
         <TextInput
+          ref={input}
           value={draft}
           onChangeText={setDraft}
-          placeholder={t('comments.placeholder')}
+          placeholder={replyTo ? t('comments.replyPlaceholder') : t('comments.placeholder')}
           placeholderTextColor={c.ink3}
           maxLength={500}
           onSubmitEditing={send}
