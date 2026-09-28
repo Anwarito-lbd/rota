@@ -4,7 +4,7 @@
  */
 import * as Notifications from 'expo-notifications';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Linking, Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, Text, TextInput, View } from 'react-native';
 import {
   changePassword,
   closeAccount,
@@ -43,7 +43,11 @@ import { passwordChecks, passwordValid, usernameError } from '../state/auth';
 import { useStore } from '../state/store';
 import type { Lang, ThemeMode } from '../state/types';
 import { useTheme } from '../theme/useTheme';
-import { BackButton, Field, GhostButton, Group, Header, PrimaryButton, Radio, Row, Screen, SectionLabel, Toggle, Txt } from '../ui/kit';
+import { Field, GhostButton, Group, Header, PrimaryButton, Radio, Row, Screen, SectionLabel, Toggle, Txt } from '../ui/kit';
+import { DeleteAccountSheet } from '../ui/DeleteAccountSheet';
+import { FlatHelp, FlatIntro, FlatPage as BasePage, FlatRow, FlatSection, FlatToggle, Pill } from '../ui/Flat';
+import { CheckIcon, PencilIcon } from '../ui/icons';
+import { usePolicy } from '../lib/policy';
 import { MediaSlot } from '../ui/MediaSlot';
 import { PayoutsCard } from '../ui/Payouts';
 
@@ -123,130 +127,71 @@ function Help({ children }: { children: ReactNode }) {
   );
 }
 
-// ── Flat lists (Vinted-style notification and privacy pages) ───
-
-/** Full-width page with a small centred title, like a system settings list. */
-function FlatPage({ title, children }: { title: string; children: ReactNode }) {
+/** Every settings page goes back to Réglages unless it says otherwise. */
+function FlatPage(props: Parameters<typeof BasePage>[0]) {
   const { go } = useStore();
-  return (
-    <Screen padded={false} bottomInset={60}>
-      <View style={{ height: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 }}>
-        <BackButton onPress={() => go('settings')} />
-        <Txt size={17} weight="bold" center numberOfLines={1} style={{ flex: 1 }}>
-          {title}
-        </Txt>
-        <View style={{ width: 44 }} />
-      </View>
-      {children}
-    </Screen>
-  );
-}
-
-/** A section: a thick band above (except the first), a small grey title, rows. */
-function FlatSection({ title, first, children }: { title?: string; first?: boolean; children: ReactNode }) {
-  const { c } = useTheme();
-  return (
-    <View style={{ borderTopWidth: first ? 0 : 10, borderTopColor: c.surf }}>
-      {title ? (
-        <Txt size={14} color={c.ink3} style={{ paddingHorizontal: 18, paddingTop: 18, paddingBottom: 6 }}>
-          {title}
-        </Txt>
-      ) : null}
-      {children}
-    </View>
-  );
-}
-
-/** Title, optional explanation under it, switch on the right. */
-function FlatToggle({
-  label,
-  body,
-  on,
-  onPress,
-  disabled,
-  last,
-}: {
-  label: string;
-  body?: string;
-  on: boolean;
-  onPress: () => void;
-  disabled?: boolean;
-  last?: boolean;
-}) {
-  const { c } = useTheme();
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 14,
-        minHeight: 60,
-        paddingHorizontal: 18,
-        paddingVertical: 14,
-        borderBottomWidth: last ? 0 : 1,
-        borderBottomColor: c.line,
-        opacity: disabled ? 0.45 : 1,
-      }}
-    >
-      <View style={{ flex: 1 }}>
-        <Txt size={16} weight="semi">
-          {label}
-        </Txt>
-        {body ? (
-          <Txt size={14} color={c.ink3} style={{ marginTop: 3 }}>
-            {body}
-          </Txt>
-        ) : null}
-      </View>
-      <Toggle on={on} onPress={() => !disabled && onPress()} label={label} />
-    </View>
-  );
-}
-
-/** A static line (title + value on the right), or a tappable one. */
-function FlatRow({ label, detail, onPress, last }: { label: string; detail?: string; onPress?: () => void; last?: boolean }) {
-  const { c } = useTheme();
-  return (
-    <Pressable
-      disabled={!onPress}
-      onPress={onPress}
-      accessibilityRole={onPress ? 'button' : undefined}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        minHeight: 56,
-        paddingHorizontal: 18,
-        backgroundColor: pressed ? c.surf2 : 'transparent',
-        borderBottomWidth: last ? 0 : 1,
-        borderBottomColor: c.line,
-      })}
-    >
-      <Txt size={16} style={{ flex: 1 }}>
-        {label}
-      </Txt>
-      {detail ? (
-        <Txt size={14} color={c.ink3}>
-          {detail}
-        </Txt>
-      ) : null}
-    </Pressable>
-  );
-}
-
-function FlatHelp({ children }: { children: ReactNode }) {
-  const { c } = useTheme();
-  return (
-    <Txt size={13} color={c.ink3} style={{ paddingHorizontal: 18, paddingVertical: 12 }}>
-      {children}
-    </Txt>
-  );
+  return <BasePage onBack={props.left ? undefined : () => go('settings')} {...props} />;
 }
 
 // ── Mon profil ─────────────────────────────────────────────────
 
+/** A text box that sits flat in a list (label on the left or above). */
+function FlatInput({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  multiline,
+  inline,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+  inline?: boolean;
+}) {
+  const { c, fs } = useTheme();
+  const input = (
+    <TextInput
+      accessibilityLabel={label}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      placeholderTextColor={c.ink3}
+      multiline={multiline}
+      autoCapitalize={multiline ? 'sentences' : 'none'}
+      autoCorrect={!!multiline}
+      textAlignVertical={multiline ? 'top' : 'center'}
+      style={{
+        flex: inline ? 1 : undefined,
+        textAlign: inline ? 'right' : 'left',
+        minHeight: multiline ? 110 : 24,
+        marginTop: inline ? 0 : 6,
+        color: c.ink,
+        fontSize: fs(16),
+        padding: 0,
+      }}
+    />
+  );
+  return inline ? (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 58, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: c.line }}>
+      <Txt size={16}>{label}</Txt>
+      {input}
+    </View>
+  ) : (
+    <View style={{ paddingHorizontal: 18, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: c.line }}>
+      <Txt size={14} color={c.ink3}>
+        {label}
+      </Txt>
+      {input}
+    </View>
+  );
+}
+
 export function ProfileSettings() {
   const { go, state, setMedia } = useStore();
+  const { c } = useTheme();
   const { t } = useT();
   const { session, profile, refreshProfile } = useAuth();
   const [username, setUsername] = useState(profile?.username ?? '');
@@ -279,7 +224,7 @@ export function ProfileSettings() {
   };
 
   const save = async () => {
-    if (!session || !profile) return;
+    if (!session || !profile) return go('settings');
     const handle = username.trim().toLowerCase();
     const formatError = usernameError(handle);
     if (formatError && handle !== profile.username) return setError(formatError);
@@ -307,38 +252,41 @@ export function ProfileSettings() {
   };
 
   return (
-    <Page title={t('set.profile')}>
-      <View style={{ marginTop: 20, alignItems: 'center' }}>
-        <View style={{ width: 96, height: 96, borderRadius: 999, overflow: 'hidden' }}>
-          <MediaSlot id="me-avatar" shape="circle" editable remoteUri={profile?.avatarUrl ?? undefined} placeholder={t('set.photo')} />
+    <FlatPage
+      title={t('set.profile')}
+      left={{ label: t('common.close'), onPress: () => go('settings') }}
+      right={{ label: busy ? t('common.loading') : t('set.validate'), onPress: save, disabled: busy }}
+    >
+      <FlatSection first>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 18, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: c.line }}>
+          <View style={{ width: 58, height: 58, borderRadius: 999, overflow: 'hidden' }}>
+            <MediaSlot id="me-avatar" shape="circle" editable remoteUri={profile?.avatarUrl ?? undefined} placeholder="" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Txt size={16}>{t('set.changePhoto')}</Txt>
+            <Txt size={13} color={c.ink3} style={{ marginTop: 2 }}>
+              {t('set.photoHelp')}
+            </Txt>
+          </View>
         </View>
-        <Help>{t('set.photoHelp')}</Help>
+        <FlatInput inline label={t('settings.username')} value={username} onChangeText={setUsername} />
+        <FlatInput label={t('set.about')} value={bio} onChangeText={(v) => setBio(v.slice(0, 300))} placeholder={t('set.bioPlaceholder')} multiline />
+      </FlatSection>
+      <FlatSection>
+        <FlatRow label={t('set.myLocation')} detail={locating ? t('common.loading') : city || '—'} onPress={locate} />
+        <FlatToggle label={t('set.showCity')} on={showCity} onPress={() => setShowCity((v) => !v)} last />
+      </FlatSection>
+      <View style={{ paddingHorizontal: 18 }}>
+        <Status error={error} />
       </View>
-      <View style={{ marginTop: 16, gap: 10 }}>
-        <Field label={t('settings.username')} value={username} onChangeText={setUsername} hint={t('set.usernameHelp')} />
-        <Field
-          label={t('set.bio')}
-          value={bio}
-          onChangeText={(v) => setBio(v.slice(0, 300))}
-          placeholder={t('set.bioPlaceholder')}
-          autoCapitalize="sentences"
-          multiline
-        />
-        <Field label={t('set.city')} value={city} onChangeText={setCity} autoCapitalize="sentences" />
-      </View>
-      <GhostButton label={locating ? t('common.loading') : t('set.useLocation')} onPress={locate} style={{ marginTop: 10 }} />
-      <Group>
-        <ToggleRow label={t('set.showCity')} on={showCity} onPress={() => setShowCity((v) => !v)} last />
-      </Group>
-      <Status error={error} />
-      <PrimaryButton label={busy ? t('common.loading') : t('set.save')} onPress={save} disabled={busy} style={{ marginTop: 18 }} />
-    </Page>
+    </FlatPage>
   );
 }
 
 // ── Paramètres du compte ───────────────────────────────────────
 
 export function AccountSettings() {
+  const { go } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const { session, profile, refreshProfile } = useAuth();
@@ -349,8 +297,6 @@ export function AccountSettings() {
   const [ok, setOk] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [confirm, setConfirm] = useState('');
-  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -367,122 +313,116 @@ export function AccountSettings() {
 
   const identity = profile?.identityStatus ?? 'none';
   const canVerify = paymentsConfigured && identity !== 'verified' && identity !== 'pending';
-
-  const remove = async () => {
-    setBusy(true);
-    setDeleteError(null);
-    try {
-      await closeAccount(confirm);
-    } catch (e) {
-      const code = e instanceof Error ? e.message : '';
-      setDeleteError(
-        code === 'active_rentals' || code === 'open_claims'
-          ? t('set.deleteBlockedRentals')
-          : code === 'payouts_pending'
-            ? t('set.deleteBlockedPayouts')
-            : code === 'confirm'
-              ? t('set.deleteConfirmWrong')
-              : friendlyError(e, t),
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
+  const verifiedEmail = !!session?.user.email_confirmed_at;
+  const providers: string[] = (session?.user.app_metadata?.providers as string[] | undefined) ?? [];
 
   return (
-    <Page title={t('set.account')}>
-      <SectionLabel>{t('settings.email')}</SectionLabel>
-      <Group>
-        <Row
+    <FlatPage title={t('set.account')} onBack={() => go('settings')}>
+      <FlatSection first>
+        <FlatRow
           label={session?.user.email ?? '—'}
-          detail={session?.user.email_confirmed_at ? t('settings.verified') : t('settings.toVerify')}
-          detailColor={session?.user.email_confirmed_at ? c.accent : c.plum}
-          onPress={() => setStep(step === 'idle' ? 'email' : 'idle')}
+          sub={verifiedEmail ? t('settings.verified') : t('settings.toVerify')}
+          right={<Pill label={t('set.change')} onPress={() => setStep(step === 'idle' ? 'email' : 'idle')} />}
           last
         />
-      </Group>
-      {step === 'email' ? (
-        <View style={{ marginTop: 10, gap: 10 }}>
-          <Field label={t('set.newEmail')} value={newEmail} onChangeText={setNewEmail} keyboardType="email-address" />
-          <PrimaryButton
-            label={busy ? t('common.loading') : t('set.sendCode')}
-            disabled={busy}
-            onPress={() =>
-              run(async () => {
-                await requestEmailChange(newEmail);
-                setStep('code');
-                setOk(t('set.codeSent').replace('{email}', newEmail.trim()));
-              })
-            }
-          />
+        {step === 'email' ? (
+          <View style={{ padding: 18, gap: 10 }}>
+            <Field label={t('set.newEmail')} value={newEmail} onChangeText={setNewEmail} keyboardType="email-address" />
+            <PrimaryButton
+              label={busy ? t('common.loading') : t('set.sendCode')}
+              disabled={busy}
+              onPress={() =>
+                run(async () => {
+                  await requestEmailChange(newEmail);
+                  setStep('code');
+                  setOk(t('set.codeSent').replace('{email}', newEmail.trim()));
+                })
+              }
+            />
+          </View>
+        ) : null}
+        {step === 'code' ? (
+          <View style={{ padding: 18, gap: 10 }}>
+            <Field label={t('set.code')} value={code} onChangeText={setCode} keyboardType="number-pad" />
+            <PrimaryButton
+              label={busy ? t('common.loading') : t('set.confirmEmail')}
+              disabled={busy}
+              onPress={() =>
+                run(async () => {
+                  await confirmEmailChange(newEmail, code);
+                  setStep('idle');
+                  setCode('');
+                  setOk(t('set.emailChanged'));
+                })
+              }
+            />
+          </View>
+        ) : null}
+        <View style={{ paddingHorizontal: 18 }}>
+          <Status ok={ok} error={error} />
         </View>
-      ) : null}
-      {step === 'code' ? (
-        <View style={{ marginTop: 10, gap: 10 }}>
-          <Field label={t('set.code')} value={code} onChangeText={setCode} keyboardType="number-pad" />
-          <PrimaryButton
-            label={busy ? t('common.loading') : t('set.confirmEmail')}
-            disabled={busy}
-            onPress={() =>
-              run(async () => {
-                await confirmEmailChange(newEmail, code);
-                setStep('idle');
-                setCode('');
-                setOk(t('set.emailChanged'));
-              })
-            }
-          />
-        </View>
-      ) : null}
-      <Status ok={ok} error={error} />
+      </FlatSection>
 
-      <SectionLabel>{t('closet.identity')}</SectionLabel>
-      <Group>
-        <Row
+      <FlatSection>
+        <FlatRow
           label={t('set.identityCheck')}
-          detail={t(`set.identity.${identity}` as TranslationKey)}
-          detailColor={identity === 'verified' ? c.accent : undefined}
-          onPress={
-            canVerify
-              ? () =>
+          sub={t(`set.identity.${identity}` as TranslationKey)}
+          right={
+            identity === 'verified' ? (
+              <Pill label={t('settings.verified')} tone="muted" />
+            ) : canVerify ? (
+              <Pill
+                label={t('verify.gateCta')}
+                onPress={() =>
                   run(async () => {
                     await verifyIdentity();
                     refreshProfile();
                   })
-              : undefined
+                }
+              />
+            ) : undefined
           }
           last
         />
-      </Group>
-      <Help>{canVerify ? t('settings.identityHelp') : paymentsConfigured ? '' : t('error.paymentsUnavailable')}</Help>
+        {!paymentsConfigured ? <FlatHelp>{t('error.paymentsUnavailable')}</FlatHelp> : null}
+      </FlatSection>
 
-      <SectionLabel>{t('set.dangerZone')}</SectionLabel>
-      <Group>
-        <Row label={t('set.deleteAccount')} detailColor={c.plum} onPress={() => setDeleting((v) => !v)} last />
-      </Group>
-      {deleting ? (
-        <View style={{ marginTop: 10, gap: 10 }}>
-          <Txt size={13} color={c.ink2}>
-            {t('set.deleteBody')}
-          </Txt>
-          <Field label={t('set.deleteType')} value={confirm} onChangeText={setConfirm} autoCapitalize="none" />
-          <PrimaryButton
-            label={busy ? t('common.loading') : t('set.deleteForever')}
-            tone="plum"
-            disabled={busy || confirm.trim().length === 0}
-            onPress={remove}
+      <FlatSection title={t('set.connectedAccounts')}>
+        {(['apple', 'google'] as const).map((p, i) => (
+          <FlatRow
+            key={p}
+            label={p === 'apple' ? 'Apple' : 'Google'}
+            right={
+              providers.includes(p) ? (
+                <Pill label={t('set.connected')} tone="muted" />
+              ) : (
+                <Txt size={14} color={c.ink3}>
+                  {t('set.notConnected')}
+                </Txt>
+              )
+            }
+            last={i === 1}
           />
-          <Status error={deleteError} />
-        </View>
-      ) : null}
-    </Page>
+        ))}
+        <FlatHelp>{t('set.connectedHelp')}</FlatHelp>
+      </FlatSection>
+
+      <FlatSection>
+        <FlatRow label={t('set.changePassword')} onPress={() => go('set.security')} last />
+      </FlatSection>
+      <FlatSection>
+        <FlatRow label={t('set.deleteAccount')} tone="plum" onPress={() => setDeleting(true)} last />
+      </FlatSection>
+
+      <DeleteAccountSheet visible={deleting} onClose={() => setDeleting(false)} />
+    </FlatPage>
   );
 }
 
 // ── Paiements ──────────────────────────────────────────────────
 
 export function PaymentsSettings() {
-  const { c } = useTheme();
+  const { go } = useStore();
   const { t } = useT();
   const addCard = useAddCard();
   const [methods, setMethods] = useState<SavedMethod[] | null>(null);
@@ -515,66 +455,72 @@ export function PaymentsSettings() {
   };
 
   return (
-    <Page title={t('set.payments')}>
-      <SectionLabel>{t('set.paymentMethods')}</SectionLabel>
-      {!paymentsConfigured ? (
-        <Help>{t('error.paymentsUnavailable')}</Help>
-      ) : (
-        <>
-          <Group>
+    <FlatPage title={t('set.payments')} onBack={() => go('settings')}>
+      <FlatSection first title={t('set.paymentDetails')}>
+        {!paymentsConfigured ? (
+          <FlatHelp>{t('error.paymentsUnavailable')}</FlatHelp>
+        ) : (
+          <>
             {(methods ?? []).map((m) => (
-              <View
+              <FlatRow
                 key={m.id}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  minHeight: 56,
-                  paddingHorizontal: 15,
-                  borderBottomWidth: 1,
-                  borderBottomColor: c.line,
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Txt weight="semi">
-                    {m.brand.toUpperCase()} {m.last4 ? `•••• ${m.last4}` : ''}
-                  </Txt>
-                  {m.expMonth ? (
-                    <Txt size={12} color={c.ink3}>
-                      {t('set.expires')} {String(m.expMonth).padStart(2, '0')}/{String(m.expYear).slice(-2)}
-                    </Txt>
-                  ) : null}
-                </View>
-                <Pressable onPress={() => run(() => removePaymentMethod(m.id))} hitSlop={8}>
-                  <Txt size={13} weight="semi" color={c.plum}>
-                    {t('set.remove')}
-                  </Txt>
-                </Pressable>
-              </View>
+                label={`${m.brand.toUpperCase()}${m.last4 ? ` •••• ${m.last4}` : ''}`}
+                sub={m.expMonth ? `${t('set.expires')} ${String(m.expMonth).padStart(2, '0')}/${String(m.expYear).slice(-2)}` : undefined}
+                right={<Pill label={t('set.remove')} tone="plum" onPress={() => run(() => removePaymentMethod(m.id))} disabled={busy} />}
+              />
             ))}
-            <Row
-              label={methods === null ? t('common.loading') : t('set.addCard')}
-              onPress={() => run(addCard)}
-              last
-            />
-          </Group>
-          <Help>{t('set.cardsHelp')}</Help>
-        </>
-      )}
-      <SectionLabel>{t('set.payouts')}</SectionLabel>
-      <PayoutsCard />
-      <Status error={busy ? null : error} />
-    </Page>
+            <FlatRow label={methods === null ? t('common.loading') : t('set.addCard')} onPress={() => run(addCard)} last />
+            <FlatHelp>{t('set.cardsHelp')}</FlatHelp>
+          </>
+        )}
+      </FlatSection>
+      <FlatSection title={t('set.payouts')}>
+        <View style={{ paddingHorizontal: 18, paddingBottom: 16 }}>
+          <PayoutsCard />
+        </View>
+      </FlatSection>
+      <View style={{ paddingHorizontal: 18 }}>
+        <Status error={busy ? null : error} />
+      </View>
+    </FlatPage>
   );
 }
 
 // ── Envoi ──────────────────────────────────────────────────────
 
+function ModeCard({ title, body, on, note }: { title: string; body: string; on: boolean; note?: string }) {
+  const { c } = useTheme();
+  return (
+    <View style={{ marginHorizontal: 18, marginBottom: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: on ? c.accent : c.line2, opacity: on ? 1 : 0.55 }}>
+        <View style={{ flex: 1 }}>
+          <Txt size={16} weight="semi">
+            {title}
+          </Txt>
+          <Txt size={14} color={c.ink3} style={{ marginTop: 3 }}>
+            {body}
+          </Txt>
+        </View>
+        {on ? <CheckIcon size={20} color={c.accent} /> : null}
+      </View>
+      {note ? (
+        <Txt size={13} color={c.ink3} style={{ marginTop: 6 }}>
+          {note}
+        </Txt>
+      ) : null}
+    </View>
+  );
+}
+
 export function ShippingSettings() {
+  const { go } = useStore();
+  const { c } = useTheme();
   const { t } = useT();
   const { session } = useAuth();
+  const policy = usePolicy();
   const { address, loading } = useAddress(!!session);
   const [form, setForm] = useState<Address>(emptyAddress);
+  const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [ok, setOk] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -590,6 +536,7 @@ export function ShippingSettings() {
     try {
       await saveAddress(form);
       setOk(t('set.addressSaved'));
+      setEditing(false);
     } catch (e) {
       setError(e instanceof Error && e.message === 'address_invalid' ? t('set.addressInvalid') : friendlyError(e, t));
     } finally {
@@ -597,31 +544,66 @@ export function ShippingSettings() {
     }
   };
 
+  const lines = address ? [address.fullName, address.line1, address.line2, `${address.postalCode} ${address.city}`].filter(Boolean) : [];
+
   return (
-    <Page title={t('set.shipping')}>
-      <SectionLabel>{t('set.myAddress')}</SectionLabel>
-      {loading ? (
-        <Help>{t('common.loading')}</Help>
-      ) : (
-        <View style={{ marginTop: 10, gap: 10 }}>
-          <Field label={t('set.fullName')} value={form.fullName} onChangeText={field('fullName')} autoCapitalize="sentences" />
-          <Field label={t('set.line1')} value={form.line1} onChangeText={field('line1')} autoCapitalize="sentences" />
-          <Field label={t('set.line2')} value={form.line2} onChangeText={field('line2')} autoCapitalize="sentences" />
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <View style={{ flex: 1 }}>
-              <Field label={t('set.postalCode')} value={form.postalCode} onChangeText={field('postalCode')} />
-            </View>
-            <View style={{ flex: 2 }}>
-              <Field label={t('set.cityShort')} value={form.city} onChangeText={field('city')} autoCapitalize="sentences" />
-            </View>
+    <FlatPage title={t('set.shipping')} onBack={() => go('settings')}>
+      <FlatSection first>
+        <Txt size={20} weight="bold" style={{ paddingHorizontal: 18, paddingTop: 12 }}>
+          {t('set.myAddress')}
+        </Txt>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setEditing((v) => !v)}
+          style={{ margin: 18, marginBottom: 8, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: c.line2, flexDirection: 'row', gap: 12 }}
+        >
+          <View style={{ flex: 1, gap: 2 }}>
+            {loading ? (
+              <Txt color={c.ink3}>{t('common.loading')}</Txt>
+            ) : lines.length ? (
+              lines.map((l) => <Txt key={l}>{l}</Txt>)
+            ) : (
+              <Txt color={c.ink3}>{t('set.noAddress')}</Txt>
+            )}
           </View>
-          <Field label={t('set.phone')} value={form.phone} onChangeText={field('phone')} keyboardType="number-pad" />
+          <PencilIcon size={20} color={c.ink2} />
+        </Pressable>
+        {editing ? (
+          <View style={{ paddingHorizontal: 18, gap: 10 }}>
+            <Field label={t('set.fullName')} value={form.fullName} onChangeText={field('fullName')} autoCapitalize="sentences" />
+            <Field label={t('set.line1')} value={form.line1} onChangeText={field('line1')} autoCapitalize="sentences" />
+            <Field label={t('set.line2')} value={form.line2} onChangeText={field('line2')} autoCapitalize="sentences" />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Field label={t('set.postalCode')} value={form.postalCode} onChangeText={field('postalCode')} />
+              </View>
+              <View style={{ flex: 2 }}>
+                <Field label={t('set.cityShort')} value={form.city} onChangeText={field('city')} autoCapitalize="sentences" />
+              </View>
+            </View>
+            <Field label={t('set.phone')} value={form.phone} onChangeText={field('phone')} keyboardType="number-pad" />
+            <PrimaryButton label={busy ? t('common.loading') : t('set.save')} onPress={save} disabled={busy} />
+          </View>
+        ) : null}
+        <FlatHelp>{t('set.addressHelp')}</FlatHelp>
+        <View style={{ paddingHorizontal: 18 }}>
+          <Status ok={ok} error={error} />
         </View>
-      )}
-      <Help>{t('set.addressHelp')}</Help>
-      <Status ok={ok} error={error} />
-      <PrimaryButton label={busy ? t('common.loading') : t('set.save')} onPress={save} disabled={busy || loading} style={{ marginTop: 16 }} />
-    </Page>
+      </FlatSection>
+
+      <FlatSection>
+        <Txt size={20} weight="bold" style={{ paddingHorizontal: 18, paddingTop: 18, paddingBottom: 12 }}>
+          {t('set.handoverModes')}
+        </Txt>
+        <ModeCard title={t('set.handHand')} body={t('set.handHandBody')} on />
+        <ModeCard
+          title={t('set.rotaDelivery')}
+          body={t('set.rotaDeliveryBody')}
+          on={policy.flagRotaDelivery}
+          note={policy.flagRotaDelivery ? undefined : t('set.soon')}
+        />
+      </FlatSection>
+    </FlatPage>
   );
 }
 
@@ -659,7 +641,7 @@ function PasswordForm() {
   };
 
   return (
-    <View style={{ marginTop: 10, gap: 10 }}>
+    <View style={{ padding: 18, gap: 10 }}>
       <Field label={t('set.currentPassword')} value={current} onChangeText={setCurrent} secure />
       <Field label={t('set.newPassword')} value={next} onChangeText={setNext} secure />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 4 }}>
@@ -707,29 +689,27 @@ function TwoStep() {
 
   const on = !!factorId;
   return (
-    <>
-      <Group>
-        <ToggleRow
-          label={t('set.twoStep')}
-          body={on ? t('set.twoStepOn') : t('set.twoStepOff')}
-          on={on || !!setup}
-          disabled={busy || factorId === undefined}
-          onPress={() =>
-            on
-              ? run(async () => {
-                  await disableTotp(factorId!);
-                  setFactorId(null);
-                  setOk(t('set.twoStepDisabled'));
-                })
-              : setup
-                ? setSetup(null)
-                : run(async () => setSetup(await startTotpEnrollment()))
-          }
-          last
-        />
-      </Group>
+    <View>
+      <FlatToggle
+        label={t('set.twoStep')}
+        body={on ? t('set.twoStepOn') : t('set.twoStepOff')}
+        on={on || !!setup}
+        disabled={busy || factorId === undefined}
+        onPress={() =>
+          on
+            ? run(async () => {
+                await disableTotp(factorId!);
+                setFactorId(null);
+                setOk(t('set.twoStepDisabled'));
+              })
+            : setup
+              ? setSetup(null)
+              : run(async () => setSetup(await startTotpEnrollment()))
+        }
+        last
+      />
       {setup ? (
-        <View style={{ marginTop: 10, gap: 10 }}>
+        <View style={{ padding: 18, gap: 10 }}>
           <Txt size={13} color={c.ink2}>
             {t('set.twoStepSetup')}
           </Txt>
@@ -758,41 +738,45 @@ function TwoStep() {
           />
         </View>
       ) : null}
-      <Status ok={ok} error={error} />
-    </>
+      <View style={{ paddingHorizontal: 18 }}>
+        <Status ok={ok} error={error} />
+      </View>
+    </View>
   );
 }
 
 export function SecuritySettings() {
+  const { go } = useStore();
   const { t } = useT();
-  const [open, setOpen] = useState<'password' | null>(null);
+  const [open, setOpen] = useState<'password' | 'twoStep' | 'sessions' | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const toggle = (k: 'password' | 'twoStep' | 'sessions') => setOpen((v) => (v === k ? null : k));
   return (
-    <Page title={t('set.security')}>
-      <SectionLabel>{t('set.password')}</SectionLabel>
-      <Group>
-        <Row label={t('set.changePassword')} onPress={() => setOpen(open === 'password' ? null : 'password')} last />
-      </Group>
+    <FlatPage title={t('set.security')} onBack={() => go('settings')}>
+      <FlatIntro title={t('set.securityTitle')} body={t('set.securityBody')} />
+      <FlatRow label={t('settings.email')} sub={t('set.emailSub')} onPress={() => go('set.account')} />
+      <FlatRow label={t('set.password')} sub={t('set.passwordSub')} onPress={() => toggle('password')} />
       {open === 'password' ? <PasswordForm /> : null}
-
-      <SectionLabel>{t('set.twoStep')}</SectionLabel>
-      <TwoStep />
-
-      <SectionLabel>{t('set.sessions')}</SectionLabel>
-      <Group>
-        <Row
-          label={t('set.signOutOthers')}
-          onPress={() =>
-            signOutOtherDevices()
-              .then(() => setOk(t('set.signedOutOthers')))
-              .catch((e) => setError(friendlyError(e, t)))
-          }
-          last
-        />
-      </Group>
-      <Status ok={ok} error={error} />
-    </Page>
+      <FlatRow label={t('set.twoStep')} sub={t('set.twoStepSub')} onPress={() => toggle('twoStep')} />
+      {open === 'twoStep' ? <TwoStep /> : null}
+      <FlatRow label={t('set.sessions')} sub={t('set.sessionsSub')} onPress={() => toggle('sessions')} last={open !== 'sessions'} />
+      {open === 'sessions' ? (
+        <View style={{ padding: 18 }}>
+          <GhostButton
+            label={t('set.signOutOthers')}
+            onPress={() =>
+              signOutOtherDevices()
+                .then(() => setOk(t('set.signedOutOthers')))
+                .catch((e) => setError(friendlyError(e, t)))
+            }
+          />
+        </View>
+      ) : null}
+      <View style={{ paddingHorizontal: 18 }}>
+        <Status ok={ok} error={error} />
+      </View>
+    </FlatPage>
   );
 }
 

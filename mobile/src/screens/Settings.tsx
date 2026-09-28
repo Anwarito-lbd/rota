@@ -1,46 +1,33 @@
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Linking, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
 import { useSocial } from '../data/social';
 import { LANGUAGES, useT, type TranslationKey } from '../i18n';
 import { useAuth } from '../lib/auth';
 import { BRAND, LEGAL_URLS } from '../lib/config';
-import { usePolicy } from '../lib/policy';
 import { useStore } from '../state/store';
 import { useTheme } from '../theme/useTheme';
 import { DeleteAccountSheet } from '../ui/DeleteAccountSheet';
-import { Group, Header, Row, Screen, SectionLabel, Txt } from '../ui/kit';
-
-const BanIcon = ({ color }: { color: string }) => (
-  <Svg width={20} height={20} viewBox="0 0 24 24">
-    <Circle cx="12" cy="12" r="8.5" stroke={color} strokeWidth={1.8} fill="none" />
-    <Path d="M6 6l12 12" stroke={color} strokeWidth={1.8} />
-  </Svg>
-);
-
-const TrashIcon = ({ color }: { color: string }) => (
-  <Svg width={20} height={20} viewBox="0 0 24 24">
-    <Path d="M4 7h16M9 7V4.8h6V7M6.5 7l1 12.5h9l1-12.5" stroke={color} strokeWidth={1.8} fill="none" strokeLinejoin="round" />
-  </Svg>
-);
+import { FlatPage, FlatRow, FlatSection } from '../ui/Flat';
+import { ArrowUpRightIcon } from '../ui/icons';
+import { Txt } from '../ui/kit';
 
 /**
- * Réglages (Figma 08): account, notifications, language, appearance,
- * privacy and safety, legal information, then sign out and delete.
+ * Réglages, laid out like Vinted's Paramètres: the account pages first,
+ * then notifications, language and appearance, privacy, legal, and at the
+ * bottom sign out and delete (Apple 5.1.1(v)).
  */
 export function Settings() {
   const { state, set, go } = useStore();
   const { c } = useTheme();
-  const { t, lang, setLang } = useT();
-  const { session, profile, isStaff, signOut } = useAuth();
+  const { t, lang } = useT();
+  const { profile, isStaff, signOut } = useAuth();
   const social = useSocial();
-  const policy = usePolicy();
   const [deleting, setDeleting] = useState(false);
 
-  const username = profile?.username ?? (social.demo ? 'demo.rota' : '—');
-  const emailVerified = !!session?.user.email_confirmed_at || social.demo;
   const open = (url: string) => WebBrowser.openBrowserAsync(url).catch(() => undefined);
+  const external = <ArrowUpRightIcon size={15} color={c.ink3} />;
+  const language = LANGUAGES.find((l) => l.key === lang)?.native ?? lang;
 
   const leave = async () => {
     if (social.demo) {
@@ -51,107 +38,69 @@ export function Settings() {
   };
 
   return (
-    <Screen bottomInset={40}>
-      <Header title={t('settings.title')} onBack={() => go('closet')} />
+    <FlatPage title={t('settings.title')} onBack={() => go('closet')}>
+      <FlatSection first>
+        <FlatRow label={t('set.profile')} detail={profile?.username ? `@${profile.username}` : undefined} onPress={() => go('set.profile')} />
+        <FlatRow label={t('set.account')} onPress={() => go('set.account')} />
+        <FlatRow label={t('set.payments')} onPress={() => go('set.payments')} />
+        <FlatRow label={t('set.shipping')} onPress={() => go('set.shipping')} />
+        <FlatRow label={t('set.security')} onPress={() => go('set.security')} last />
+      </FlatSection>
 
-      <SectionLabel>{t('set.sectionAccount')}</SectionLabel>
-      <Group>
-        <Row label={t('set.username')} detail={`@${username}`} onPress={() => go('set.profile')} />
-        <Row
-          label={t('settings.email')}
-          detail={emailVerified ? t('settings.verified') : t('settings.toVerify')}
-          detailColor={emailVerified ? undefined : c.plum}
-          onPress={() => go('set.account')}
-        />
-        <Row label={t('set.payments')} onPress={() => go('set.payments')} />
-        {policy.flagRotaDelivery ? <Row label={t('set.shipping')} onPress={() => go('set.shipping')} /> : null}
-        <Row label={t('set.security')} onPress={() => go('set.security')} last />
-      </Group>
+      <FlatSection title={t('set.sectionNotifications')}>
+        <FlatRow label={t('set.push')} onPress={() => go('set.push')} />
+        <FlatRow label={t('set.email')} onPress={() => go('set.email')} last />
+      </FlatSection>
 
-      <SectionLabel>{t('set.notifications')}</SectionLabel>
-      <Group>
-        <Row label={t('set.push')} onPress={() => go('set.push')} />
-        <Row label={t('set.email')} onPress={() => go('set.email')} last />
-      </Group>
+      <FlatSection title={t('set.appLanguage')}>
+        <FlatRow label={t('settings.language')} detail={language} onPress={() => go('set.language')} last />
+      </FlatSection>
 
-      <SectionLabel>{t('set.sectionLanguage')}</SectionLabel>
-      <Group>
-        {LANGUAGES.map((l, i) => (
-          <Row
-            key={l.key}
-            label={l.native}
-            checked={lang === l.key}
-            onPress={() => setLang(l.key)}
-            last={i === LANGUAGES.length - 1}
-          />
-        ))}
-      </Group>
+      <FlatSection>
+        <FlatRow label={t('set.theme')} detail={t(`set.themeMode.${state.themeMode}` as TranslationKey)} onPress={() => go('set.theme')} last />
+      </FlatSection>
 
-      <SectionLabel>{t('set.sectionAppearance')}</SectionLabel>
-      <Group>
-        <Row
-          label={t('set.theme')}
-          detail={t(`set.themeMode.${state.themeMode}` as TranslationKey)}
-          onPress={() => go('set.theme')}
-          last
-        />
-      </Group>
-
-      <SectionLabel>{t('set.sectionPrivacy')}</SectionLabel>
-      <Group>
-        <Row label={t('set.privacy')} onPress={() => go('set.privacy')} />
-        <Row
+      <FlatSection title={t('set.sectionPrivacy')}>
+        <FlatRow label={t('set.privacy')} onPress={() => go('set.privacy')} />
+        <FlatRow
           label={t('set.blocked')}
-          icon={<BanIcon color={c.accent} />}
           detail={social.blockedIds.length ? String(social.blockedIds.length) : undefined}
           onPress={() => go('blocked')}
           last
         />
-      </Group>
+      </FlatSection>
 
-      <SectionLabel>{t('set.sectionLegal')}</SectionLabel>
-      <Group>
-        <Row label={t('set.terms')} external onPress={() => open(LEGAL_URLS.terms)} />
-        <Row label={t('set.privacyPolicy')} external onPress={() => open(LEGAL_URLS.privacy)} />
-        <Row label={t('settings.guidelines')} onPress={() => go('guidelines')} />
-        <Row label={t('set.fees')} onPress={() => go('fees')} />
-        <Row
+      <FlatSection title={t('set.sectionLegal')}>
+        <FlatRow label={t('settings.guidelines')} onPress={() => go('guidelines')} />
+        <FlatRow label={t('set.fees')} onPress={() => go('fees')} />
+        <FlatRow label={t('set.terms')} right={external} onPress={() => open(LEGAL_URLS.terms)} />
+        <FlatRow label={t('set.privacyPolicy')} right={external} onPress={() => open(LEGAL_URLS.privacy)} />
+        <FlatRow
           label={t('set.help')}
-          external
+          right={external}
           onPress={() => Linking.openURL(`mailto:${BRAND.supportEmail}`).catch(() => open(LEGAL_URLS.support))}
           last
         />
-      </Group>
+      </FlatSection>
 
       {isStaff ? (
-        <>
-          <SectionLabel>{t('admin.section')}</SectionLabel>
-          <Group>
-            <Row label={t('admin.title')} onPress={() => go('admin')} last />
-          </Group>
-        </>
+        <FlatSection>
+          <FlatRow label={t('admin.title')} onPress={() => go('admin')} last />
+        </FlatSection>
       ) : null}
 
-      <View style={{ height: 24 }} />
-      <Group>
-        <Row label={t('settings.signOut')} tone="accent" onPress={leave} last />
-      </Group>
-      <View style={{ height: 12 }} />
-      <Group>
-        <Row
-          label={t('set.deleteAccount')}
-          tone="plum"
-          icon={<TrashIcon color={c.plum} />}
-          onPress={() => setDeleting(true)}
-          last
-        />
-      </Group>
+      <FlatSection>
+        <FlatRow label={t('settings.signOut')} tone="accent" onPress={leave} />
+        <FlatRow label={t('set.deleteAccount')} tone="plum" onPress={() => setDeleting(true)} last />
+      </FlatSection>
 
-      <Txt size={12} color={c.ink3} center style={{ marginTop: 18 }}>
-        {t('settings.version')}
-      </Txt>
+      <View style={{ paddingVertical: 16 }}>
+        <Txt size={12} color={c.ink3} center>
+          {t('settings.version')}
+        </Txt>
+      </View>
 
       <DeleteAccountSheet visible={deleting} onClose={() => setDeleting(false)} />
-    </Screen>
+    </FlatPage>
   );
 }
