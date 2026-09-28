@@ -6,6 +6,7 @@
 import { useEffect, useRef, type ReactElement } from 'react';
 import { Animated, Easing, Linking, Modal, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCommunity } from '../data/community';
 import { useSocial } from '../data/social';
 import { useT, type TranslationKey } from '../i18n';
 import { useAuth } from '../lib/auth';
@@ -18,6 +19,7 @@ import {
   CalendarIcon,
   ChevronRight,
   CloseIcon,
+  CrownIcon,
   GearIcon,
   HeartIcon,
   HelpIcon,
@@ -42,6 +44,7 @@ export function SideMenu({ visible, onClose }: { visible: boolean; onClose: () =
   const { t } = useT();
   const { isStaff } = useAuth();
   const social = useSocial();
+  const community = useCommunity();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
@@ -64,10 +67,15 @@ export function SideMenu({ visible, onClose }: { visible: boolean; onClose: () =
     if (item.onPress) return item.onPress();
     if (item.to === 'verify') return set({ screen: 'verify', afterVerify: 'closet' });
     if (item.to === 'boards') return set({ screen: 'boards', board: null });
+    if (item.to === 'pro') return set({ screen: 'pro', proFrom: 'closet' });
     if (item.to) go(item.to);
   };
 
   const groups: Item[][] = [
+    [
+      { label: 'pro.row', Icon: CrownIcon, to: 'pro', detail: community.pro ? t('pro.active') : undefined },
+      { label: 'planner.title', Icon: CalendarIcon, to: 'planner' },
+    ],
     [
       { label: 'boards.title', Icon: HeartIcon, to: 'boards' },
       { label: 'rentals.title', Icon: CalendarIcon, to: 'rentals' },

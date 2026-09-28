@@ -3,13 +3,14 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useListings, type Listing } from '../data/listings';
+import { useCommunity } from '../data/community';
 import { useSocial, type Post } from '../data/social';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
 import type { FeedTab } from '../state/types';
 import { BRAND_LAVENDER, OVER_INK, OVER_INK_SOFT } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
-import { BookmarkIcon, DotsIcon, HeartIcon, MapIcon, PersonPlusIcon, PinIcon, SparkleIcon } from '../ui/icons';
+import { BellIcon, BookmarkIcon, DotsIcon, HeartIcon, PersonPlusIcon, PinIcon, SparkleIcon } from '../ui/icons';
 import { CertifiedMark, Display, GhostButton, PrimaryButton, Txt } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
 import { Avatar, FadeIn, GlassChip, IdBadge, Logo, Pop, PressScale, Segmented, tap } from '../ui/motion';
@@ -213,13 +214,18 @@ export function Feed() {
   const [height, setHeight] = useState(0);
   const { listings, loading: listingsLoading, error, refresh: refreshListings } = useListings();
   const social = useSocial();
+  const community = useCommunity();
   const tab = state.feedTab;
   const items: Item[] = useMemo(() => {
     if (tab === 'follow') {
-      return social.posts.filter((p) => social.isFollowing(p.authorId)).map((post) => ({ type: 'post' as const, post }));
+      return social.posts
+        .filter((p) => social.isFollowing(p.authorId) || !!community.repostedBy[p.id])
+        .map((post) => ({ type: 'post' as const, post }));
     }
-    return interleave(social.posts, listings);
-  }, [tab, social, listings]);
+    // Rota Pro: your own looks are boosted to the top of Pour toi.
+    const boosted = community.pro ? social.posts.filter((p) => p.authorId === social.meId) : [];
+    return interleave([...boosted, ...social.posts.filter((p) => !boosted.includes(p))], listings);
+  }, [tab, social, listings, community]);
 
   const loading = listingsLoading || social.loading;
   const refresh = () => {
@@ -304,10 +310,9 @@ export function Feed() {
             <Segmented items={tabs} value={tab} onChange={(k) => set({ feedTab: k })} over />
           </View>
           <View style={{ width: 40 }}>
-          {tab === 'near' ? null : (
           <PressScale
-            onPress={() => go('map')}
-            accessibilityLabel={t('explore.map')}
+            onPress={() => go('activity')}
+            accessibilityLabel={t('activity.title')}
             style={{
               width: 40,
               height: 40,
@@ -319,9 +324,8 @@ export function Feed() {
               justifyContent: 'center',
             }}
           >
-            <MapIcon size={19} />
+            <BellIcon size={19} />
           </PressScale>
-          )}
           </View>
         </View>
         {social.demo ? (

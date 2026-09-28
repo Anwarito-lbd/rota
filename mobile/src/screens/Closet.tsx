@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { ActivityIndicator, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Pressable, View, useWindowDimensions } from 'react-native';
 import { useMyListings, type Listing } from '../data/listings';
 import { DEMO_ME } from '../data/demo';
 import { useMember, useSocial } from '../data/social';
@@ -68,15 +68,20 @@ export function Closet() {
             <Avatar uri={avatar ?? undefined} size={86} ring />
           </PressScale>
           <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-around' }}>
-            {stats.map(([n, label]) => (
-              <View key={label} style={{ alignItems: 'center' }}>
+            {stats.map(([n, label], i) => (
+              <Pressable
+                key={label}
+                disabled={i === 0 || !social.meId}
+                onPress={() => social.meId && set({ screen: 'follows', followList: { memberId: social.meId, kind: i === 1 ? 'followers' : 'following' } })}
+                style={{ alignItems: 'center' }}
+              >
                 <Txt size={18} weight="bold">
                   {n}
                 </Txt>
                 <Txt size={12} color={c.ink3}>
                   {label}
                 </Txt>
-              </View>
+              </Pressable>
             ))}
           </View>
         </View>

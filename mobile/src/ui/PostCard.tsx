@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { useListings, type Listing } from '../data/listings';
+import { useCommunity } from '../data/community';
 import { useSocial, type Post } from '../data/social';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
@@ -22,6 +23,8 @@ import {
   SparkleIcon,
   TagIcon,
   CheckIcon,
+  CrownIcon,
+  RepostIcon,
 } from './icons';
 import { Sheet, Txt } from './kit';
 import { useTheme } from '../theme/useTheme';
@@ -200,10 +203,12 @@ function PostMenu({
   onShare,
   onTryOn,
   onReport,
+  repost,
 }: {
   visible: boolean;
   onClose: () => void;
   onShare: () => void;
+  repost?: { on: boolean; toggle: () => void };
   onTryOn?: () => void;
   onReport?: () => void;
 }) {
@@ -235,6 +240,7 @@ function PostMenu({
   return (
     <Sheet visible={visible} onClose={onClose}>
       {onTryOn ? item(<SparkleIcon size={20} color={c.accent} />, t('post.tryOn'), t('post.tryOnSub'), onTryOn) : null}
+      {repost ? item(<RepostIcon size={20} color={repost.on ? c.accent : c.ink} />, repost.on ? t('repost.undo') : t('repost.do'), repost.on ? null : t('repost.sub'), repost.toggle) : null}
       {item(<ShareIcon size={20} color={c.ink} />, t('post.share'), null, onShare)}
       {onReport ? item(<DotsIcon color={c.plum} />, t('post.report'), null, onReport, c.plum) : null}
     </Sheet>
@@ -246,6 +252,7 @@ export function PostCard({ post, height, distanceKm }: { post: Post; height: num
   const { t, lang } = useT();
   const { byId } = useListings();
   const social = useSocial();
+  const community = useCommunity();
   const { width } = useWindowDimensions();
   const [index, setIndex] = useState(0);
   const [showTags, setShowTags] = useState(false);
@@ -424,13 +431,30 @@ export function PostCard({ post, height, distanceKm }: { post: Post; height: num
         }
         onTryOn={tagged.length ? () => set({ screen: 'tryon', tryOnListingId: tagged[0].listingId }) : undefined}
         onReport={!mine ? () => set({ socialReport: { kind: 'post', id: post.id, memberId: post.authorId } }) : undefined}
+        repost={!mine && post.distribution === 'public' ? { on: community.isReposted(post.id), toggle: () => community.toggleRepost(post.id) } : undefined}
       />
 
       {peekListing ? <TagPeek listing={peekListing} top={peekTop} onClose={() => setPeek(null)} /> : null}
 
       {/* Caption block */}
       <View style={{ position: 'absolute', left: 0, right: 70, bottom: 0, paddingHorizontal: 16, paddingBottom: 18 + TAB_BAR_SPACE }}>
+        {community.repostedBy[post.id] ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+            <RepostIcon size={14} color={OVER_INK_SOFT} />
+            <Txt size={12} weight="semi" color={OVER_INK_SOFT}>
+              {t('repost.by').replace('{name}', community.repostedBy[post.id].username)}
+            </Txt>
+          </View>
+        ) : null}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+          {mine && community.pro ? (
+            <GlassChip style={{ backgroundColor: 'rgba(226,169,241,0.9)', borderColor: 'transparent' }}>
+              <CrownIcon size={12} color="#2A1033" />
+              <Txt size={11} weight="bold" upper color="#2A1033">
+                {t('pro.boosted')}
+              </Txt>
+            </GlassChip>
+          ) : null}
           <GlassChip>
             <Txt size={11} weight="bold" upper color={BRAND_LAVENDER}>
               {post.kind === 'dump' ? `${t('post.dump')} · ${post.media.length}` : t('post.fit')}

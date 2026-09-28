@@ -8,6 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCommunity } from '../data/community';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
 import type { MediaItem } from '../state/types';
@@ -17,7 +18,7 @@ import { CameraIcon, CloseIcon, FlipIcon, ImagesIcon } from '../ui/icons';
 import { PrimaryButton, Txt } from '../ui/kit';
 import { PressScale, tap } from '../ui/motion';
 
-type Mode = 'fit' | 'list';
+type Mode = 'fit' | 'story' | 'list';
 
 const GLASS = 'rgba(12,10,13,0.45)';
 
@@ -31,11 +32,15 @@ export function Camera() {
   const [mode, setMode] = useState<Mode>('fit');
   const [busy, setBusy] = useState(false);
   const cam = useRef<CameraView>(null);
+  const community = useCommunity();
 
   const hand = (items: MediaItem[]) => {
     if (!items.length) return;
     if (mode === 'fit') {
       set({ screen: 'compose', captured: items });
+    } else if (mode === 'story') {
+      community.postStory(items[0].uri).catch(() => undefined);
+      go('messages');
     } else {
       // The listing form reads its photo slots from the store.
       setMedia('new-listing-photo-1', items[0]);
@@ -61,7 +66,7 @@ export function Camera() {
       mediaTypes: ['images'],
       quality: 0.85,
       allowsMultipleSelection: true,
-      selectionLimit: mode === 'fit' ? 10 : 2,
+      selectionLimit: mode === 'fit' ? 10 : mode === 'story' ? 1 : 2,
     }).catch(() => null);
     if (!result || result.canceled) return;
     hand(
@@ -144,10 +149,10 @@ export function Camera() {
         </View>
 
         <View style={{ flexDirection: 'row', gap: 22, marginTop: 18 }}>
-          {(['fit', 'list'] as Mode[]).map((k) => (
+          {(['fit', 'story', 'list'] as Mode[]).map((k) => (
             <PressScale key={k} haptic="light" onPress={() => setMode(k)} accessibilityRole="tab" accessibilityState={{ selected: mode === k }}>
               <Txt size={15} weight={mode === k ? 'bold' : 'semi'} color={mode === k ? OVER_INK : 'rgba(247,242,248,0.55)'}>
-                {t(k === 'fit' ? 'camera.fit' : 'camera.list')}
+                {t(k === 'fit' ? 'camera.fit' : k === 'story' ? 'camera.story' : 'camera.list')}
               </Txt>
               <View style={{ height: 3, borderRadius: 99, marginTop: 5, alignSelf: 'center', width: 18, backgroundColor: mode === k ? OVER_INK : 'transparent' }} />
             </PressScale>

@@ -51,7 +51,12 @@ export type Screen =
   | 'compose'
   | 'tryon'
   | 'verify'
-  | 'camera';
+  | 'camera'
+  | 'follows'
+  | 'activity'
+  | 'story'
+  | 'pro'
+  | 'planner';
 
 /**
  * 0 welcome · 'auth' credentials · 'otp' e-mail code · 1 guidelines gate
@@ -198,6 +203,12 @@ export interface AppState {
   createSheet: boolean;
   /** Photos taken on the camera screen, waiting for the post composer. */
   captured: MediaItem[] | null;
+  /** Follower / following list being shown. */
+  followList: { memberId: string; kind: 'followers' | 'following' } | null;
+  /** Whose stories the story viewer opened on. */
+  storyAuthorId: string | null;
+  /** Where to go back to after the Pro page. */
+  proFrom: Screen | null;
   /** What "Signaler" was opened on, beyond listings. */
   socialReport: { kind: 'post' | 'comment' | 'member' | 'message'; id: string; memberId: string } | null;
   /** Listing the try-on screen dresses you in. */

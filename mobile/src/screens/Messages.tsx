@@ -17,6 +17,7 @@ import { useTheme } from '../theme/useTheme';
 import { ChevronLeft, DotsIcon, PinIcon, SendIcon, ShieldCheckIcon, TabMessagesIcon } from '../ui/icons';
 import { Display, Note, Screen, Sheet, Txt } from '../ui/kit';
 import { Avatar, FadeIn, IdBadge, PressScale, Skeleton, tap, timeAgo } from '../ui/motion';
+import { StoriesRow } from './Community';
 
 function Inbox() {
   const { set } = useStore();
@@ -27,6 +28,9 @@ function Inbox() {
   return (
     <Screen>
       <Display size={34}>{t('messages.title')}</Display>
+      <View style={{ marginHorizontal: -18, marginTop: 6 }}>
+        <StoriesRow />
+      </View>
       {threads === null ? (
         <View style={{ marginTop: 20, gap: 12 }}>
           {[0, 1, 2].map((i) => (

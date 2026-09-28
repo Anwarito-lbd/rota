@@ -121,15 +121,20 @@ export function UserProfile() {
                 [compact(posts.length, lang), t('profile.fits')],
                 [compact(member.followers, lang), t('profile.followers')],
                 [compact(member.following, lang), t('profile.following')],
-              ].map(([n, label]) => (
-                <View key={label} style={{ alignItems: 'center' }}>
+              ].map(([n, label], i) => (
+                <Pressable
+                  key={label}
+                  disabled={i === 0 || !memberId}
+                  onPress={() => memberId && set({ screen: 'follows', followList: { memberId, kind: i === 1 ? 'followers' : 'following' } })}
+                  style={{ alignItems: 'center' }}
+                >
                   <Txt size={18} weight="bold">
                     {n}
                   </Txt>
                   <Txt size={12} color={c.ink3}>
                     {label}
                   </Txt>
-                </View>
+                </Pressable>
               ))}
             </View>
           </View>

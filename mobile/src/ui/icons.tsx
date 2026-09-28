@@ -396,3 +396,15 @@ export const HandbagIcon = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
     <Path d="M5 9h14l-1.2 11H6.2L5 9ZM9 9V7a3 3 0 0 1 6 0v2" stroke={color} strokeWidth={1.7} fill="none" strokeLinejoin="round" />
   </Svg>
 );
+
+export const RepostIcon = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="M7 7h10.5a2.5 2.5 0 0 1 2.5 2.5V12M17 17H6.5A2.5 2.5 0 0 1 4 14.5V12M14.5 4 17.5 7l-3 3M9.5 20l-3-3 3-3" stroke={color} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+export const CrownIcon = ({ size = 22, color = '#F7F2F8' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="M4 8.5 8 12l4-6 4 6 4-3.5-1.5 9.5h-13L4 8.5ZM5.5 20.5h13" stroke={color} strokeWidth={1.8} fill="none" strokeLinejoin="round" strokeLinecap="round" />
+  </Svg>
+);
