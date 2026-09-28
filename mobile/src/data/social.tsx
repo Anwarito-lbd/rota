@@ -72,6 +72,8 @@ export interface Comment {
   authorId: string;
   author: { username: string; avatar: string | null };
   body: string;
+  /** 1–5 stars on a review; null on a reply. */
+  rating: number | null;
   createdAt: string;
   likeCount: number;
   liked: boolean;
@@ -691,6 +693,7 @@ function demoCommentsFor(postId: string): Comment[] {
         authorId: c.authorId,
         author: { username: demoAuthor(c.authorId).username, avatar: demoAuthor(c.authorId).avatar },
         body: c.body,
+        rating: c.rating,
         createdAt: new Date(Date.now() - c.minutesAgo * 6e4).toISOString(),
         likeCount: 3 + ((i * 7) % 11),
         liked: false,
@@ -706,6 +709,7 @@ type CommentRow = {
   parent_id: string | null;
   author_id: string;
   body: string;
+  rating: number | null;
   created_at: string;
   like_count: number | null;
   author: { username: string; avatar_url: string | null } | null;
@@ -726,7 +730,7 @@ export function useComments(postId: string | null) {
     setLoading(true);
     const db = supabase;
     db.from('post_comments')
-      .select('id, post_id, parent_id, author_id, body, created_at, like_count, author:profiles!post_comments_author_id_fkey(username, avatar_url)')
+      .select('id, post_id, parent_id, author_id, body, rating, created_at, like_count, author:profiles!post_comments_author_id_fkey(username, avatar_url)')
       .eq('post_id', postId)
       .order('created_at')
       .limit(300)
@@ -745,6 +749,7 @@ export function useComments(postId: string | null) {
             authorId: r.author_id,
             author: { username: r.author?.username ?? 'membre', avatar: r.author?.avatar_url ?? null },
             body: r.body,
+            rating: r.rating,
             createdAt: r.created_at,
             likeCount: r.like_count ?? 0,
             liked: likedIds.has(r.id),
@@ -757,11 +762,16 @@ export function useComments(postId: string | null) {
     };
   }, [demo, postId, meId]);
 
-  /** A new comment, or a reply when `parentId` is set (replies stay one level deep). */
+  /**
+   * A review (stars + text), or a reply when `parentId` is set. Replies stay
+   * one level deep and carry no stars.
+   */
   const add = useCallback(
-    async (body: string, parentId: string | null = null) => {
+    async (body: string, parentId: string | null = null, rating: number | null = null) => {
       const text = body.trim().slice(0, 500);
       if (!postId || !meId || !text) return;
+      const stars = parentId ? null : rating && rating >= 1 && rating <= 5 ? Math.round(rating) : null;
+      if (!parentId && !stars) return;
       if (demo || !supabase) {
         const c: Comment = {
           id: uid(),
@@ -770,6 +780,7 @@ export function useComments(postId: string | null) {
           authorId: meId,
           author: { username: DEMO_ME.username, avatar: DEMO_ME.avatar },
           body: text,
+          rating: stars,
           createdAt: new Date().toISOString(),
           likeCount: 0,
           liked: false,
@@ -780,7 +791,7 @@ export function useComments(postId: string | null) {
       }
       const { data, error } = await supabase
         .from('post_comments')
-        .insert({ post_id: postId, body: text, parent_id: parentId })
+        .insert({ post_id: postId, body: text, parent_id: parentId, rating: stars })
         .select('id, created_at')
         .single();
       if (error) throw new Error(error.message);
@@ -793,6 +804,7 @@ export function useComments(postId: string | null) {
           authorId: meId,
           author: { username: 'moi', avatar: null },
           body: text,
+          rating: stars,
           createdAt: data.created_at,
           likeCount: 0,
           liked: false,

@@ -11,12 +11,23 @@ import { useT, type TranslationKey } from '../i18n';
 import { useStore } from '../state/store';
 import { FONT, ff } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
-import { BookmarkIcon, CameraIcon, CloseIcon, HeartIcon, PlusIcon, SendIcon, TabAddIcon } from './icons';
+import { BookmarkIcon, CameraIcon, CloseIcon, HeartIcon, PlusIcon, SendIcon, StarIcon, TabAddIcon } from './icons';
 import { Check, Display, Field, GhostButton, PrimaryButton, Row, Sheet, Txt } from './kit';
 import { Avatar, FadeIn, PressScale, compact, tap, timeAgo } from './motion';
 import { BlockRow } from './Moderation';
 
-// ─── Comments ──────────────────────────────────────────────────
+// ─── Reviews (stars + text, replies one level deep) ────────────
+
+function Stars({ value, size, label }: { value: number; size: number; label: string }) {
+  const { c } = useTheme();
+  return (
+    <View accessible accessibilityLabel={label} style={{ flexDirection: 'row', gap: 2, marginTop: 3 }}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <StarIcon key={n} size={size} fill={n <= value ? c.accent : 'none'} color={n <= value ? c.accent : c.ink3} />
+      ))}
+    </View>
+  );
+}
 
 export function CommentsSheet() {
   const { state, set } = useStore();
@@ -27,35 +38,47 @@ export function CommentsSheet() {
   const { comments, add, remove, toggleLike } = useComments(state.commentsFor);
   const [draft, setDraft] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
+  const [rating, setRating] = useState(0);
   const [busy, setBusy] = useState(false);
   const input = useRef<TextInput>(null);
 
   useEffect(() => {
     setDraft('');
     setReplyTo(null);
+    setRating(0);
   }, [state.commentsFor]);
 
+  const close = () => set({ commentsFor: null });
+  const top = comments.filter((cm) => !cm.parentId);
+  const repliesOf = (id: string) => comments.filter((cm) => cm.parentId === id);
+  const rated = top.filter((cm) => cm.rating);
+  const average = rated.length ? rated.reduce((n, cm) => n + (cm.rating ?? 0), 0) / rated.length : 0;
+  // One review per member, and never on your own look; replies stay open.
+  const ownPost = !!post && post.authorId === social.meId;
+  const reviewed = top.some((cm) => cm.authorId === social.meId && cm.rating);
+  const writing = replyTo ? 'reply' : ownPost || reviewed ? null : 'review';
+  const canSend = !!draft.trim() && !busy && (writing === 'reply' || (writing === 'review' && rating > 0));
+
   const send = async () => {
-    if (!draft.trim() || busy) return;
+    if (!canSend) return;
     setBusy(true);
     try {
       // Replies stay one level deep: answering a reply answers its thread.
-      await add(draft, replyTo ? (replyTo.parentId ?? replyTo.id) : null);
+      await add(draft, replyTo ? (replyTo.parentId ?? replyTo.id) : null, replyTo ? null : rating);
       tap('light');
       setDraft('');
       setReplyTo(null);
+      setRating(0);
     } finally {
       setBusy(false);
     }
   };
 
-  const close = () => set({ commentsFor: null });
-  const top = comments.filter((cm) => !cm.parentId);
-  const repliesOf = (id: string) => comments.filter((cm) => cm.parentId === id);
-
   const renderOne = (cm: Comment, i: number, reply: boolean) => {
     const mine = cm.authorId === social.meId;
-    const canDelete = mine || post?.authorId === social.meId;
+    // The look's author can clear replies under it, never someone's review.
+    const canDelete = mine || (reply && post?.authorId === social.meId);
+    const byAuthor = !!post && cm.authorId === post.authorId;
     return (
       <FadeIn key={cm.id} delay={Math.min(i, 6) * 40} style={{ flexDirection: 'row', gap: 10, marginLeft: reply ? 44 : 0 }}>
         <Pressable onPress={() => set({ commentsFor: null, screen: 'user', profileId: cm.authorId })}>
@@ -66,10 +89,16 @@ export function CommentsSheet() {
             <Txt size={13} weight="bold">
               {cm.author.username}
             </Txt>
+            {byAuthor && reply ? (
+              <Txt size={11} weight="bold" color={c.accent}>
+                Auteur
+              </Txt>
+            ) : null}
             <Txt size={12} color={c.ink3}>
               {timeAgo(cm.createdAt, lang)}
             </Txt>
           </View>
+          {cm.rating && !reply ? <Stars value={cm.rating} size={13} label={t('reviews.stars').replace('{n}', String(cm.rating))} /> : null}
           <Txt size={14} color={c.ink2} style={{ marginTop: 1 }}>
             {cm.body}
           </Txt>
@@ -121,11 +150,19 @@ export function CommentsSheet() {
 
   return (
     <Sheet visible={!!state.commentsFor} onClose={close}>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Display size={26}>{t('comments.title')}</Display>
-        <Txt size={13} color={c.ink3}>
-          {comments.length}
-        </Txt>
+        {rated.length ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <StarIcon size={16} fill={c.accent} />
+            <Txt size={15} weight="bold">
+              {average.toFixed(1).replace('.', lang === 'en' ? '.' : ',')}
+            </Txt>
+            <Txt size={13} color={c.ink3}>
+              · {t('reviews.count').replace('{n}', String(rated.length))}
+            </Txt>
+          </View>
+        ) : null}
       </View>
       <Txt size={12} color={c.ink3} style={{ marginTop: 4 }}>
         {t('comments.rules')}
@@ -157,46 +194,78 @@ export function CommentsSheet() {
         </View>
       ) : null}
 
-      <View
-        style={{
-          marginTop: replyTo ? 8 : 18,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-          paddingLeft: 14,
-          paddingRight: 6,
-          minHeight: 50,
-          borderRadius: 999,
-          backgroundColor: c.surf2,
-        }}
-      >
-        <TextInput
-          ref={input}
-          value={draft}
-          onChangeText={setDraft}
-          placeholder={replyTo ? t('comments.replyPlaceholder') : t('comments.placeholder')}
-          placeholderTextColor={c.ink3}
-          maxLength={500}
-          onSubmitEditing={send}
-          returnKeyType="send"
-          style={{ flex: 1, ...ff('med'), fontSize: 15, color: c.ink, paddingVertical: 10 }}
-        />
-        <PressScale
-          onPress={send}
-          disabled={!draft.trim() || busy}
-          accessibilityLabel={t('comments.send')}
+      {writing === 'review' ? (
+        <View style={{ marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View style={{ flexDirection: 'row', gap: 4 }}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <PressScale
+                key={n}
+                haptic="light"
+                scaleTo={0.8}
+                onPress={() => setRating(n)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: rating === n }}
+                accessibilityLabel={t('reviews.stars').replace('{n}', String(n))}
+                style={{ padding: 2 }}
+              >
+                <StarIcon size={28} fill={n <= rating ? c.accent : 'none'} color={n <= rating ? c.accent : c.ink3} />
+              </PressScale>
+            ))}
+          </View>
+          {!rating ? (
+            <Txt size={13} color={c.ink3} style={{ flex: 1 }}>
+              {t('reviews.pickStars')}
+            </Txt>
+          ) : null}
+        </View>
+      ) : null}
+
+      {writing ? (
+        <View
           style={{
-            width: 38,
-            height: 38,
-            borderRadius: 99,
-            backgroundColor: draft.trim() ? c.accent : c.line,
+            marginTop: replyTo ? 8 : 12,
+            flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'center',
+            gap: 8,
+            paddingLeft: 14,
+            paddingRight: 6,
+            minHeight: 50,
+            borderRadius: 999,
+            backgroundColor: c.surf2,
           }}
         >
-          <SendIcon size={17} color={c.onAccent} />
-        </PressScale>
-      </View>
+          <TextInput
+            ref={input}
+            value={draft}
+            onChangeText={setDraft}
+            placeholder={replyTo ? t('comments.replyPlaceholder') : t('comments.placeholder')}
+            placeholderTextColor={c.ink3}
+            maxLength={500}
+            onSubmitEditing={send}
+            returnKeyType="send"
+            style={{ flex: 1, ...ff('med'), fontSize: 15, color: c.ink, paddingVertical: 10 }}
+          />
+          <PressScale
+            onPress={send}
+            disabled={!canSend}
+            accessibilityLabel={t('comments.send')}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 99,
+              backgroundColor: canSend ? c.accent : c.line,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <SendIcon size={17} color={c.onAccent} />
+          </PressScale>
+        </View>
+      ) : (
+        <Txt size={13} color={c.ink3} style={{ marginTop: 18 }}>
+          {ownPost ? t('reviews.own') : t('reviews.done')}
+        </Txt>
+      )}
     </Sheet>
   );
 }

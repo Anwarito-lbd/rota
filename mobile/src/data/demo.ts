@@ -243,17 +243,17 @@ export const DEMO_POSTS: DemoPostSeed[] = [
   },
 ];
 
-export const DEMO_COMMENTS: Record<string, { authorId: string; body: string; minutesAgo: number }[]> = {
+export const DEMO_COMMENTS: Record<string, { authorId: string; body: string; minutesAgo: number; rating: number }[]> = {
   p1: [
-    { authorId: 'u_juliette', body: 'La coupe en biais tu la reprends quand ?', minutesAgo: 40 },
-    { authorId: 'u_lea', body: 'Je l’ai louée le mois dernier, la soie est incroyable.', minutesAgo: 22 },
+    { authorId: 'u_juliette', body: 'Superbe coupe en biais, elle tombe parfaitement.', minutesAgo: 40, rating: 5 },
+    { authorId: 'u_lea', body: 'Je l’ai louée le mois dernier, la soie est incroyable.', minutesAgo: 22, rating: 5 },
   ],
   p2: [
-    { authorId: 'u_camille', body: 'Le jean archive est dispo en 27 ?', minutesAgo: 180 },
-    { authorId: 'u_manon', body: 'Dump parfait, je vole le trench', minutesAgo: 95 },
+    { authorId: 'u_camille', body: 'Le jean archive taille un peu grand, prenez une taille en dessous.', minutesAgo: 180, rating: 4 },
+    { authorId: 'u_manon', body: 'Dump parfait, je vole le trench', minutesAgo: 95, rating: 5 },
   ],
-  p3: [{ authorId: 'u_yasmine', body: 'Iconique.', minutesAgo: 300 }],
-  p5: [{ authorId: 'u_juliette', body: 'Les sandales avec la perlée, validé', minutesAgo: 600 }],
+  p3: [{ authorId: 'u_yasmine', body: 'Iconique.', minutesAgo: 300, rating: 5 }],
+  p5: [{ authorId: 'u_juliette', body: 'Les sandales avec la perlée, validé', minutesAgo: 600, rating: 4 }],
 };
 
 /** Members the demo account already follows. */

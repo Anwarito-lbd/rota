@@ -14,7 +14,7 @@ import { useStore } from '../state/store';
 import { BRAND_LAVENDER, OVER_INK, OVER_INK_SOFT } from '../theme/tokens';
 import {
   BookmarkIcon,
-  CommentIcon,
+  StarIcon,
   DotsIcon,
   HeartIcon,
   PinIcon,
@@ -410,7 +410,7 @@ export function PostCard({ post, height, distanceKm }: { post: Post; height: num
         </RailButton>
 
         <RailButton label={t('post.comments')} count={compact(post.commentCount, lang)} onPress={() => set({ commentsFor: post.id })}>
-          <CommentIcon size={30} />
+          <StarIcon size={30} fill="none" color={OVER_INK} />
         </RailButton>
 
         <RailButton label={t('post.save')} active={saved} onPress={() => set({ saveTarget: { kind: 'post', id: post.id } })}>
