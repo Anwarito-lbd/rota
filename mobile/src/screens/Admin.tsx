@@ -223,9 +223,9 @@ function Moderation() {
 // ── Social (posts, comments, messages, profiles — migration 010) ──
 
 interface SocialRow {
-  kind: 'post' | 'comment' | 'message' | 'member';
+  kind: 'post' | 'comment' | 'message' | 'member' | 'appeal' | 'web';
   target_id: string;
-  member_id: string;
+  member_id: string | null;
   member_username: string;
   body: string | null;
   media_paths: string[];
@@ -253,6 +253,16 @@ const SOCIAL_ACTIONS: Record<SocialRow['kind'], { action: string; label: Transla
   ],
   member: [
     { action: 'suspend', label: 'admin.suspend', danger: true },
+    { action: 'dismiss', label: 'admin.dismiss' },
+  ],
+  // A member contests a decision (DSA art. 20): overturning reverses it.
+  appeal: [
+    { action: 'overturn', label: 'admin.overturn', primary: true },
+    { action: 'uphold', label: 'admin.uphold' },
+  ],
+  // A report from the public web form (DSA art. 16); act on the content, then close it.
+  web: [
+    { action: 'actioned', label: 'admin.actioned', primary: true },
     { action: 'dismiss', label: 'admin.dismiss' },
   ],
 };
@@ -295,7 +305,7 @@ function Social() {
                 <Meta key={i}>— {n}</Meta>
               ))}
               <Buttons>
-                {SOCIAL_ACTIONS[row.kind].map((a) => (
+                {(SOCIAL_ACTIONS[row.kind] ?? []).map((a) => (
                   <Chip
                     key={a.action}
                     label={t(a.label)}
