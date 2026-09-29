@@ -8,9 +8,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OCCASIONS } from '../data/catalog';
-import { PRO_PRICE_EUR, PurchaseUnavailable, TRYON_PRICE_EUR, useActivity, useCommunity, useFollowList, type Activity, type Person } from '../data/community';
+import { PRO_PRICE_EUR, PurchaseUnavailable, TRYON_PRICE_EUR, useActivity, useCommunity, useFollowList, type Activity, type Person, useHighlights } from '../data/community';
 import { useListings, type Listing } from '../data/listings';
-import { useSocial } from '../data/social';
+import { useMember, useSocial } from '../data/social';
 import { useT } from '../i18n';
 import { supabase } from '../lib/supabase';
 import { useStore } from '../state/store';
@@ -580,5 +580,114 @@ export function PlannerScreen() {
         </FadeIn>
       ) : null}
     </Screen>
+  );
+}
+
+// ─── Highlight viewer ─────────────────────────────────────────
+
+/** A profile highlight, full screen: tap right for the next photo, left to go back. */
+export function HighlightViewer() {
+  const { state, set } = useStore();
+  const { t } = useT();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const social = useSocial();
+  const reduced = useReducedMotion();
+  const memberId = state.highlight?.memberId ?? null;
+  const { highlights } = useHighlights(memberId);
+  const member = useMember(memberId);
+  const [hIndex, setHIndex] = useState(0);
+  const [index, setIndex] = useState(0);
+  const progress = useRef(new Animated.Value(0)).current;
+
+  // Start on the highlight that was tapped, once the list is loaded.
+  useEffect(() => {
+    const i = highlights.findIndex((h) => h.id === state.highlight?.id);
+    if (i >= 0) setHIndex(i);
+  }, [highlights, state.highlight?.id]);
+
+  const current = highlights[hIndex];
+  const photo = current?.media[index];
+
+  const close = () =>
+    memberId && memberId !== social.meId
+      ? set({ screen: 'user', profileId: memberId, highlight: null })
+      : set({ screen: 'closet', highlight: null });
+  const next = () => {
+    if (!current) return close();
+    if (index < current.media.length - 1) return setIndex(index + 1);
+    if (hIndex < highlights.length - 1) {
+      setHIndex(hIndex + 1);
+      setIndex(0);
+      return;
+    }
+    close();
+  };
+  const prev = () => {
+    if (index > 0) return setIndex(index - 1);
+    if (hIndex > 0) {
+      setHIndex(hIndex - 1);
+      setIndex(0);
+    }
+  };
+
+  useEffect(() => {
+    if (!photo) return;
+    progress.setValue(0);
+    const anim = Animated.timing(progress, { toValue: 1, duration: reduced ? STORY_MS * 1.5 : STORY_MS, easing: Easing.linear, useNativeDriver: false });
+    anim.start(({ finished }) => finished && next());
+    return () => anim.stop();
+    // Restart the timer for each photo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photo, hIndex, index]);
+
+  if (!current || !photo) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
+        <GhostButton label={t('camera.close')} onPress={close} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: '#000' }}>
+      <Image source={{ uri: photo }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" />
+      <LinearGradient colors={['rgba(0,0,0,0.55)', 'transparent']} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 160 }} pointerEvents="none" />
+
+      <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, flexDirection: 'row' }}>
+        <Pressable accessibilityLabel={t('common.back')} onPress={prev} style={{ width: width * 0.35 }} />
+        <Pressable accessibilityLabel={t('common.next')} onPress={next} style={{ flex: 1 }} />
+      </View>
+
+      <View pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + 8, left: 12, right: 12 }}>
+        <View style={{ flexDirection: 'row', gap: 4 }}>
+          {current.media.map((uri, i) => (
+            <View key={`${uri}-${i}`} style={{ flex: 1, height: 3, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.35)', overflow: 'hidden' }}>
+              {i < index ? (
+                <View style={{ flex: 1, backgroundColor: OVER_INK }} />
+              ) : i === index ? (
+                <Animated.View style={{ height: 3, backgroundColor: OVER_INK, width: progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
+              ) : null}
+            </View>
+          ))}
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 }}>
+          <Avatar uri={member?.avatar} size={34} />
+          <View style={{ flex: 1 }}>
+            <Txt size={15} weight="bold" color={OVER_INK} numberOfLines={1}>
+              {current.title}
+            </Txt>
+            {member ? (
+              <Txt size={12} color="rgba(247,242,248,0.7)" numberOfLines={1}>
+                @{member.username}
+              </Txt>
+            ) : null}
+          </View>
+          <Pressable hitSlop={10} onPress={close} accessibilityLabel={t('camera.close')}>
+            <CloseIcon size={24} />
+          </Pressable>
+        </View>
+      </View>
+    </View>
   );
 }

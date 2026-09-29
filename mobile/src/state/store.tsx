@@ -109,6 +109,7 @@ const initialState: AppState = {
   captured: null,
   followList: null,
   storyAuthorId: null,
+  highlight: null,
   proFrom: null,
   socialReport: null,
   tryOnListingId: null,

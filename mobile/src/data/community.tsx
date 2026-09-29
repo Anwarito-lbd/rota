@@ -366,3 +366,121 @@ export function useActivity() {
 
   return items;
 }
+
+// ─── Highlights ───────────────────────────────────────────────
+
+export interface Highlight {
+  id: string;
+  ownerId: string;
+  title: string;
+  /** Image URLs, in order. */
+  media: string[];
+  createdAt: string;
+}
+
+const HIGHLIGHT_TITLES = ['Soirées', 'Vintage', 'Mariages', 'Paris'];
+
+/** Demo highlights live in memory for the session; members get a few from their posts. */
+const demoHighlights = new Map<string, Highlight[]>();
+const highlightListeners = new Set<() => void>();
+function demoHighlightsFor(memberId: string): Highlight[] {
+  if (!demoHighlights.has(memberId)) {
+    const photos = DEMO_POSTS.filter((p) => p.authorId === memberId).flatMap((p) => p.photos);
+    const seeded: Highlight[] = [];
+    if (memberId !== DEMO_ME.id && photos.length) {
+      const groups = Math.min(HIGHLIGHT_TITLES.length, Math.max(1, Math.ceil(photos.length / 2)));
+      for (let g = 0; g < groups; g++) {
+        const media = photos.filter((_, i) => i % groups === g);
+        if (media.length) {
+          seeded.push({ id: `hl-${memberId}-${g}`, ownerId: memberId, title: HIGHLIGHT_TITLES[g], media, createdAt: ago(5000 + g * 600) });
+        }
+      }
+    }
+    demoHighlights.set(memberId, seeded);
+  }
+  return demoHighlights.get(memberId) as Highlight[];
+}
+
+/** Storage path of a post-media public URL; null for anything else. */
+function postMediaPath(url: string): string | null {
+  const marker = '/storage/v1/object/public/post-media/';
+  const i = url.indexOf(marker);
+  if (i >= 0) return decodeURIComponent(url.slice(i + marker.length).split('?')[0]);
+  return /^[a-z]+:/i.test(url) ? null : url;
+}
+
+/** A member's highlights (migration 022), and for me, create and delete. */
+export function useHighlights(memberId: string | null) {
+  const social = useSocial();
+  const demo = social.demo || !supabase;
+  const [items, setItems] = useState<Highlight[]>([]);
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    if (!memberId) return;
+    if (demo) {
+      const update = () => setItems([...demoHighlightsFor(memberId)]);
+      update();
+      highlightListeners.add(update);
+      return () => {
+        highlightListeners.delete(update);
+      };
+    }
+    let cancelled = false;
+    const db = supabase!;
+    db.from('story_highlights')
+      .select('id, owner_id, title, media_paths, created_at')
+      .eq('owner_id', memberId)
+      .order('created_at')
+      .then(({ data }) => {
+        if (cancelled) return;
+        // Before migration 022 runs the table is missing: no highlights, no error.
+        setItems(
+          ((data ?? []) as { id: string; owner_id: string; title: string; media_paths: string[]; created_at: string }[]).map((h) => ({
+            id: h.id,
+            ownerId: h.owner_id,
+            title: h.title,
+            media: h.media_paths.map((p) => db.storage.from('post-media').getPublicUrl(p).data.publicUrl),
+            createdAt: h.created_at,
+          })),
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [demo, memberId, tick]);
+
+  const create = useCallback(
+    async (title: string, media: string[]) => {
+      const name = title.trim().slice(0, 24);
+      if (!memberId || memberId !== social.meId || !name || !media.length) return;
+      if (demo) {
+        demoHighlightsFor(memberId).push({ id: `hl-${Date.now().toString(36)}`, ownerId: memberId, title: name, media: media.slice(0, 20), createdAt: new Date().toISOString() });
+        highlightListeners.forEach((l) => l());
+        return;
+      }
+      const paths = media.map(postMediaPath).filter((p): p is string => !!p).slice(0, 20);
+      if (!paths.length) throw new Error('no_media');
+      const { error } = await supabase!.from('story_highlights').insert({ title: name, media_paths: paths });
+      if (error) throw new Error(error.message);
+      setTick((n) => n + 1);
+    },
+    [demo, memberId, social.meId],
+  );
+
+  const remove = useCallback(
+    async (id: string) => {
+      if (!memberId || memberId !== social.meId) return;
+      if (demo) {
+        demoHighlights.set(memberId, demoHighlightsFor(memberId).filter((h) => h.id !== id));
+        highlightListeners.forEach((l) => l());
+        return;
+      }
+      await supabase!.from('story_highlights').delete().eq('id', id);
+      setTick((n) => n + 1);
+    },
+    [demo, memberId, social.meId],
+  );
+
+  return { highlights: items, create, remove };
+}

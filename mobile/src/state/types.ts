@@ -45,6 +45,7 @@ export type Screen =
   | 'set.language'
   | 'set.theme'
   | 'set.privacy'
+  | 'set.decisions'
   | 'post'
   | 'user'
   | 'map'
@@ -55,6 +56,7 @@ export type Screen =
   | 'follows'
   | 'activity'
   | 'story'
+  | 'highlight'
   | 'pro'
   | 'planner';
 
@@ -213,6 +215,8 @@ export interface AppState {
   followList: { memberId: string; kind: 'followers' | 'following' } | null;
   /** Whose stories the story viewer opened on. */
   storyAuthorId: string | null;
+  /** Highlight opened in the viewer, and whose profile to go back to. */
+  highlight: { memberId: string; id: string } | null;
   /** Where to go back to after the Pro page. */
   proFrom: Screen | null;
   /** What "Signaler" was opened on, beyond listings. */

@@ -32,7 +32,7 @@ import { Compose } from './src/screens/Compose';
 import { Guidelines } from './src/screens/Guidelines';
 import { NearMap } from './src/screens/NearMap';
 import { Camera } from './src/screens/Camera';
-import { ActivityScreen, FollowList, PlannerScreen, ProScreen, StoryViewer } from './src/screens/Community';
+import { ActivityScreen, FollowList, HighlightViewer, PlannerScreen, ProScreen, StoryViewer } from './src/screens/Community';
 import { Settings } from './src/screens/Settings';
 import { Blocked, Boards, PostScreen, UserProfile } from './src/screens/Social';
 import { TryOn } from './src/screens/TryOn';
@@ -49,6 +49,7 @@ import {
   ShippingSettings,
   ThemeSettings,
 } from './src/screens/SettingsPages';
+import { ModerationDecisions } from './src/screens/Decisions';
 import { StoreProvider, useStore } from './src/state/store';
 import type { Screen as ScreenKey } from './src/state/types';
 import { useTheme } from './src/theme/useTheme';
@@ -100,6 +101,7 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   'set.language': LanguageSettings,
   'set.theme': ThemeSettings,
   'set.privacy': PrivacySettings,
+  'set.decisions': ModerationDecisions,
   post: PostScreen,
   user: UserProfile,
   profile: UserProfile,
@@ -108,6 +110,7 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   follows: FollowList,
   activity: ActivityScreen,
   story: StoryViewer,
+  highlight: HighlightViewer,
   pro: ProScreen,
   planner: PlannerScreen,
   compose: Compose,
@@ -120,7 +123,7 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
 };
 
 /** Full-screen flows that hide the tab bar. */
-const NO_TABS: ScreenKey[] = ['onboard', 'map', 'compose', 'tryon', 'verify', 'camera', 'story'];
+const NO_TABS: ScreenKey[] = ['onboard', 'map', 'compose', 'tryon', 'verify', 'camera', 'story', 'highlight'];
 /** Screens whose photos run under the floating tab bar. */
 const FULL_BLEED: ScreenKey[] = ['feed', 'post'];
 

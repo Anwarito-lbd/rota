@@ -273,8 +273,8 @@ export function ProfileSettings() {
         <FlatInput label={t('set.about')} value={bio} onChangeText={(v) => setBio(v.slice(0, 300))} placeholder={t('set.bioPlaceholder')} multiline />
       </FlatSection>
       <FlatSection>
-        <FlatRow label={t('set.myLocation')} detail={locating ? t('common.loading') : city || '—'} onPress={locate} />
-        <FlatToggle label={t('set.showCity')} on={showCity} onPress={() => setShowCity((v) => !v)} last />
+        <FlatRow label={t('set.myLocation')} detail={locating ? t('common.loading') : city || '—'} onPress={locate} last />
+        <FlatHelp>{t('set.cityWhere')}</FlatHelp>
       </FlatSection>
       <View style={{ paddingHorizontal: 18 }}>
         <Status error={error} />
@@ -407,9 +407,6 @@ export function AccountSettings() {
         <FlatHelp>{t('set.connectedHelp')}</FlatHelp>
       </FlatSection>
 
-      <FlatSection>
-        <FlatRow label={t('set.changePassword')} onPress={() => go('set.security')} last />
-      </FlatSection>
       <FlatSection>
         <FlatRow label={t('set.deleteAccount')} tone="plum" onPress={() => setDeleting(true)} last />
       </FlatSection>
@@ -755,7 +752,6 @@ export function SecuritySettings() {
   return (
     <FlatPage title={t('set.security')} onBack={() => go('settings')}>
       <FlatIntro title={t('set.securityTitle')} body={t('set.securityBody')} />
-      <FlatRow label={t('settings.email')} sub={t('set.emailSub')} onPress={() => go('set.account')} />
       <FlatRow label={t('set.password')} sub={t('set.passwordSub')} onPress={() => toggle('password')} />
       {open === 'password' ? <PasswordForm /> : null}
       <FlatRow label={t('set.twoStep')} sub={t('set.twoStepSub')} onPress={() => toggle('twoStep')} />
