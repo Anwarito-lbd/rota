@@ -59,6 +59,8 @@ export interface Listing {
     avatar: string | null;
     certified: boolean;
     identityVerified: boolean;
+    /** The lender paused every piece (migration 023). */
+    vacation?: boolean;
   };
 }
 
@@ -67,6 +69,7 @@ interface OwnerRow {
   avatar_url: string | null;
   certified: boolean;
   identity_status: string;
+  vacation?: boolean | null;
 }
 
 interface ListingRow {
@@ -108,7 +111,7 @@ interface ListingRow {
 }
 
 const SELECT =
-  '*, owner:profiles!listings_owner_id_fkey(username, avatar_url, certified, identity_status)';
+  '*, owner:profiles!listings_owner_id_fkey(username, avatar_url, certified, identity_status, vacation)';
 
 /** Storage paths live in the row; the listing-media bucket is public. */
 function publicUrl(path: string | null | undefined): string | null {
@@ -153,6 +156,7 @@ function toListing(row: ListingRow): Listing {
       avatar: owner?.avatar_url ?? null,
       certified: owner?.certified ?? false,
       identityVerified: owner?.identity_status === 'verified',
+      vacation: !!owner?.vacation,
     },
   };
 }
@@ -164,6 +168,8 @@ interface ListingsValue {
   error: string | null;
   refresh: () => void;
   byId: (id: string | null) => Listing | null;
+  /** Every listing this member may read, including paused lenders' pieces. */
+  all: Listing[];
 }
 
 const ListingsContext = createContext<ListingsValue | null>(null);
@@ -173,7 +179,7 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
   // Everything this member may read: distributed listings, limited ones
   // (reachable by link) and their own, whatever their state.
   const [all, setAll] = useState<Listing[]>([]);
-  const listings = useMemo(() => all.filter((l) => l.distribution === 'public'), [all]);
+  const listings = useMemo(() => all.filter((l) => l.distribution === 'public' && !l.owner.vacation), [all]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -210,8 +216,8 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
   const byId = useCallback((id: string | null) => all.find((l) => l.id === id) ?? null, [all]);
 
   const value = useMemo<ListingsValue>(
-    () => ({ listings, loading, error, refresh, byId }),
-    [listings, loading, error, refresh, byId],
+    () => ({ listings, loading, error, refresh, byId, all }),
+    [listings, loading, error, refresh, byId, all],
   );
 
   return <ListingsContext.Provider value={value}>{children}</ListingsContext.Provider>;

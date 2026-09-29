@@ -29,7 +29,7 @@ export async function usernameFree(username: string) {
 
 export async function saveProfile(
   userId: string,
-  patch: { username?: string; bio?: string | null; city?: string | null; showCity?: boolean; avatarUrl?: string },
+  patch: { username?: string; bio?: string | null; city?: string | null; showCity?: boolean; avatarUrl?: string; vacation?: boolean },
 ) {
   const row: Record<string, unknown> = {};
   if (patch.username !== undefined) row.username = patch.username;
@@ -37,6 +37,7 @@ export async function saveProfile(
   if (patch.city !== undefined) row.city = patch.city;
   if (patch.showCity !== undefined) row.show_city = patch.showCity;
   if (patch.avatarUrl !== undefined) row.avatar_url = patch.avatarUrl;
+  if (patch.vacation !== undefined) row.vacation = patch.vacation;
   const { error } = await db().from('profiles').update(row).eq('id', userId);
   if (error) throw new Error(error.code === '23505' ? 'username_taken' : error.message);
 }

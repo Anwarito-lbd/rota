@@ -27,7 +27,7 @@ import { MessageButton } from './MessageButton';
 const GAP = 2;
 
 export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | null; onMenu?: () => void; onBack?: () => void }) {
-  const { set, go, m } = useStore();
+  const { state, set, go, m } = useStore();
   const { c } = useTheme();
   const { t, lang } = useT();
   const insets = useSafeAreaInsets();
@@ -37,7 +37,8 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
   const { session, profile } = useAuth();
   const me = !!memberId && memberId === social.meId;
   const member = useMember(memberId);
-  const { listings: publicListings } = useListings();
+  const { all: everyListing } = useListings();
+  const publicListings = everyListing.filter((l) => l.distribution === 'public');
   const { listings: myListings, loading: myLoading } = useMyListings(me ? session?.user.id : undefined);
   const { highlights, create, remove } = useHighlights(memberId);
   const [tab, setTab] = useState<'fits' | 'pieces'>('fits');
@@ -53,6 +54,11 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
   const avatar = (me ? profile?.avatarUrl : null) ?? member?.avatar ?? (me && social.demo ? DEMO_ME.avatar : undefined) ?? undefined;
   const bio = (me ? profile?.bio : null) ?? member?.bio ?? null;
   const city = me && profile?.showCity ? profile.city : null;
+  const onVacation = me
+    ? social.demo
+      ? state.vacation
+      : !!profile?.vacation
+    : publicListings.some((l) => l.ownerId === memberId && l.owner.vacation);
   const verified = me ? social.identity === 'verified' : !!member?.identityVerified;
   const cell = (Math.min(width, 720) - GAP * 2) / 3;
 
@@ -197,6 +203,13 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
                   {t('profile.addBio')}
                 </Txt>
               </Pressable>
+            ) : null}
+            {onVacation ? (
+              <View style={{ alignSelf: 'flex-start', marginTop: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: c.plumSoft }}>
+                <Txt size={12} weight="semi" color={c.plum}>
+                  {t('profile.onVacation')}
+                </Txt>
+              </View>
             ) : null}
             {city ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>

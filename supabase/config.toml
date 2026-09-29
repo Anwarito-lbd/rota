@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.outfit-planner]
 verify_jwt = false
+
+[functions.report]
+verify_jwt = false

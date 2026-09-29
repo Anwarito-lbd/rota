@@ -84,7 +84,7 @@ export function Detail() {
   const [photo, setPhoto] = useState(0);
   // Offers run in the demo only for now: the server still prices a rental from
   // the listing, so an accepted offer could not be honoured at payment yet.
-  const offersOpen = !!listing?.acceptOffers && !backendConfigured && listing.ownerId !== social.meId;
+  const offersOpen = !!listing?.acceptOffers && !backendConfigured && listing.ownerId !== social.meId && !listing.owner.vacation;
 
   if (!listing) {
     return (
@@ -217,6 +217,12 @@ export function Detail() {
               .filter(Boolean)
               .join(' · ')}
           </Txt>
+
+          {listing.owner.vacation ? (
+            <View style={{ marginTop: 12 }}>
+              <Note>{t('detail.onVacation')}</Note>
+            </View>
+          ) : null}
 
           {offersOpen ? (
             <View
@@ -406,6 +412,7 @@ export function Detail() {
         ) : null}
         <PrimaryButton
           label={t('detail.viewDates')}
+          disabled={!!listing.owner.vacation}
           onPress={() => {
             // Booking from the listing is at the listed price; an accepted offer books from its message.
             set({ agreedOffer: null });

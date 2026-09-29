@@ -3,6 +3,7 @@ import { Linking, View } from 'react-native';
 import { PRO_PRICE_EUR, useCommunity } from '../data/community';
 import { useSocial } from '../data/social';
 import { LANGUAGES, useT, type TranslationKey } from '../i18n';
+import { saveProfile } from '../data/account';
 import { useAuth } from '../lib/auth';
 import { BRAND, LEGAL_URLS } from '../lib/config';
 import { useStore } from '../state/store';
@@ -21,13 +22,21 @@ export function Settings() {
   const { state, set, go, m } = useStore();
   const { c } = useTheme();
   const { t, lang } = useT();
-  const { profile, isStaff, signOut } = useAuth();
+  const { session, profile, isStaff, signOut, refreshProfile } = useAuth();
   const social = useSocial();
   const community = useCommunity();
 
   const open = (url: string) => WebBrowser.openBrowserAsync(url).catch(() => undefined);
   const external = <ArrowUpRightIcon size={15} color={c.ink3} />;
   const language = LANGUAGES.find((l) => l.key === lang)?.native ?? lang;
+
+  // Vacation mode: the demo keeps it on the phone; for real it is on the profile.
+  const onVacation = social.demo ? state.vacation : !!profile?.vacation;
+  const toggleVacation = async () => {
+    if (social.demo || !session) return set({ vacation: !state.vacation });
+    await saveProfile(session.user.id, { vacation: !onVacation }).catch(() => undefined);
+    refreshProfile();
+  };
 
   const leave = async () => {
     if (social.demo) {
@@ -58,6 +67,10 @@ export function Settings() {
           onPress={() => set({ screen: 'pro', proFrom: 'settings' })}
           last
         />
+      </FlatSection>
+
+      <FlatSection title={t('set.sectionLending')}>
+        <FlatToggle label={t('set.vacation')} body={t('set.vacationBody')} on={onVacation} onPress={toggleVacation} />
       </FlatSection>
 
       <FlatSection title={t('set.sectionNotifications')}>

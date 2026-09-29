@@ -22,6 +22,7 @@ const KNOWN: [RegExp, TranslationKey][] = [
   [/payments_not_configured|server_not_configured/i, 'error.paymentsUnavailable'],
   [/expired/i, 'error.bookingExpired'],
   [/Not allowed/i, 'error.notAllowed'],
+  [/owner_on_vacation/i, 'detail.onVacation'],
 ];
 
 export function friendlyError(e: unknown, t: (k: TranslationKey) => string): string {
