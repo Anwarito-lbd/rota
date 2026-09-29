@@ -146,6 +146,10 @@ export interface Preferences {
   pushBookings: boolean;
   pushReminders: boolean;
   pushClaims: boolean;
+  /** New messages (migration 025). */
+  pushMessages: boolean;
+  /** Likes, new followers, reviews, replies and reposts (migration 025). */
+  pushSocial: boolean;
 }
 
 const DEFAULT_PREFS: Preferences = {
@@ -154,6 +158,8 @@ const DEFAULT_PREFS: Preferences = {
   pushBookings: true,
   pushReminders: true,
   pushClaims: true,
+  pushMessages: true,
+  pushSocial: true,
 };
 
 const COLUMNS: Record<keyof Preferences, string> = {
@@ -162,6 +168,8 @@ const COLUMNS: Record<keyof Preferences, string> = {
   pushBookings: 'push_bookings',
   pushReminders: 'push_reminders',
   pushClaims: 'push_claims',
+  pushMessages: 'push_messages',
+  pushSocial: 'push_social',
 };
 
 export function usePreferences(enabled: boolean) {
@@ -181,6 +189,8 @@ export function usePreferences(enabled: boolean) {
             pushBookings: data.push_bookings,
             pushReminders: data.push_reminders,
             pushClaims: data.push_claims,
+            pushMessages: data.push_messages ?? true,
+            pushSocial: data.push_social ?? true,
           });
         }
         setLoading(false);

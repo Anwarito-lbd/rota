@@ -4,6 +4,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/instrument-serif';
 import { StripeProvider } from '@stripe/stripe-react-native';
+import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, type ReactElement } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -138,6 +139,22 @@ function Shell() {
       set({ signedIn: true, emailVerified: true, screen: 'feed' });
     }
   }, [session, state.screen, state.obStep, set]);
+
+  // Tapping a push opens what it is about: the conversation, or the post.
+  useEffect(() => {
+    const open = (data: Record<string, unknown> | undefined) => {
+      if (!data || !session) return;
+      if (typeof data.conversation === 'string') set({ screen: 'messages', thread: data.conversation });
+      else if (typeof data.post === 'string') set({ screen: 'post', activePostId: data.post });
+      else if (typeof data.kind === 'string' && data.kind === 'social_follow') set({ screen: 'activity' });
+    };
+    const last = Notifications.getLastNotificationResponse();
+    if (last) open(last.notification.request.content.data as Record<string, unknown>);
+    const sub = Notifications.addNotificationResponseReceivedListener((r) =>
+      open(r.notification.request.content.data as Record<string, unknown>),
+    );
+    return () => sub.remove();
+  }, [session, set]);
 
   // Signed out (from Settings, a closed account, an expired session): back to
   // the welcome screen. Only on the change from signed in to signed out.

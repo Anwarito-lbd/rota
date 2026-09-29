@@ -837,6 +837,23 @@ export function PushSettings() {
           last
         />
       </FlatSection>
+      <FlatSection title={t('set.pushCommunity')}>
+        <FlatToggle
+          label={t('set.catMessages')}
+          body={t('set.catMessagesBody')}
+          on={prefs.pushMessages}
+          disabled={off}
+          onPress={() => set({ pushMessages: !prefs.pushMessages })}
+        />
+        <FlatToggle
+          label={t('set.catSocial')}
+          body={t('set.catSocialBody')}
+          on={prefs.pushSocial}
+          disabled={off}
+          onPress={() => set({ pushSocial: !prefs.pushSocial })}
+          last
+        />
+      </FlatSection>
       <FlatSection title={t('set.pushSecondary')}>
         <FlatToggle
           label={t('set.catReminders')}

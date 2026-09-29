@@ -113,7 +113,16 @@ async function sendPushes() {
       end: n.end_date,
       payload: n.payload ?? {},
     });
-    return push ? { to: n.token, title: push.title, body: push.body, sound: 'default', data: { kind: n.kind } } : null;
+    return push
+      ? {
+          to: n.token,
+          title: push.title,
+          body: push.body,
+          sound: 'default',
+          // Where to open the app: the conversation or the post it is about.
+          data: { kind: n.kind, conversation: n.payload?.conversation ?? null, post: n.payload?.post ?? null },
+        }
+      : null;
   });
   const sendable = batch.filter((_, i) => messages[i]);
   for (const [i, n] of batch.entries()) if (!messages[i]) await rpc('mark_push', { p_id: n.id, p_state: 'skipped' });
