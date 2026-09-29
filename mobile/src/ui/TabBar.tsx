@@ -2,7 +2,7 @@
  * Floating Liquid Glass tab bar (Figma redesign): four tabs in a pill,
  * the selected one marked by a filled capsule and a bolder label — shape,
  * not colour alone. With Reduce Transparency on, the glass becomes solid.
- * Creating (a fit or a listing) moved to the "+" in the feed header.
+ * The round "+" in the middle opens the camera (post a fit or list a piece).
  */
 import { BlurView } from 'expo-blur';
 import { useEffect, useState, type ReactElement } from 'react';
@@ -13,7 +13,7 @@ import { useT } from '../i18n';
 import { useStore } from '../state/store';
 import type { Screen } from '../state/types';
 import { useTheme } from '../theme/useTheme';
-import { TabClosetIcon, TabDiscoverIcon, TabFeedIcon, TabMessagesIcon } from './icons';
+import { PlusIcon, TabClosetIcon, TabDiscoverIcon, TabFeedIcon, TabMessagesIcon } from './icons';
 import { Txt } from './kit';
 import { PressScale } from './motion';
 
@@ -72,19 +72,46 @@ const TAB_GROUPS: Record<string, Screen[]> = {
 };
 
 export function TabBar() {
-  const { state, go, config } = useStore();
+  const { state, set, go, config } = useStore();
   const { c, dark } = useTheme();
   const { t } = useT();
   const insets = useSafeAreaInsets();
   const solid = useReduceTransparency();
   const { unread } = useInbox();
 
+  const create = (
+    <View key="create" style={{ width: 64, alignItems: 'center', justifyContent: 'center' }}>
+      <PressScale
+        accessibilityRole="button"
+        accessibilityLabel={t('create.title')}
+        haptic="medium"
+        scaleTo={0.88}
+        onPress={() => set({ screen: 'camera' })}
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: 999,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: c.accent,
+          shadowColor: c.accent,
+          shadowOpacity: 0.45,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 6,
+        }}
+      >
+        <PlusIcon size={26} color={c.onAccent} />
+      </PressScale>
+    </View>
+  );
+
   const bar = (
-    <View style={{ flexDirection: 'row', padding: 6, gap: 2 }}>
-      {TABS.map(({ key, label, Icon }) => {
+    <View style={{ flexDirection: 'row', alignItems: 'center', padding: 6, gap: 2 }}>
+      {TABS.flatMap(({ key, label, Icon }, i) => {
         const active = state.screen === key || (TAB_GROUPS[key] ?? []).includes(state.screen);
         const color = active ? c.accent : c.ink2;
-        return (
+        const tab = (
           <PressScale
             key={key}
             accessibilityRole="tab"
@@ -126,6 +153,7 @@ export function TabBar() {
             ) : null}
           </PressScale>
         );
+        return i === 1 ? [tab, create] : [tab];
       })}
     </View>
   );

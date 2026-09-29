@@ -50,7 +50,13 @@ export type Screen =
   | 'map'
   | 'compose'
   | 'tryon'
-  | 'verify';
+  | 'verify'
+  | 'camera'
+  | 'follows'
+  | 'activity'
+  | 'story'
+  | 'pro'
+  | 'planner';
 
 /**
  * 0 welcome · 'auth' credentials · 'otp' e-mail code · 1 guidelines gate
@@ -100,6 +106,10 @@ export interface AppState {
   feedTab: FeedTab;
 
   authMode: AuthMode | null;
+  /** Which screen of the step-by-step sign-up is showing: username, e-mail, password. */
+  signupStep: 0 | 1 | 2;
+  /** True while a member goes through the e-mail sign-up, so later steps count from it. */
+  emailFlow: boolean;
   username: string;
   email: string;
   pw: string;
@@ -161,6 +171,8 @@ export interface AppState {
 
   offer: boolean;
   offerIdx: number;
+  /** A per-day price the lender accepted in messages; booking that piece uses it. */
+  agreedOffer: { listingId: string; perDay: number } | null;
   favs: Flags;
   pinSaves: Flags;
 
@@ -195,6 +207,14 @@ export interface AppState {
   saveTarget: { kind: 'post' | 'listing'; id: string } | null;
   /** The "+" tab's chooser: publish a fit or list a piece. */
   createSheet: boolean;
+  /** Photos taken on the camera screen, waiting for the post composer. */
+  captured: MediaItem[] | null;
+  /** Follower / following list being shown. */
+  followList: { memberId: string; kind: 'followers' | 'following' } | null;
+  /** Whose stories the story viewer opened on. */
+  storyAuthorId: string | null;
+  /** Where to go back to after the Pro page. */
+  proFrom: Screen | null;
   /** What "Signaler" was opened on, beyond listings. */
   socialReport: { kind: 'post' | 'comment' | 'member' | 'message'; id: string; memberId: string } | null;
   /** Listing the try-on screen dresses you in. */

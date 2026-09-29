@@ -2,7 +2,7 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View, useWindowDimensions } from 'react-native';
 import { useListings } from '../data/listings';
 import { useSocial, type PostKind, type PostTag } from '../data/social';
@@ -11,7 +11,7 @@ import { useStore } from '../state/store';
 import type { MediaItem } from '../state/types';
 import { BRAND_LAVENDER, FONT, OVER_INK, ff } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
-import { CameraIcon, CloseIcon, ImagesIcon, PinIcon, SearchIcon, ShieldCheckIcon, TagIcon } from '../ui/icons';
+import { CameraIcon, CheckIcon, CloseIcon, ImagesIcon, PinIcon, SearchIcon, ShieldCheckIcon, TagIcon } from '../ui/icons';
 import { Display, Field, Header, Note, PrimaryButton, Screen, SectionLabel, Sheet, Toggle, Txt } from '../ui/kit';
 import { FadeIn, Pop, PressScale, Pulse, Segmented, tap } from '../ui/motion';
 
@@ -35,8 +35,14 @@ export function Compose() {
   const { listings } = useListings();
   const social = useSocial();
 
-  const [kind, setKind] = useState<PostKind>('fit');
-  const [media, setMedia] = useState<MediaItem[]>([]);
+  // Photos handed over by the camera screen, taken once.
+  const [kind, setKind] = useState<PostKind>((state.captured?.length ?? 0) > 1 ? 'dump' : 'fit');
+  const [media, setMedia] = useState<MediaItem[]>(state.captured ?? []);
+  useEffect(() => {
+    if (state.captured) set({ captured: null });
+    // Only on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [active, setActive] = useState(0);
   const [tags, setTags] = useState<PostTag[]>([]);
   const [pending, setPending] = useState<{ x: number; y: number } | null>(null);
@@ -133,7 +139,7 @@ export function Compose() {
                 justifyContent: 'center',
               }}
             >
-              {done.live ? <Txt size={40} weight="bold" color={c.onAccent}>✓</Txt> : <ShieldCheckIcon size={40} color={c.plum} />}
+              {done.live ? <CheckIcon size={44} color={c.onAccent} /> : <ShieldCheckIcon size={40} color={c.plum} />}
             </View>
           </Pop>
           <Display size={34} style={{ marginTop: 20, textAlign: 'center' }}>

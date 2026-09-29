@@ -80,7 +80,7 @@ function ConditionBlock({
     return (
       <Card style={{ marginTop: 10 }}>
         <Txt size={14} weight="bold">
-          ✓ {t(phase === 'pre_handover' ? 'rental.conditionBefore' : 'rental.conditionAfter')}
+          {t(phase === 'pre_handover' ? 'rental.conditionBefore' : 'rental.conditionAfter')}
         </Txt>
         <Txt size={13} color={c.ink2} style={{ marginTop: 4 }}>
           {t('rental.conditionSaved')}
@@ -487,7 +487,7 @@ export function RentalDetail() {
       ) : (
         <Card style={{ marginTop: 10 }}>
           <Txt size={14} weight="bold">
-            ✓ {t('rental.handoverDone')}
+            {t('rental.handoverDone')}
           </Txt>
           <Txt size={13} color={c.ink2} style={{ marginTop: 4 }}>
             {day(rental.handoverConfirmedAt)} · {t('rental.clockStarts')}
@@ -513,7 +513,7 @@ export function RentalDetail() {
         <>
           <Card style={{ marginTop: 10 }}>
             <Txt size={14} weight="bold">
-              ✓ {t('rental.returnDone')}
+              {t('rental.returnDone')}
             </Txt>
             <Txt size={13} color={c.ink2} style={{ marginTop: 4 }}>
               {day(rental.returnConfirmedAt)}

@@ -8,15 +8,24 @@ import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useListing } from '../data/listings';
-import { MEETING_PLACES, looksOffApp, useInbox, useThread, type Message } from '../data/messages';
+import {
+  MEETING_PLACES,
+  looksOffApp,
+  offerState,
+  useInbox,
+  useThread,
+  type Message,
+  type OfferState,
+} from '../data/messages';
 import { useSocial } from '../data/social';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
 import { ff } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { ChevronLeft, DotsIcon, PinIcon, SendIcon, ShieldCheckIcon, TabMessagesIcon } from '../ui/icons';
-import { Display, Note, Screen, Sheet, Txt } from '../ui/kit';
+import { Amount, Display, Note, Screen, Sheet, Txt } from '../ui/kit';
 import { Avatar, FadeIn, IdBadge, PressScale, Skeleton, tap, timeAgo } from '../ui/motion';
+import { StoriesRow } from './Community';
 
 function Inbox() {
   const { set } = useStore();
@@ -27,6 +36,9 @@ function Inbox() {
   return (
     <Screen>
       <Display size={34}>{t('messages.title')}</Display>
+      <View style={{ marginHorizontal: -18, marginTop: 6 }}>
+        <StoriesRow />
+      </View>
       {threads === null ? (
         <View style={{ marginTop: 20, gap: 12 }}>
           {[0, 1, 2].map((i) => (
@@ -77,7 +89,7 @@ function Inbox() {
                   </View>
                   <Txt size={14} color={th.unread ? c.ink : c.ink2} numberOfLines={1} weight={th.unread ? 'semi' : 'reg'}>
                     {th.lastMine ? `${t('msg.you')} : ` : ''}
-                    {th.lastKind === 'meetpoint' ? `📍 ${th.lastBody}` : (th.lastBody ?? '')}
+                    {th.lastKind === 'meetpoint' ? th.lastBody : (th.lastBody ?? '')}
                   </Txt>
                 </View>
                 {th.unread ? (
@@ -103,6 +115,112 @@ function Inbox() {
         </View>
       )}
     </Screen>
+  );
+}
+
+/** A price offer in the thread. The lender answers it; the renter books at that price once accepted. */
+function OfferCard({
+  m: msg,
+  mine,
+  status,
+  askPrice,
+  otherName,
+  onAnswer,
+  onRent,
+}: {
+  m: Message;
+  mine: boolean;
+  status: OfferState;
+  askPrice: number | null;
+  otherName: string;
+  onAnswer: (accepted: boolean) => void;
+  onRent: () => void;
+}) {
+  const { c } = useTheme();
+  const { m } = useStore();
+  const perDay = msg.meta?.perDay ?? 0;
+  const days = msg.meta?.days ?? 1;
+  const label = { pending: 'En attente', accepted: 'Acceptée', declined: 'Refusée' }[status];
+  const tone = status === 'accepted' ? c.accent : status === 'declined' ? c.ink3 : c.ink2;
+
+  return (
+    <View
+      style={{
+        alignSelf: mine ? 'flex-end' : 'flex-start',
+        width: '82%',
+        padding: 14,
+        borderRadius: 20,
+        backgroundColor: c.surf,
+        borderWidth: 1,
+        borderColor: status === 'accepted' ? c.accent : c.line2,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Txt size={11} weight="bold" upper color={c.accent}>
+          {mine ? 'Votre offre' : 'Offre reçue'}
+        </Txt>
+        <Txt size={12} weight="semi" color={tone}>
+          {label}
+        </Txt>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 6 }}>
+        <Amount size={24}>{m(perDay)}</Amount>
+        <Txt size={14} color={c.ink2}>
+          / jour
+        </Txt>
+        {askPrice && askPrice > perDay ? (
+          <Txt size={14} color={c.ink3} style={{ textDecorationLine: 'line-through' }}>
+            {m(askPrice)}
+          </Txt>
+        ) : null}
+      </View>
+      <Txt size={13} color={c.ink3} style={{ marginTop: 2 }}>
+        {days} {days > 1 ? 'jours' : 'jour'} · loyer {m(perDay * days)}
+      </Txt>
+
+      {status === 'pending' && !mine ? (
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+          <PressScale
+            onPress={() => onAnswer(false)}
+            style={{ flex: 1, minHeight: 42, borderRadius: 999, borderWidth: 1, borderColor: c.line2, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Txt size={14} weight="bold">
+              Refuser
+            </Txt>
+          </PressScale>
+          <PressScale
+            haptic="light"
+            onPress={() => onAnswer(true)}
+            style={{ flex: 1, minHeight: 42, borderRadius: 999, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Txt size={14} weight="bold" color={c.onAccent}>
+              Accepter
+            </Txt>
+          </PressScale>
+        </View>
+      ) : null}
+      {status === 'pending' && mine ? (
+        <Txt size={13} color={c.ink3} style={{ marginTop: 10 }}>
+          @{otherName} a 12 h pour répondre.
+        </Txt>
+      ) : null}
+      {status === 'accepted' && mine && msg.meta?.listingId ? (
+        <PressScale
+          haptic="light"
+          onPress={onRent}
+          style={{ marginTop: 12, minHeight: 44, borderRadius: 999, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Txt size={15} weight="bold" color={c.onAccent}>
+            Louer à {m(perDay)} / jour
+          </Txt>
+        </PressScale>
+      ) : null}
+      {status === 'declined' && mine ? (
+        <Txt size={13} color={c.ink3} style={{ marginTop: 10 }}>
+          Vous pouvez faire une nouvelle offre depuis l'annonce.
+        </Txt>
+      ) : null}
+    </View>
   );
 }
 
@@ -253,16 +371,51 @@ function Conversation({ id }: { id: string }) {
             {t('msg.safety')}
           </Txt>
         </View>
-        {messages.map((msg) => (
-          <Bubble
-            key={msg.id}
-            m={msg}
-            mine={msg.senderId === social.meId}
-            onLongPress={() =>
-              msg.senderId !== social.meId && set({ socialReport: { kind: 'message', id: msg.id, memberId: msg.senderId } })
-            }
-          />
-        ))}
+        {messages.map((msg) => {
+          if (msg.kind === 'offer_answer') {
+            return (
+              <Txt key={msg.id} size={12} weight="semi" center color={msg.meta?.accepted ? c.accent : c.ink3} style={{ marginVertical: 4 }}>
+                {msg.senderId === social.meId ? 'Vous avez répondu : ' : `@${th?.other.username ?? ''} : `}
+                {msg.meta?.accepted ? 'offre acceptée' : 'offre refusée'}
+              </Txt>
+            );
+          }
+          if (msg.kind === 'offer') {
+            const offerListing = msg.meta?.listingId;
+            return (
+              <OfferCard
+                key={msg.id}
+                m={msg}
+                mine={msg.senderId === social.meId}
+                status={offerState(msg, messages)}
+                askPrice={listing && listing.id === offerListing ? listing.price : null}
+                otherName={th?.other.username ?? ''}
+                onAnswer={(accepted) =>
+                  submit(accepted ? 'Offre acceptée' : 'Offre refusée', 'offer_answer', { offerId: msg.id, accepted })
+                }
+                onRent={() =>
+                  offerListing &&
+                  set({
+                    agreedOffer: { listingId: offerListing, perDay: msg.meta?.perDay ?? 0 },
+                    activeId: offerListing,
+                    screen: 'booking',
+                    thread: null,
+                  })
+                }
+              />
+            );
+          }
+          return (
+            <Bubble
+              key={msg.id}
+              m={msg}
+              mine={msg.senderId === social.meId}
+              onLongPress={() =>
+                msg.senderId !== social.meId && set({ socialReport: { kind: 'message', id: msg.id, memberId: msg.senderId } })
+              }
+            />
+          );
+        })}
       </ScrollView>
 
       {blocked ? (

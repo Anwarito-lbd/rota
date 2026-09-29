@@ -3,20 +3,31 @@
  * comments, save to a board, the "+" chooser, and report / block.
  */
 import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { useListings } from '../data/listings';
-import { SOCIAL_REPORT_REASONS, useComments, useMember, useSocial, type SocialReportReason } from '../data/social';
+import { SOCIAL_REPORT_REASONS, useComments, useMember, useSocial, type Comment, type SocialReportReason } from '../data/social';
 import { useT, type TranslationKey } from '../i18n';
 import { useStore } from '../state/store';
 import { FONT, ff } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
-import { BookmarkIcon, CameraIcon, PlusIcon, SendIcon, TabAddIcon } from './icons';
+import { BookmarkIcon, CameraIcon, CloseIcon, HeartIcon, PlusIcon, SendIcon, StarIcon, TabAddIcon } from './icons';
 import { Check, Display, Field, GhostButton, PrimaryButton, Row, Sheet, Txt } from './kit';
-import { Avatar, FadeIn, PressScale, tap, timeAgo } from './motion';
+import { Avatar, FadeIn, PressScale, compact, tap, timeAgo } from './motion';
 import { BlockRow } from './Moderation';
 
-// ─── Comments ──────────────────────────────────────────────────
+// ─── Reviews (stars + text, replies one level deep) ────────────
+
+function Stars({ value, size, label }: { value: number; size: number; label: string }) {
+  const { c } = useTheme();
+  return (
+    <View accessible accessibilityLabel={label} style={{ flexDirection: 'row', gap: 2, marginTop: 3 }}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <StarIcon key={n} size={size} fill={n <= value ? c.accent : 'none'} color={n <= value ? c.accent : c.ink3} />
+      ))}
+    </View>
+  );
+}
 
 export function CommentsSheet() {
   const { state, set } = useStore();
@@ -24,129 +35,239 @@ export function CommentsSheet() {
   const { t, lang } = useT();
   const social = useSocial();
   const post = social.postById(state.commentsFor);
-  const { comments, add, remove } = useComments(state.commentsFor);
+  const { comments, add, remove, toggleLike } = useComments(state.commentsFor);
   const [draft, setDraft] = useState('');
+  const [replyTo, setReplyTo] = useState<Comment | null>(null);
+  const [rating, setRating] = useState(0);
   const [busy, setBusy] = useState(false);
+  const input = useRef<TextInput>(null);
 
-  useEffect(() => setDraft(''), [state.commentsFor]);
+  useEffect(() => {
+    setDraft('');
+    setReplyTo(null);
+    setRating(0);
+  }, [state.commentsFor]);
+
+  // The field may only mount once a reply starts (own look, or already reviewed).
+  useEffect(() => {
+    if (replyTo) input.current?.focus();
+  }, [replyTo]);
+
+  const close = () => set({ commentsFor: null });
+  const top = comments.filter((cm) => !cm.parentId);
+  const repliesOf = (id: string) => comments.filter((cm) => cm.parentId === id);
+  const rated = top.filter((cm) => cm.rating);
+  const average = rated.length ? rated.reduce((n, cm) => n + (cm.rating ?? 0), 0) / rated.length : 0;
+  // One review per member, and never on your own look; replies stay open.
+  const ownPost = !!post && post.authorId === social.meId;
+  const reviewed = top.some((cm) => cm.authorId === social.meId && cm.rating);
+  const writing = replyTo ? 'reply' : ownPost || reviewed ? null : 'review';
+  const canSend = !!draft.trim() && !busy && (writing === 'reply' || (writing === 'review' && rating > 0));
 
   const send = async () => {
-    if (!draft.trim() || busy) return;
+    if (!canSend) return;
     setBusy(true);
     try {
-      await add(draft);
+      // Replies stay one level deep: answering a reply answers its thread.
+      await add(draft, replyTo ? (replyTo.parentId ?? replyTo.id) : null, replyTo ? null : rating);
       tap('light');
       setDraft('');
+      setReplyTo(null);
+      setRating(0);
     } finally {
       setBusy(false);
     }
   };
 
-  const close = () => set({ commentsFor: null });
+  const renderOne = (cm: Comment, i: number, reply: boolean) => {
+    const mine = cm.authorId === social.meId;
+    // The look's author can clear replies under it, never someone's review.
+    const canDelete = mine || (reply && post?.authorId === social.meId);
+    const byAuthor = !!post && cm.authorId === post.authorId;
+    return (
+      <FadeIn key={cm.id} delay={Math.min(i, 6) * 40} style={{ flexDirection: 'row', gap: 10, marginLeft: reply ? 44 : 0 }}>
+        <Pressable onPress={() => set({ commentsFor: null, screen: 'user', profileId: cm.authorId })}>
+          <Avatar uri={cm.author.avatar} size={reply ? 26 : 34} />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', gap: 6, alignItems: 'baseline' }}>
+            <Txt size={13} weight="bold">
+              {cm.author.username}
+            </Txt>
+            {byAuthor && reply ? (
+              <Txt size={11} weight="bold" color={c.accent}>
+                Auteur
+              </Txt>
+            ) : null}
+            <Txt size={12} color={c.ink3}>
+              {timeAgo(cm.createdAt, lang)}
+            </Txt>
+          </View>
+          {cm.rating && !reply ? <Stars value={cm.rating} size={13} label={t('reviews.stars').replace('{n}', String(cm.rating))} /> : null}
+          <Txt size={14} color={c.ink2} style={{ marginTop: 1 }}>
+            {cm.body}
+          </Txt>
+          <View style={{ flexDirection: 'row', gap: 16, marginTop: 4 }}>
+            <Pressable
+              hitSlop={8}
+              onPress={() => setReplyTo(cm)}
+            >
+              <Txt size={12} weight="semi" color={c.ink3}>
+                {t('comments.reply')}
+              </Txt>
+            </Pressable>
+            {!mine ? (
+              <Pressable hitSlop={8} onPress={() => set({ commentsFor: null, socialReport: { kind: 'comment', id: cm.id, memberId: cm.authorId } })}>
+                <Txt size={12} weight="semi" color={c.ink3}>
+                  {t('comments.report')}
+                </Txt>
+              </Pressable>
+            ) : null}
+            {canDelete ? (
+              <Pressable hitSlop={8} onPress={() => remove(cm.id)}>
+                <Txt size={12} weight="semi" color={c.plum}>
+                  {t('comments.delete')}
+                </Txt>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+        <PressScale
+          haptic="light"
+          scaleTo={0.8}
+          onPress={() => toggleLike(cm.id)}
+          accessibilityLabel={t('post.like')}
+          style={{ alignItems: 'center', width: 32, paddingTop: 2 }}
+        >
+          <HeartIcon size={17} fill={cm.liked ? c.accent : 'none'} color={cm.liked ? c.accent : c.ink3} />
+          {cm.likeCount ? (
+            <Txt size={11} color={c.ink3}>
+              {compact(cm.likeCount, lang)}
+            </Txt>
+          ) : null}
+        </PressScale>
+      </FadeIn>
+    );
+  };
 
   return (
     <Sheet visible={!!state.commentsFor} onClose={close}>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Display size={26}>{t('comments.title')}</Display>
-        <Txt size={13} color={c.ink3}>
-          {comments.length}
-        </Txt>
+        {rated.length ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <StarIcon size={16} fill={c.accent} />
+            <Txt size={15} weight="bold">
+              {average.toFixed(1).replace('.', lang === 'en' ? '.' : ',')}
+            </Txt>
+            <Txt size={13} color={c.ink3}>
+              · {t('reviews.count').replace('{n}', String(rated.length))}
+            </Txt>
+          </View>
+        ) : null}
       </View>
       <Txt size={12} color={c.ink3} style={{ marginTop: 4 }}>
         {t('comments.rules')}
       </Txt>
 
       <View style={{ marginTop: 14, gap: 14 }}>
-        {comments.length === 0 ? (
+        {top.length === 0 ? (
           <Txt color={c.ink2} style={{ paddingVertical: 20 }} center>
             {t('comments.empty')}
           </Txt>
         ) : (
-          comments.map((cm, i) => {
-            const mine = cm.authorId === social.meId;
-            const canDelete = mine || post?.authorId === social.meId;
-            return (
-              <FadeIn key={cm.id} delay={Math.min(i, 6) * 40} style={{ flexDirection: 'row', gap: 10 }}>
-                <Pressable onPress={() => set({ commentsFor: null, screen: 'user', profileId: cm.authorId })}>
-                  <Avatar uri={cm.author.avatar} size={34} />
-                </Pressable>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', gap: 6, alignItems: 'baseline' }}>
-                    <Txt size={13} weight="bold">
-                      {cm.author.username}
-                    </Txt>
-                    <Txt size={12} color={c.ink3}>
-                      {timeAgo(cm.createdAt, lang)}
-                    </Txt>
-                  </View>
-                  <Txt size={14} color={c.ink2} style={{ marginTop: 1 }}>
-                    {cm.body}
-                  </Txt>
-                  <View style={{ flexDirection: 'row', gap: 14, marginTop: 3 }}>
-                    {!mine ? (
-                      <Pressable
-                        hitSlop={8}
-                        onPress={() => set({ commentsFor: null, socialReport: { kind: 'comment', id: cm.id, memberId: cm.authorId } })}
-                      >
-                        <Txt size={12} weight="semi" color={c.ink3}>
-                          {t('comments.report')}
-                        </Txt>
-                      </Pressable>
-                    ) : null}
-                    {canDelete ? (
-                      <Pressable hitSlop={8} onPress={() => remove(cm.id)}>
-                        <Txt size={12} weight="semi" color={c.plum}>
-                          {t('comments.delete')}
-                        </Txt>
-                      </Pressable>
-                    ) : null}
-                  </View>
-                </View>
-              </FadeIn>
-            );
-          })
+          top.map((cm, i) => (
+            <View key={cm.id} style={{ gap: 12 }}>
+              {renderOne(cm, i, false)}
+              {repliesOf(cm.id).map((r, j) => renderOne(r, j, true))}
+            </View>
+          ))
         )}
       </View>
 
-      <View
-        style={{
-          marginTop: 18,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-          paddingLeft: 14,
-          paddingRight: 6,
-          minHeight: 50,
-          borderRadius: 999,
-          backgroundColor: c.surf2,
-        }}
-      >
-        <TextInput
-          value={draft}
-          onChangeText={setDraft}
-          placeholder={t('comments.placeholder')}
-          placeholderTextColor={c.ink3}
-          maxLength={500}
-          onSubmitEditing={send}
-          returnKeyType="send"
-          style={{ flex: 1, ...ff('med'), fontSize: 15, color: c.ink, paddingVertical: 10 }}
-        />
-        <PressScale
-          onPress={send}
-          disabled={!draft.trim() || busy}
-          accessibilityLabel={t('comments.send')}
+      {replyTo ? (
+        <View style={{ marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Txt size={13} color={c.ink3} style={{ flex: 1 }}>
+            {t('comments.replyingTo').replace('{name}', replyTo.author.username)}
+          </Txt>
+          <Pressable hitSlop={8} onPress={() => setReplyTo(null)} accessibilityLabel={t('common.cancel')}>
+            <CloseIcon size={16} color={c.ink3} />
+          </Pressable>
+        </View>
+      ) : null}
+
+      {writing === 'review' ? (
+        <View style={{ marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View style={{ flexDirection: 'row', gap: 4 }}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <PressScale
+                key={n}
+                haptic="light"
+                scaleTo={0.8}
+                onPress={() => setRating(n)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: rating === n }}
+                accessibilityLabel={t('reviews.stars').replace('{n}', String(n))}
+                style={{ padding: 2 }}
+              >
+                <StarIcon size={28} fill={n <= rating ? c.accent : 'none'} color={n <= rating ? c.accent : c.ink3} />
+              </PressScale>
+            ))}
+          </View>
+          {!rating ? (
+            <Txt size={13} color={c.ink3} style={{ flex: 1 }}>
+              {t('reviews.pickStars')}
+            </Txt>
+          ) : null}
+        </View>
+      ) : null}
+
+      {writing ? (
+        <View
           style={{
-            width: 38,
-            height: 38,
-            borderRadius: 99,
-            backgroundColor: draft.trim() ? c.accent : c.line,
+            marginTop: replyTo ? 8 : 12,
+            flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'center',
+            gap: 8,
+            paddingLeft: 14,
+            paddingRight: 6,
+            minHeight: 50,
+            borderRadius: 999,
+            backgroundColor: c.surf2,
           }}
         >
-          <SendIcon size={17} color={c.onAccent} />
-        </PressScale>
-      </View>
+          <TextInput
+            ref={input}
+            value={draft}
+            onChangeText={setDraft}
+            placeholder={replyTo ? t('comments.replyPlaceholder') : t('comments.placeholder')}
+            placeholderTextColor={c.ink3}
+            maxLength={500}
+            onSubmitEditing={send}
+            returnKeyType="send"
+            style={{ flex: 1, ...ff('med'), fontSize: 15, color: c.ink, paddingVertical: 10 }}
+          />
+          <PressScale
+            onPress={send}
+            disabled={!canSend}
+            accessibilityLabel={t('comments.send')}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 99,
+              backgroundColor: canSend ? c.accent : c.line,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <SendIcon size={17} color={c.onAccent} />
+          </PressScale>
+        </View>
+      ) : (
+        <Txt size={13} color={c.ink3} style={{ marginTop: 18 }}>
+          {ownPost ? t('reviews.own') : t('reviews.done')}
+        </Txt>
+      )}
     </Sheet>
   );
 }

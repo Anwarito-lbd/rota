@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.tryon-token]
 verify_jwt = false
+
+[functions.outfit-planner]
+verify_jwt = false

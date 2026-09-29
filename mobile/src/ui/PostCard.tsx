@@ -7,13 +7,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { useListings, type Listing } from '../data/listings';
+import { useCommunity } from '../data/community';
 import { useSocial, type Post } from '../data/social';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
 import { BRAND_LAVENDER, OVER_INK, OVER_INK_SOFT } from '../theme/tokens';
 import {
   BookmarkIcon,
-  CommentIcon,
+  StarIcon,
   DotsIcon,
   HeartIcon,
   PinIcon,
@@ -21,8 +22,12 @@ import {
   ShareIcon,
   SparkleIcon,
   TagIcon,
+  CheckIcon,
+  CrownIcon,
+  RepostIcon,
 } from './icons';
-import { Txt } from './kit';
+import { Sheet, Txt } from './kit';
+import { useTheme } from '../theme/useTheme';
 import { TAB_BAR_SPACE } from './TabBar';
 import {
   Avatar,
@@ -191,16 +196,69 @@ export function TagPeek({ listing, onClose, top }: { listing: Listing; onClose: 
   );
 }
 
+/** The ⋯ sheet: one clear line per action instead of a column of icons. */
+function PostMenu({
+  visible,
+  onClose,
+  onShare,
+  onTryOn,
+  onReport,
+  repost,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onShare: () => void;
+  repost?: { on: boolean; toggle: () => void };
+  onTryOn?: () => void;
+  onReport?: () => void;
+}) {
+  const { c } = useTheme();
+  const { t } = useT();
+  const item = (icon: React.ReactNode, label: string, sub: string | null, onPress: () => void, tone?: string) => (
+    <PressScale
+      key={label}
+      scaleTo={0.98}
+      onPress={() => {
+        onClose();
+        onPress();
+      }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: c.line }}
+    >
+      <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: c.surf2, alignItems: 'center', justifyContent: 'center' }}>{icon}</View>
+      <View style={{ flex: 1 }}>
+        <Txt size={16} weight="semi" color={tone ?? c.ink}>
+          {label}
+        </Txt>
+        {sub ? (
+          <Txt size={13} color={c.ink3}>
+            {sub}
+          </Txt>
+        ) : null}
+      </View>
+    </PressScale>
+  );
+  return (
+    <Sheet visible={visible} onClose={onClose}>
+      {onTryOn ? item(<SparkleIcon size={20} color={c.accent} />, t('post.tryOn'), t('post.tryOnSub'), onTryOn) : null}
+      {repost ? item(<RepostIcon size={20} color={repost.on ? c.accent : c.ink} />, repost.on ? t('repost.undo') : t('repost.do'), repost.on ? null : t('repost.sub'), repost.toggle) : null}
+      {item(<ShareIcon size={20} color={c.ink} />, t('post.share'), null, onShare)}
+      {onReport ? item(<DotsIcon color={c.plum} />, t('post.report'), null, onReport, c.plum) : null}
+    </Sheet>
+  );
+}
+
 export function PostCard({ post, height, distanceKm }: { post: Post; height: number; distanceKm?: number }) {
   const { set } = useStore();
   const { t, lang } = useT();
   const { byId } = useListings();
   const social = useSocial();
+  const community = useCommunity();
   const { width } = useWindowDimensions();
   const [index, setIndex] = useState(0);
   const [showTags, setShowTags] = useState(false);
   const [peek, setPeek] = useState<string | null>(null);
   const [burst, setBurst] = useState(0);
+  const [menu, setMenu] = useState(false);
   const lastTap = useRef(0);
 
   const liked = social.isLiked(post.id);
@@ -310,7 +368,7 @@ export function PostCard({ post, height, distanceKm }: { post: Post; height: num
       ) : null}
 
       {/* Right rail */}
-      <View style={{ position: 'absolute', right: 8, bottom: 150 + TAB_BAR_SPACE, alignItems: 'center', gap: 14 }}>
+      <View style={{ position: 'absolute', right: 8, bottom: 28 + TAB_BAR_SPACE, alignItems: 'center', gap: 12 }}>
         <View style={{ alignItems: 'center', marginBottom: 6 }}>
           <PressScale onPress={openProfile} accessibilityLabel={post.author.username}>
             <Avatar uri={post.author.avatar} size={50} ring />
@@ -331,9 +389,7 @@ export function PostCard({ post, height, distanceKm }: { post: Post; height: num
               }}
             >
               {following ? (
-                <Txt size={12} weight="bold" color="#2A1033">
-                  ✓
-                </Txt>
+                <CheckIcon size={13} color="#2A1033" />
               ) : (
                 <PlusIcon size={14} color="#2A1033" />
               )}
@@ -354,46 +410,51 @@ export function PostCard({ post, height, distanceKm }: { post: Post; height: num
         </RailButton>
 
         <RailButton label={t('post.comments')} count={compact(post.commentCount, lang)} onPress={() => set({ commentsFor: post.id })}>
-          <CommentIcon size={30} />
+          <StarIcon size={30} fill="none" color={OVER_INK} />
         </RailButton>
 
         <RailButton label={t('post.save')} active={saved} onPress={() => set({ saveTarget: { kind: 'post', id: post.id } })}>
           <BookmarkIcon size={29} fill={saved ? OVER_INK : 'none'} />
         </RailButton>
 
-        {tagged.length ? (
-          <RailButton
-            label={t('post.tryOn')}
-            onPress={() => set({ screen: 'tryon', tryOnListingId: tagged[0].listingId })}
-          >
-            <SparkleIcon size={29} />
-          </RailButton>
-        ) : null}
-
-        <RailButton
-          label={t('post.share')}
-          onPress={() =>
-            Share.share({ message: `@${post.author.username} sur Rota — https://therotaapp.com/p/${post.id}` }).catch(() => undefined)
-          }
-        >
-          <ShareIcon size={27} />
+        {/* Everything else lives behind ⋯: share, try on, report. */}
+        <RailButton label={t('post.more')} onPress={() => setMenu(true)}>
+          <DotsIcon />
         </RailButton>
-
-        {!mine ? (
-          <RailButton
-            label={t('post.more')}
-            onPress={() => set({ socialReport: { kind: 'post', id: post.id, memberId: post.authorId } })}
-          >
-            <DotsIcon />
-          </RailButton>
-        ) : null}
       </View>
+
+      <PostMenu
+        visible={menu}
+        onClose={() => setMenu(false)}
+        onShare={() =>
+          Share.share({ message: `@${post.author.username} sur Rota — https://therotaapp.com/p/${post.id}` }).catch(() => undefined)
+        }
+        onTryOn={tagged.length ? () => set({ screen: 'tryon', tryOnListingId: tagged[0].listingId }) : undefined}
+        onReport={!mine ? () => set({ socialReport: { kind: 'post', id: post.id, memberId: post.authorId } }) : undefined}
+        repost={!mine && post.distribution === 'public' ? { on: community.isReposted(post.id), toggle: () => community.toggleRepost(post.id) } : undefined}
+      />
 
       {peekListing ? <TagPeek listing={peekListing} top={peekTop} onClose={() => setPeek(null)} /> : null}
 
       {/* Caption block */}
       <View style={{ position: 'absolute', left: 0, right: 70, bottom: 0, paddingHorizontal: 16, paddingBottom: 18 + TAB_BAR_SPACE }}>
+        {community.repostedBy[post.id] ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+            <RepostIcon size={14} color={OVER_INK_SOFT} />
+            <Txt size={12} weight="semi" color={OVER_INK_SOFT}>
+              {t('repost.by').replace('{name}', community.repostedBy[post.id].username)}
+            </Txt>
+          </View>
+        ) : null}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+          {mine && community.pro ? (
+            <GlassChip style={{ backgroundColor: 'rgba(226,169,241,0.9)', borderColor: 'transparent' }}>
+              <CrownIcon size={12} color="#2A1033" />
+              <Txt size={11} weight="bold" upper color="#2A1033">
+                {t('pro.boosted')}
+              </Txt>
+            </GlassChip>
+          ) : null}
           <GlassChip>
             <Txt size={11} weight="bold" upper color={BRAND_LAVENDER}>
               {post.kind === 'dump' ? `${t('post.dump')} · ${post.media.length}` : t('post.fit')}

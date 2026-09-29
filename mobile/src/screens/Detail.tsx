@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useListing } from '../data/listings';
+import { sendMessage, startConversation } from '../data/messages';
+import { useSocial } from '../data/social';
+import { backendConfigured } from '../lib/auth';
 import { useT, type TranslationKey } from '../i18n';
 import { FEES } from '../lib/fees';
 import { OFFER_TIERS, useBooking } from '../state/selectors';
@@ -24,7 +27,7 @@ import {
 import { MediaSlot } from '../ui/MediaSlot';
 import { usePolicy } from '../lib/policy';
 import { MessageButton } from '../ui/MessageButton';
-import { PressScale } from '../ui/motion';
+import { PressScale, tap } from '../ui/motion';
 
 function RoundOverlayButton({
   onPress,
@@ -62,6 +65,10 @@ export function Detail() {
   const listing = useListing(state.activeId);
   const { days, quote } = useBooking(listing);
   const policy = usePolicy();
+  const social = useSocial();
+  // Offers run in the demo only for now: the server still prices a rental from
+  // the listing, so an accepted offer could not be honoured at payment yet.
+  const offersOpen = !!listing?.acceptOffers && !backendConfigured && listing.ownerId !== social.meId;
 
   if (!listing) {
     return (
@@ -162,7 +169,7 @@ export function Detail() {
               .join(' · ')}
           </Txt>
 
-          {listing.acceptOffers ? (
+          {offersOpen ? (
             <View
               style={{
                 marginTop: 10,
@@ -362,10 +369,18 @@ export function Detail() {
             par {t('common.day')}
           </Txt>
         </View>
-        {listing.acceptOffers ? (
+        {offersOpen ? (
           <GhostButton label={t('detail.offer')} tone="accent" onPress={() => set({ offer: true })} style={{ minHeight: 54 }} />
         ) : null}
-        <PrimaryButton label={t('detail.viewDates')} onPress={() => go('booking')} style={{ flex: 1 }} />
+        <PrimaryButton
+          label={t('detail.viewDates')}
+          onPress={() => {
+            // Booking from the listing is at the listed price; an accepted offer books from its message.
+            set({ agreedOffer: null });
+            go('booking');
+          }}
+          style={{ flex: 1 }}
+        />
       </View>
 
       <OfferSheet days={days} />
@@ -375,22 +390,56 @@ export function Detail() {
 
 function OfferSheet({ days }: { days: number }) {
   const { state, set, m } = useStore();
-  const { c } = useTheme();
+  const { c, amount } = useTheme();
   const listing = useListing(state.activeId);
-  const [idx, setIdx] = useState(state.offerIdx);
+  const [idx, setIdx] = useState<number | 'custom'>(state.offerIdx);
+  const [custom, setCustom] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   if (!listing) return null;
-  const perDay = Math.round(listing.price * OFFER_TIERS[idx]);
+
+  // The lender's minimum is shown on the listing; without one, half the price.
+  // At or above the asking price there is nothing to negotiate: just book.
+  const floor = listing.minOffer ?? Math.ceil(listing.price / 2);
+  const tiers = OFFER_TIERS.map((pct, i) => ({ i, pct, amount: Math.round(listing.price * pct) })).filter(
+    (tier) => tier.amount >= floor && tier.amount < listing.price,
+  );
+  const sel = idx === 'custom' || tiers.some((tier) => tier.i === idx) ? idx : (tiers[0]?.i ?? 'custom');
+  const perDay = sel === 'custom' ? Number(custom.replace(',', '.')) || 0 : Math.round(listing.price * OFFER_TIERS[sel]);
+  const invalid = perDay < floor || perDay >= listing.price;
+  const dayWord = days > 1 ? 'jours' : 'jour';
+
+  const sendOffer = async () => {
+    if (busy || invalid) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const id = await startConversation(listing.ownerId, listing.id);
+      await sendMessage(id, `Offre : ${m(perDay)} / jour pour ${days} ${dayWord}`, 'offer', {
+        listingId: listing.id,
+        perDay,
+        days,
+      });
+      tap('success');
+      set({ offer: false, screen: 'messages', thread: id });
+    } catch {
+      setError("L'offre n'est pas partie. Réessayez.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <Sheet visible={state.offer} onClose={() => set({ offer: false })}>
-      <Display size={28}>Faire une proposition</Display>
+      <Display size={28}>Faire une offre</Display>
       <Txt size={14} color={c.ink2} style={{ marginTop: 8 }}>
-        @{listing.owner.username} a 12 h pour accepter. Elle demande {m(listing.price)} / jour pour {days} jours.
+        @{listing.owner.username} demande {m(listing.price)} / jour. Votre offre arrive dans vos messages, et vous
+        pouvez louer à ce prix dès qu'elle est acceptée.
       </Txt>
 
       <View style={{ marginTop: 18, flexDirection: 'row', gap: 8 }}>
-        {OFFER_TIERS.map((pct, i) => {
-          const on = idx === i;
+        {tiers.map(({ i, pct }) => {
+          const on = sel === i;
           return (
             <Pressable
               key={pct}
@@ -414,18 +463,67 @@ function OfferSheet({ days }: { days: number }) {
                 {m(Math.round(listing.price * pct))}
               </Amount>
               <Txt size={11} color={on ? c.onAccent : c.ink2} style={{ marginTop: 3 }}>
-                {Math.round((1 - pct) * 100)} % / jour
+                -{Math.round((1 - pct) * 100)} %
               </Txt>
             </Pressable>
           );
         })}
       </View>
 
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected: sel === 'custom' }}
+        onPress={() => setIdx('custom')}
+        style={{
+          marginTop: 8,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          paddingHorizontal: 14,
+          minHeight: 54,
+          borderRadius: 14,
+          borderWidth: 1,
+          borderColor: sel === 'custom' ? c.accent : c.line2,
+        }}
+      >
+        <Txt size={15} weight="semi" style={{ flex: 1 }}>
+          Autre montant
+        </Txt>
+        <TextInput
+          value={custom}
+          onFocus={() => setIdx('custom')}
+          onChangeText={(v) => {
+            setIdx('custom');
+            setCustom(v.replace(/[^\d,.]/g, '').slice(0, 5));
+          }}
+          keyboardType="decimal-pad"
+          placeholder={String(floor)}
+          placeholderTextColor={c.ink3}
+          accessibilityLabel="Montant par jour"
+          style={[amount(20), { minWidth: 60, textAlign: 'right', color: c.ink, outlineWidth: 0 } as object]}
+        />
+        <Txt size={15} color={c.ink2}>
+          € / jour
+        </Txt>
+      </Pressable>
+
+      <Txt size={13} color={sel === 'custom' && custom && invalid ? c.plum : c.ink3} style={{ marginTop: 10 }}>
+        {sel === 'custom' && custom && invalid
+          ? `La prêteuse accepte entre ${m(floor)} et ${m(listing.price - 1)} par jour.`
+          : `Total du loyer : ${m(perDay * days)} pour ${days} ${dayWord}. Les frais s'ajoutent au paiement.`}
+      </Txt>
+      {error ? (
+        <Txt size={13} color={c.plum} style={{ marginTop: 6 }}>
+          {error}
+        </Txt>
+      ) : null}
+
       <PrimaryButton
-        label={`Envoyer · ${m(perDay * days)}`}
+        label={busy ? 'Envoi…' : invalid ? 'Envoyer' : `Envoyer · ${m(perDay)} / jour`}
         tone="plum"
-        onPress={() => set({ offer: false })}
-        style={{ marginTop: 18 }}
+        disabled={busy || invalid}
+        onPress={sendOffer}
+        style={{ marginTop: 16 }}
       />
     </Sheet>
   );

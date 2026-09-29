@@ -67,10 +67,16 @@ export interface Post {
 export interface Comment {
   id: string;
   postId: string;
+  /** Set on a reply: the comment it answers. */
+  parentId: string | null;
   authorId: string;
   author: { username: string; avatar: string | null };
   body: string;
+  /** 1–5 stars on a review; null on a reply. */
+  rating: number | null;
   createdAt: string;
+  likeCount: number;
+  liked: boolean;
 }
 
 export interface BoardItem {
@@ -683,15 +689,31 @@ function demoCommentsFor(postId: string): Comment[] {
       (DEMO_COMMENTS[postId] ?? []).map((c, i) => ({
         id: `${postId}-c${i}`,
         postId,
+        parentId: null,
         authorId: c.authorId,
         author: { username: demoAuthor(c.authorId).username, avatar: demoAuthor(c.authorId).avatar },
         body: c.body,
+        rating: c.rating,
         createdAt: new Date(Date.now() - c.minutesAgo * 6e4).toISOString(),
+        likeCount: 3 + ((i * 7) % 11),
+        liked: false,
       })),
     );
   }
   return demoComments.get(postId) as Comment[];
 }
+
+type CommentRow = {
+  id: string;
+  post_id: string;
+  parent_id: string | null;
+  author_id: string;
+  body: string;
+  rating?: number | null;
+  created_at: string;
+  like_count: number | null;
+  author: { username: string; avatar_url: string | null } | null;
+};
 
 export function useComments(postId: string | null) {
   const { demo, meId, isBlocked } = useSocial();
@@ -706,29 +728,38 @@ export function useComments(postId: string | null) {
     }
     let cancelled = false;
     setLoading(true);
-    supabase
-      .from('post_comments')
-      .select('id, post_id, author_id, body, created_at, author:profiles!post_comments_author_id_fkey(username, avatar_url)')
-      .eq('post_id', postId)
-      .order('created_at')
-      .limit(200)
-      .then(({ data }) => {
+    const db = supabase;
+    const load = (withRating: boolean) =>
+      db
+        .from('post_comments')
+        .select(
+          `id, post_id, parent_id, author_id, body, ${withRating ? 'rating, ' : ''}created_at, like_count, author:profiles!post_comments_author_id_fkey(username, avatar_url)`,
+        )
+        .eq('post_id', postId)
+        .order('created_at')
+        .limit(300);
+    // Until migration 020 runs there is no rating column: read comments without stars.
+    load(true)
+      .then((res) => (res.error ? load(false) : res))
+      .then(async ({ data }) => {
+        const rows = (data ?? []) as unknown as CommentRow[];
+        const { data: mine } = meId
+          ? await db.from('comment_likes').select('comment_id').eq('user_id', meId).in('comment_id', rows.map((r) => r.id))
+          : { data: [] };
+        const likedIds = new Set(((mine ?? []) as { comment_id: string }[]).map((r) => r.comment_id));
         if (cancelled) return;
         setComments(
-          ((data ?? []) as unknown as {
-            id: string;
-            post_id: string;
-            author_id: string;
-            body: string;
-            created_at: string;
-            author: { username: string; avatar_url: string | null } | null;
-          }[]).map((r) => ({
+          rows.map((r) => ({
             id: r.id,
             postId: r.post_id,
+            parentId: r.parent_id,
             authorId: r.author_id,
             author: { username: r.author?.username ?? 'membre', avatar: r.author?.avatar_url ?? null },
             body: r.body,
+            rating: r.rating ?? null,
             createdAt: r.created_at,
+            likeCount: r.like_count ?? 0,
+            liked: likedIds.has(r.id),
           })),
         );
         setLoading(false);
@@ -736,20 +767,30 @@ export function useComments(postId: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [demo, postId]);
+  }, [demo, postId, meId]);
 
+  /**
+   * A review (stars + text), or a reply when `parentId` is set. Replies stay
+   * one level deep and carry no stars.
+   */
   const add = useCallback(
-    async (body: string) => {
+    async (body: string, parentId: string | null = null, rating: number | null = null) => {
       const text = body.trim().slice(0, 500);
       if (!postId || !meId || !text) return;
+      const stars = parentId ? null : rating && rating >= 1 && rating <= 5 ? Math.round(rating) : null;
+      if (!parentId && !stars) return;
       if (demo || !supabase) {
         const c: Comment = {
           id: uid(),
           postId,
+          parentId,
           authorId: meId,
           author: { username: DEMO_ME.username, avatar: DEMO_ME.avatar },
           body: text,
+          rating: stars,
           createdAt: new Date().toISOString(),
+          likeCount: 0,
+          liked: false,
         };
         demoCommentsFor(postId).push(c);
         setComments((cs) => [...cs, c]);
@@ -757,23 +798,62 @@ export function useComments(postId: string | null) {
       }
       const { data, error } = await supabase
         .from('post_comments')
-        .insert({ post_id: postId, body: text })
+        .insert({ post_id: postId, body: text, parent_id: parentId, rating: stars })
         .select('id, created_at')
         .single();
       if (error) throw new Error(error.message);
       setComments((cs) => [
         ...cs,
-        { id: data.id, postId, authorId: meId, author: { username: 'moi', avatar: null }, body: text, createdAt: data.created_at },
+        {
+          id: data.id,
+          postId,
+          parentId,
+          authorId: meId,
+          author: { username: 'moi', avatar: null },
+          body: text,
+          rating: stars,
+          createdAt: data.created_at,
+          likeCount: 0,
+          liked: false,
+        },
       ]);
+    },
+    [demo, meId, postId],
+  );
+
+  const toggleLike = useCallback(
+    async (commentId: string) => {
+      let nowLiked = false;
+      setComments((cs) =>
+        cs.map((c) => {
+          if (c.id !== commentId) return c;
+          nowLiked = !c.liked;
+          return { ...c, liked: nowLiked, likeCount: Math.max(0, c.likeCount + (nowLiked ? 1 : -1)) };
+        }),
+      );
+      if (demo || !supabase || !meId) {
+        if (postId) {
+          const list = demoCommentsFor(postId);
+          const c = list.find((x) => x.id === commentId);
+          if (c) {
+            c.liked = !c.liked;
+            c.likeCount = Math.max(0, c.likeCount + (c.liked ? 1 : -1));
+          }
+        }
+        return;
+      }
+      if (nowLiked) await supabase.from('comment_likes').insert({ comment_id: commentId });
+      else await supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', meId);
     },
     [demo, meId, postId],
   );
 
   const remove = useCallback(
     async (commentId: string) => {
-      setComments((cs) => cs.filter((c) => c.id !== commentId));
+      // Removing a comment removes its replies too.
+      setComments((cs) => cs.filter((c) => c.id !== commentId && c.parentId !== commentId));
       if (demo || !supabase) {
-        if (postId) demoComments.set(postId, demoCommentsFor(postId).filter((c) => c.id !== commentId));
+        if (postId) demoComments.set(postId, demoCommentsFor(postId).filter((c) => c.id !== commentId && c.parentId !== commentId));
         return;
       }
       await supabase.from('post_comments').delete().eq('id', commentId);
@@ -781,7 +861,7 @@ export function useComments(postId: string | null) {
     [demo, postId],
   );
 
-  return { comments: comments.filter((c) => !isBlocked(c.authorId)), loading, add, remove };
+  return { comments: comments.filter((c) => !isBlocked(c.authorId)), loading, add, remove, toggleLike };
 }
 
 // ─── members ──────────────────────────────────────────────────
@@ -799,12 +879,13 @@ export function useMember(memberId: string | null): Member | null {
       const m = DEMO_MEMBERS.find((x) => x.id === memberId);
       const a = demoAuthor(memberId);
       const followedByMe = followingIds.includes(memberId) ? 1 : 0;
+      const isMe = memberId === meId;
       setMember({
         id: memberId,
         ...a,
         bio: m?.bio ?? null,
-        followers: 1200 + memberId.length * 137 + followedByMe,
-        following: 180 + memberId.length * 11,
+        followers: isMe ? 38 : 1200 + memberId.length * 137 + followedByMe,
+        following: isMe ? followingIds.length : 180 + memberId.length * 11,
       });
       return;
     }

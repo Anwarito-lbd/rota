@@ -165,21 +165,19 @@ export function IdentityGate({
   const social = useSocial();
   if (social.identity === 'verified') return <>{children}</>;
   return (
+    // Lives in a footer bar: one short line and the button, never a card
+    // that would push the footer over the form.
     <FadeIn>
-      <View style={{ padding: 16, borderRadius: 18, backgroundColor: c.accentSoft, gap: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <ShieldCheckIcon size={20} color={c.accent} />
-          <Txt size={16} weight="bold">
-            {t('verify.gateTitle')}
+      <View style={{ gap: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <ShieldCheckIcon size={15} color={c.accent} />
+          <Txt size={13} color={c.ink2} numberOfLines={2} style={{ flex: 1 }}>
+            {reason === 'rent' ? t('verify.gateRent') : t('verify.gateList')}
           </Txt>
         </View>
-        <Txt size={14} color={c.ink2}>
-          {reason === 'rent' ? t('verify.gateRent') : t('verify.gateList')}
-        </Txt>
         <PrimaryButton
           label={social.identity === 'pending' ? t('verify.pending') : t('verify.gateCta')}
           onPress={() => set({ screen: 'verify', afterVerify: returnTo })}
-          style={{ marginTop: 6 }}
         />
       </View>
     </FadeIn>

@@ -72,7 +72,7 @@ export function Claim() {
         <Header title={t('claim.open')} onBack={() => go('rentals')} />
         <Card style={{ marginTop: 20 }}>
           <Txt size={16} weight="bold">
-            ✓ {t('claim.sentTitle')}
+            {t('claim.sentTitle')}
           </Txt>
           <Txt size={14} color={c.ink2} style={{ marginTop: 6 }}>
             {t('claim.sentBody')}

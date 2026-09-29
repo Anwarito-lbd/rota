@@ -6,17 +6,45 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { DEMO_ME, DEMO_MEMBERS } from './demo';
+import { DEMO_LISTINGS, DEMO_ME, DEMO_MEMBERS } from './demo';
 
-export type MessageKind = 'text' | 'meetpoint';
+/**
+ * 'offer' is a price proposal for a piece (per day, for a number of days);
+ * 'offer_answer' is the lender's yes or no to one offer. Only an answer from
+ * the other member counts, so nobody can accept their own offer.
+ */
+export type MessageKind = 'text' | 'meetpoint' | 'offer' | 'offer_answer';
+
+export interface MessageMeta {
+  place?: string;
+  area?: string;
+  /** offer */
+  listingId?: string;
+  perDay?: number;
+  days?: number;
+  /** offer_answer */
+  offerId?: string;
+  accepted?: boolean;
+}
 
 export interface Message {
   id: string;
   senderId: string;
   kind: MessageKind;
   body: string;
-  meta: { place?: string; area?: string } | null;
+  meta: MessageMeta | null;
   createdAt: string;
+}
+
+export type OfferState = 'pending' | 'accepted' | 'declined';
+
+/** Where an offer stands, from the answers that follow it in the thread. */
+export function offerState(offer: Message, messages: Message[]): OfferState {
+  const answer = messages.find(
+    (m) => m.kind === 'offer_answer' && m.meta?.offerId === offer.id && m.senderId !== offer.senderId,
+  );
+  if (!answer) return 'pending';
+  return answer.meta?.accepted ? 'accepted' : 'declined';
 }
 
 export interface Thread {
@@ -73,7 +101,7 @@ const demoMessages: Record<string, Message[]> = {
     },
   ],
   c2: [
-    { id: 'c2m1', senderId: 'u_juliette', kind: 'text', body: 'Merci pour le retour, la robe était impeccable ✨', meta: null, createdAt: iso(1500) },
+    { id: 'c2m1', senderId: 'u_juliette', kind: 'text', body: 'Merci pour le retour, la robe était impeccable', meta: null, createdAt: iso(1500) },
   ],
 };
 
@@ -203,6 +231,57 @@ const toMessage = (r: MessageRow): Message => ({
   createdAt: r.created_at,
 });
 
+/** Sends one message; also used outside a thread (an offer sent from a listing). */
+export async function sendMessage(
+  conversationId: string,
+  body: string,
+  kind: MessageKind = 'text',
+  meta: Message['meta'] = null,
+): Promise<Message | null> {
+  const text = body.trim().slice(0, 2000);
+  if (!text) return null;
+  if (!supabase) {
+    const m: Message = {
+      id: `m-${Date.now().toString(36)}`,
+      senderId: DEMO_ME.id,
+      kind,
+      body: text,
+      meta,
+      createdAt: new Date().toISOString(),
+    };
+    (demoMessages[conversationId] ??= []).push(m);
+    emit();
+    if (kind === 'offer') demoLenderAnswers(conversationId, m);
+    return m;
+  }
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({ conversation_id: conversationId, kind, body: text, meta })
+    .select('id, sender_id, kind, body, meta, created_at')
+    .single();
+  if (error) throw new Error(error.message);
+  return toMessage(data as MessageRow);
+}
+
+/** Demo only: the lender answers a few seconds later, yes at or above her floor. */
+function demoLenderAnswers(conversationId: string, offer: Message) {
+  const th = demoThreads.find((x) => x.id === conversationId);
+  if (!th) return;
+  const floor = DEMO_LISTINGS.find((l) => l.id === offer.meta?.listingId)?.minOffer ?? 0;
+  const accepted = (offer.meta?.perDay ?? 0) >= floor;
+  setTimeout(() => {
+    (demoMessages[conversationId] ??= []).push({
+      id: `m-${Date.now().toString(36)}`,
+      senderId: th.otherId,
+      kind: 'offer_answer',
+      body: accepted ? 'Offre acceptée' : 'Offre refusée',
+      meta: { offerId: offer.id, accepted },
+      createdAt: new Date().toISOString(),
+    });
+    emit();
+  }, 2500);
+}
+
 export function useThread(conversationId: string | null) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -254,29 +333,9 @@ export function useThread(conversationId: string | null) {
 
   const send = useCallback(
     async (body: string, kind: MessageKind = 'text', meta: Message['meta'] = null) => {
-      const text = body.trim().slice(0, 2000);
-      if (!conversationId || !text) return;
-      if (!supabase) {
-        const m: Message = {
-          id: `m-${Date.now().toString(36)}`,
-          senderId: DEMO_ME.id,
-          kind,
-          body: text,
-          meta,
-          createdAt: new Date().toISOString(),
-        };
-        (demoMessages[conversationId] ??= []).push(m);
-        emit();
-        return;
-      }
-      const { data, error } = await supabase
-        .from('messages')
-        .insert({ conversation_id: conversationId, kind, body: text, meta })
-        .select('id, sender_id, kind, body, meta, created_at')
-        .single();
-      if (error) throw new Error(error.message);
-      const m = toMessage(data as MessageRow);
-      setMessages((cur) => (cur.some((x) => x.id === m.id) ? cur : [...cur, m]));
+      if (!conversationId) return;
+      const m = await sendMessage(conversationId, body, kind, meta);
+      if (m) setMessages((cur) => (cur.some((x) => x.id === m.id) ? cur : [...cur, m]));
     },
     [conversationId],
   );

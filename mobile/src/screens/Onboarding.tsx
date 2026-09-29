@@ -8,7 +8,7 @@ import * as WebBrowser from 'expo-web-browser';
 import Svg, { Path } from 'react-native-svg';
 import { appleSignInAvailable, backendConfigured, useAuth } from '../lib/auth';
 import { LEGAL_URLS } from '../lib/config';
-import { AppleIcon } from '../ui/icons';
+import { AppleIcon, CheckIcon } from '../ui/icons';
 import { usePermissions, type PermStatus } from '../lib/permissions';
 import { emailValid, passwordChecks, passwordValid, usernameError } from '../state/auth';
 import { useStore } from '../state/store';
@@ -22,6 +22,7 @@ import {
   Display,
   Field,
   FooterBar,
+  Note,
   PrimaryButton,
   Screen,
   Txt,
@@ -88,7 +89,7 @@ function Welcome() {
     setBusy(provider);
     setError(null);
     // New members go through the community rules and permissions next.
-    set({ obStep: 1, authErr: null });
+    set({ obStep: 1, emailFlow: false, authErr: null });
     const result = provider === 'apple' ? await signInWithApple() : await signInWithGoogle();
     setBusy(null);
     if (result) {
@@ -185,7 +186,7 @@ function Welcome() {
           ) : null}
           <Pressable
             accessibilityRole="button"
-            onPress={() => set({ obStep: 'auth', authMode: 'signup', authErr: null })}
+            onPress={() => set({ obStep: 'auth', authMode: 'signup', signupStep: 0, emailFlow: true, authErr: null })}
             style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
           >
             <Txt size={16} weight="semi" color="#E2A9F1">
@@ -195,7 +196,7 @@ function Welcome() {
           {!backendConfigured ? (
             <PressScale
               haptic="light"
-              onPress={() => set({ signedIn: true, emailVerified: true, obStep: 1, authErr: null })}
+              onPress={() => set({ signedIn: true, emailVerified: true, obStep: 1, emailFlow: false, authErr: null })}
               style={{
                 minHeight: 48,
                 borderRadius: 999,
@@ -214,7 +215,7 @@ function Welcome() {
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => set({ obStep: 'auth', authMode: 'login', authErr: null })}
+          onPress={() => set({ obStep: 'auth', authMode: 'login', emailFlow: false, authErr: null })}
           style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 6 }}
         >
           <Txt size={14} color="rgba(247,242,248,0.7)">
@@ -296,9 +297,7 @@ function PasswordMeter({ pw }: { pw: string }) {
               }}
             >
               {checks[key] ? (
-                <Txt size={9} weight="bold" color={c.onAccent}>
-                  ✓
-                </Txt>
+                <CheckIcon size={11} color={c.onAccent} />
               ) : null}
             </View>
             <Txt size={12} color={checks[key] ? c.ink2 : c.ink3}>
@@ -330,30 +329,178 @@ function ErrorBanner({ children }: { children: string }) {
   );
 }
 
-function AuthForm() {
+/**
+ * Where a new member is in onboarding. The e-mail sign-up has six screens
+ * (username, e-mail, password, code, rules, permissions); Apple, Google and
+ * the demo skip straight to the last two.
+ */
+function StepBar({ step, total }: { step: number; total: number }) {
+  const { c } = useTheme();
+  return (
+    <View accessibilityLabel={`Étape ${step} sur ${total}`} style={{ marginTop: 14 }}>
+      <View style={{ flexDirection: 'row', gap: 4 }}>
+        {Array.from({ length: total }, (_, i) => (
+          <View
+            key={i}
+            style={{ flex: 1, height: 4, borderRadius: 99, backgroundColor: i < step ? c.accent : c.surf2 }}
+          />
+        ))}
+      </View>
+      <Txt size={12} weight="semi" upper color={c.accent} style={{ marginTop: 10 }}>
+        Étape {step} sur {total}
+      </Txt>
+    </View>
+  );
+}
+
+/** Step number and total for the code, rules and permission screens. */
+function useObProgress(screen: 'otp' | 'rules' | 'perms') {
+  const { state } = useStore();
+  if (state.emailFlow) return { step: { otp: 4, rules: 5, perms: 6 }[screen], total: 6 };
+  return { step: screen === 'perms' ? 2 : 1, total: 2 };
+}
+
+const SIGNUP_STEPS = [
+  {
+    title: 'Choisissez votre nom d’utilisateur',
+    body: 'Il est public et unique : c’est lui que les autres membres voient sur vos annonces et vos posts.',
+  },
+  {
+    title: 'Quel est votre e-mail ?',
+    body: 'Nous y envoyons un code pour confirmer que c’est bien vous. Il n’est jamais montré aux autres membres.',
+  },
+  {
+    title: 'Créez un mot de passe',
+    body: 'Au moins 8 caractères, avec une majuscule, un chiffre et un symbole.',
+  },
+] as const;
+
+function SignupSteps() {
   const { state, set } = useStore();
   const { c } = useTheme();
-  const { signUp, signIn } = useAuth();
+  const { signUp } = useAuth();
   const [busy, setBusy] = useState(false);
-  const signup = state.authMode !== 'login';
+  const step = state.signupStep;
+  const copy = SIGNUP_STEPS[step];
 
-  const submit = async () => {
+  const next = async () => {
     if (busy) return;
-
-    if (signup) {
+    if (step === 0) {
       const nameErr = usernameError(state.username);
       if (nameErr) return set({ authErr: nameErr });
+      return set({ signupStep: 1, authErr: null });
+    }
+    if (step === 1) {
       if (!emailValid(state.email)) return set({ authErr: 'Cet e-mail ne semble pas valide.' });
-      if (!passwordValid(state.pw)) {
-        return set({ authErr: 'Le mot de passe ne remplit pas encore toutes les conditions.' });
-      }
+      return set({ signupStep: 2, authErr: null });
+    }
+    if (!passwordValid(state.pw)) {
+      return set({ authErr: 'Le mot de passe ne remplit pas encore toutes les conditions.' });
+    }
+    // The demo has no server: the next screen accepts any 6-digit code.
+    if (backendConfigured) {
       setBusy(true);
       const error = await signUp({ username: state.username, email: state.email, password: state.pw });
       setBusy(false);
       if (error) return set({ authErr: error });
-      return set({ obStep: 'otp', otpInput: '', otpErr: false, authErr: null });
     }
+    return set({ obStep: 'otp', otpInput: '', otpErr: false, authErr: null });
+  };
 
+  const back = () =>
+    step === 0
+      ? set({ obStep: 0, authErr: null, emailFlow: false })
+      : set({ signupStep: (step - 1) as 0 | 1, authErr: null });
+
+  const ready =
+    step === 0 ? state.username.length >= 3 : step === 1 ? state.email.includes('@') : passwordValid(state.pw);
+
+  return (
+    <View style={{ flex: 1 }}>
+      <Screen bottomInset={140}>
+        <BackButton onPress={back} />
+        <StepBar step={step + 1} total={6} />
+        <Display size={34} style={{ marginTop: 8 }}>
+          {copy.title}
+        </Display>
+        <Txt size={15} color={c.ink2} style={{ marginTop: 10 }}>
+          {copy.body}
+        </Txt>
+
+        <View style={{ marginTop: 22 }}>
+          {step === 0 ? (
+            <Field
+              label="Nom d'utilisateur"
+              value={state.username}
+              placeholder="camille.rota"
+              hint={
+                state.username
+                  ? `Votre profil : @${state.username}`
+                  : 'Minuscules, chiffres, point ou tiret bas · 3 à 20 caractères'
+              }
+              onChangeText={(v) => set({ username: v.toLowerCase().replace(/\s/g, ''), authErr: null })}
+            />
+          ) : step === 1 ? (
+            <Field
+              label="E-mail"
+              value={state.email}
+              placeholder="vous@exemple.fr"
+              keyboardType="email-address"
+              onChangeText={(v) => set({ email: v.trim(), authErr: null })}
+            />
+          ) : (
+            <View>
+              <Field
+                label="Mot de passe"
+                value={state.pw}
+                secure
+                placeholder="Votre mot de passe"
+                onChangeText={(v) => set({ pw: v, authErr: null })}
+              />
+              <PasswordMeter pw={state.pw} />
+            </View>
+          )}
+        </View>
+
+        {state.authErr ? <ErrorBanner>{state.authErr}</ErrorBanner> : null}
+
+        {step === 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => set({ authMode: 'login', emailFlow: false, authErr: null })}
+            style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 }}
+          >
+            <Txt size={14} color={c.ink2}>
+              Vous avez déjà un compte ?
+            </Txt>
+            <Txt size={14} weight="bold" color={c.accent}>
+              Se connecter
+            </Txt>
+          </Pressable>
+        ) : null}
+      </Screen>
+
+      <FooterBar>
+        <PrimaryButton
+          label={busy ? 'Un instant…' : step === 2 ? 'Créer le compte' : 'Continuer'}
+          disabled={busy || !ready}
+          onPress={next}
+        />
+      </FooterBar>
+    </View>
+  );
+}
+
+function AuthForm() {
+  const { state, set } = useStore();
+  const { c } = useTheme();
+  const { signIn } = useAuth();
+  const [busy, setBusy] = useState(false);
+
+  if (state.authMode !== 'login') return <SignupSteps />;
+
+  const submit = async () => {
+    if (busy) return;
     if (!emailValid(state.email)) return set({ authErr: 'Entrez l’e-mail de votre compte.' });
     if (!state.pw) return set({ authErr: 'Entrez votre mot de passe.' });
     setBusy(true);
@@ -368,24 +515,13 @@ function AuthForm() {
       <Screen bottomInset={140}>
         <BackButton onPress={() => set({ obStep: 0, authErr: null })} />
         <Display size={36} style={{ marginTop: 16 }}>
-          {signup ? 'Créer votre compte' : 'Content de vous revoir'}
+          Content de vous revoir
         </Display>
         <Txt size={15} color={c.ink2} style={{ marginTop: 10 }}>
-          {signup
-            ? "Votre nom d'utilisateur est public et unique : c'est lui que les autres membres voient sur vos annonces."
-            : 'Entrez le nom d’utilisateur ou l’e-mail utilisé à l’inscription.'}
+          Entrez l’e-mail et le mot de passe utilisés à l’inscription.
         </Txt>
 
         <View style={{ marginTop: 22, gap: 10 }}>
-          {signup ? (
-            <Field
-              label="Nom d'utilisateur"
-              value={state.username}
-              placeholder="camille.rota"
-              hint="Minuscules, chiffres, point ou tiret bas · 3 à 20 caractères"
-              onChangeText={(v) => set({ username: v.toLowerCase(), authErr: null })}
-            />
-          ) : null}
           <Field
             label="E-mail"
             value={state.email}
@@ -393,40 +529,33 @@ function AuthForm() {
             keyboardType="email-address"
             onChangeText={(v) => set({ email: v, authErr: null })}
           />
-          <View>
-            <Field
-              label="Mot de passe"
-              value={state.pw}
-              secure
-              placeholder="8 caractères, majuscule, chiffre, symbole"
-              onChangeText={(v) => set({ pw: v, authErr: null })}
-            />
-            {signup ? <PasswordMeter pw={state.pw} /> : null}
-          </View>
+          <Field
+            label="Mot de passe"
+            value={state.pw}
+            secure
+            placeholder="Votre mot de passe"
+            onChangeText={(v) => set({ pw: v, authErr: null })}
+          />
         </View>
 
         {state.authErr ? <ErrorBanner>{state.authErr}</ErrorBanner> : null}
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => set({ authMode: signup ? 'login' : 'signup', authErr: null })}
+          onPress={() => set({ authMode: 'signup', signupStep: 0, emailFlow: true, authErr: null })}
           style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 }}
         >
           <Txt size={14} color={c.ink2}>
-            {signup ? 'Vous avez déjà un compte ?' : 'Pas encore de compte ?'}
+            Pas encore de compte ?
           </Txt>
           <Txt size={14} weight="bold" color={c.accent}>
-            {signup ? 'Se connecter' : "S'inscrire"}
+            S'inscrire
           </Txt>
         </Pressable>
       </Screen>
 
       <FooterBar>
-        <PrimaryButton
-          label={busy ? 'Un instant…' : signup ? 'Créer le compte' : 'Se connecter'}
-          disabled={busy}
-          onPress={submit}
-        />
+        <PrimaryButton label={busy ? 'Un instant…' : 'Se connecter'} disabled={busy} onPress={submit} />
       </FooterBar>
     </View>
   );
@@ -474,8 +603,11 @@ function EmailOtp() {
   const [error, setError] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
 
+  const progress = useObProgress('otp');
+
   const confirm = async () => {
     if (busy) return;
+    if (!backendConfigured) return set({ signedIn: true, emailVerified: true, otpErr: false, obStep: 1 });
     setBusy(true);
     const failure = await confirmEmail({ email: state.email, code: state.otpInput });
     setBusy(false);
@@ -498,7 +630,8 @@ function EmailOtp() {
     <View style={{ flex: 1 }}>
       <Screen bottomInset={140}>
         <BackButton onPress={() => set({ obStep: 'auth' })} />
-        <Display size={36} style={{ marginTop: 16 }}>
+        <StepBar step={progress.step} total={progress.total} />
+        <Display size={34} style={{ marginTop: 8 }}>
           Vérifiez votre e-mail
         </Display>
         <Txt size={15} color={c.ink2} style={{ marginTop: 10 }}>
@@ -516,15 +649,21 @@ function EmailOtp() {
 
         {error ? <ErrorBanner>{error}</ErrorBanner> : null}
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={resend}
-          style={{ minHeight: 44, justifyContent: 'center', marginTop: 10 }}
-        >
-          <Txt size={14} weight="bold" color={c.accent}>
-            {resent ? 'Nouveau code envoyé ✓' : 'Renvoyer le code'}
-          </Txt>
-        </Pressable>
+        {backendConfigured ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={resend}
+            style={{ minHeight: 44, justifyContent: 'center', marginTop: 10 }}
+          >
+            <Txt size={14} weight="bold" color={c.accent}>
+              {resent ? 'Nouveau code envoyé' : 'Renvoyer le code'}
+            </Txt>
+          </Pressable>
+        ) : (
+          <View style={{ marginTop: 14 }}>
+            <Note tone="accent">Mode démo : entrez n'importe quel code à 6 chiffres.</Note>
+          </View>
+        )}
 
         <Txt size={13} color={c.ink3} style={{ marginTop: 6 }}>
           Pensez à regarder dans les spams. L'e-mail vient de no-reply@therotaapp.com.
@@ -545,14 +684,13 @@ function EmailOtp() {
 function RulesGate() {
   const { state, set } = useStore();
   const { c } = useTheme();
+  const progress = useObProgress('rules');
 
   return (
     <View style={{ flex: 1 }}>
       <Screen bottomInset={140}>
-        <Txt size={12} weight="semi" upper color={c.accent}>
-          Étape 1 sur 2
-        </Txt>
-        <Display size={36} style={{ marginTop: 8 }}>
+        <StepBar step={progress.step} total={progress.total} />
+        <Display size={34} style={{ marginTop: 8 }}>
           Comment on se traite ici
         </Display>
         <Txt size={15} color={c.ink2} style={{ marginTop: 10 }}>
@@ -630,14 +768,13 @@ function Perms() {
   const { c } = useTheme();
   const { t } = useT();
   const { statuses, request } = usePermissions();
+  const progress = useObProgress('perms');
   const keys = ['camera', 'microphone', 'photos', 'location'] as const;
 
   return (
     <View style={{ flex: 1 }}>
       <Screen bottomInset={140}>
-        <Txt size={13} weight="semi" color={c.accent}>
-          {t('perm.step')}
-        </Txt>
+        <StepBar step={progress.step} total={progress.total} />
         <Display size={34} style={{ marginTop: 8 }}>
           {t('perm.title')}
         </Display>
@@ -691,9 +828,7 @@ function Perms() {
                   }}
                 >
                   {on ? (
-                    <Txt size={14} weight="bold" color={c.accent}>
-                      ✓
-                    </Txt>
+                    <CheckIcon size={15} color={c.accent} />
                   ) : null}
                   <Txt size={14} weight="bold" color={c.accent}>
                     {on ? t('perm.active') : blocked ? t('perm.settings') : t('perm.activate')}

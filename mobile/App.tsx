@@ -13,6 +13,7 @@ import { AuthProvider, useAuth } from './src/lib/auth';
 import { PolicyProvider } from './src/lib/policy';
 import { ListingsProvider } from './src/data/listings';
 import { SocialProvider } from './src/data/social';
+import { CommunityProvider } from './src/data/community';
 import { Admin } from './src/screens/Admin';
 import { Booking } from './src/screens/Booking';
 import { Checkout } from './src/screens/Checkout';
@@ -30,6 +31,8 @@ import { Rentals } from './src/screens/Rentals';
 import { Compose } from './src/screens/Compose';
 import { Guidelines } from './src/screens/Guidelines';
 import { NearMap } from './src/screens/NearMap';
+import { Camera } from './src/screens/Camera';
+import { ActivityScreen, FollowList, PlannerScreen, ProScreen, StoryViewer } from './src/screens/Community';
 import { Settings } from './src/screens/Settings';
 import { Blocked, Boards, PostScreen, UserProfile } from './src/screens/Social';
 import { TryOn } from './src/screens/TryOn';
@@ -101,6 +104,12 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   user: UserProfile,
   profile: UserProfile,
   map: NearMap,
+  camera: Camera,
+  follows: FollowList,
+  activity: ActivityScreen,
+  story: StoryViewer,
+  pro: ProScreen,
+  planner: PlannerScreen,
   compose: Compose,
   tryon: TryOn,
   verify: Verify,
@@ -111,7 +120,7 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
 };
 
 /** Full-screen flows that hide the tab bar. */
-const NO_TABS: ScreenKey[] = ['onboard', 'map', 'compose', 'tryon', 'verify'];
+const NO_TABS: ScreenKey[] = ['onboard', 'map', 'compose', 'tryon', 'verify', 'camera', 'story'];
 /** Screens whose photos run under the floating tab bar. */
 const FULL_BLEED: ScreenKey[] = ['feed', 'post'];
 
@@ -223,9 +232,11 @@ export default function App() {
           <PolicyProvider>
             <ListingsProvider>
               <SocialProvider>
-                <Payments>
-                  <Shell />
-                </Payments>
+                <CommunityProvider>
+                  <Payments>
+                    <Shell />
+                  </Payments>
+                </CommunityProvider>
               </SocialProvider>
             </ListingsProvider>
           </PolicyProvider>

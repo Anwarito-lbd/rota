@@ -12,11 +12,21 @@ import { AreaMap } from '../ui/AreaMap';
 import { ChevronLeft, LocateIcon, PinIcon, TagIcon } from '../ui/icons';
 import { Display, Txt } from '../ui/kit';
 import { Avatar, FadeIn, PressScale } from '../ui/motion';
+import { TAB_BAR_SPACE } from '../ui/TabBar';
 
 const PARIS = { lat: 48.8606, lng: 2.3522 };
 const RADII = [1, 3, 5, 10];
 
 export function NearMap() {
+  return <NearMapView />;
+}
+
+/**
+ * The map of looks around you. Standalone it has its own back button and
+ * title; `embedded` (Feed › Près de moi) sits under the Feed header and above
+ * the tab bar.
+ */
+export function NearMapView({ embedded = false }: { embedded?: boolean }) {
   const { set, go } = useStore();
   const { c, dark } = useTheme();
   const { t } = useT();
@@ -85,7 +95,8 @@ export function NearMap() {
         showMe={located}
       />
 
-      <View pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + 8, left: 12, right: 12 }}>
+      <View pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + (embedded ? 72 : 8), left: 12, right: 12 }}>
+        {embedded ? null : (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <PressScale
             onPress={() => go('feed')}
@@ -110,7 +121,9 @@ export function NearMap() {
             <LocateIcon />
           </PressScale>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, marginTop: 10 }}>
+        )}
+        <View pointerEvents="box-none" style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: embedded ? 0 : 10 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ gap: 6 }}>
           {RADII.map((r) => (
             <PressScale
               key={r}
@@ -130,9 +143,24 @@ export function NearMap() {
             </PressScale>
           ))}
         </ScrollView>
+        {embedded ? (
+          <PressScale
+            onPress={locate}
+            accessibilityLabel={t('feed.nearAllow')}
+            style={{ width: 36, height: 36, borderRadius: 99, backgroundColor: 'rgba(20,16,22,0.85)', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <LocateIcon size={17} />
+          </PressScale>
+        ) : null}
+        </View>
+        {embedded && denied ? (
+          <Txt size={12} color="rgba(247,242,248,0.8)" style={{ marginTop: 8 }}>
+            {t('map.denied')}
+          </Txt>
+        ) : null}
       </View>
 
-      <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 10 }}>
+      <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: embedded ? TAB_BAR_SPACE + 6 : 10 }}>
         <ScrollView
           ref={strip}
           horizontal

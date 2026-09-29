@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/useTheme';
 import { FONT, ff } from '../theme/tokens';
+import { ArrowUpRightIcon, CheckIcon, ChevronLeft, ChevronRight } from './icons';
 
 type Weight = 'reg' | 'med' | 'semi' | 'bold';
 
@@ -338,7 +339,7 @@ export function BackButton({ onPress }: { onPress: () => void }) {
         opacity: pressed ? 0.7 : 1,
       })}
     >
-      <Text style={{ ...ff('semi'), fontSize: 24, lineHeight: 26, color: c.ink, marginTop: -2, marginLeft: -2 }}>‹</Text>
+      <ChevronLeft size={22} color={c.ink} />
     </Pressable>
   );
 }
@@ -449,9 +450,9 @@ export function Row({
             {detail}
           </Txt>
         ) : null}
-        {checked ? <Text style={{ ...ff('bold'), color: c.accent, fontSize: 17 }}>✓</Text> : null}
-        {external ? <Text style={{ color: c.ink3, fontSize: 15 }}>↗</Text> : null}
-        {chevron && !external ? <Text style={{ color: c.ink3, fontSize: 20, marginTop: -2 }}>›</Text> : null}
+        {checked ? <CheckIcon size={20} color={c.accent} /> : null}
+        {external ? <ArrowUpRightIcon size={16} color={c.ink3} /> : null}
+        {chevron && !external ? <ChevronRight size={15} color={c.ink3} /> : null}
       </View>
     </Pressable>
   );
@@ -529,10 +530,13 @@ export function Field({
   const { c, fs } = useTheme();
   return (
     <View style={{ padding: 12, borderRadius: 14, backgroundColor: c.surf, borderWidth: 1, borderColor: c.line }}>
-      <Txt size={11} weight="semi" upper color={c.ink3}>
-        {label}
-      </Txt>
+      {label ? (
+        <Txt size={11} weight="semi" upper color={c.ink3}>
+          {label}
+        </Txt>
+      ) : null}
       <TextInput
+        accessibilityLabel={label || placeholder}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -544,9 +548,10 @@ export function Field({
         multiline={multiline}
         textAlignVertical={multiline ? 'top' : 'auto'}
         style={{
-          marginTop: 4,
+          marginTop: label ? 4 : 0,
           minHeight: multiline ? 96 : 32,
-          ...ff('semi'),
+          // Placeholders in the regular weight so they never read as a value.
+          ...ff(value ? 'semi' : 'reg'),
           fontSize: fs(16),
           color: c.ink,
           padding: 0,
@@ -650,7 +655,7 @@ export function Check({ on }: { on: boolean }) {
         justifyContent: 'center',
       }}
     >
-      {on ? <Text style={{ color: c.onAccent, fontSize: 13, ...ff('bold') }}>✓</Text> : null}
+      {on ? <CheckIcon size={15} color={c.onAccent} /> : null}
     </View>
   );
 }
@@ -668,7 +673,7 @@ export function CertifiedMark({ size = 18 }: { size?: number }) {
         justifyContent: 'center',
       }}
     >
-      <Text style={{ color: c.onAccent, fontSize: size * 0.6, ...ff('bold') }}>✓</Text>
+      <CheckIcon size={size * 0.7} color={c.onAccent} />
     </View>
   );
 }

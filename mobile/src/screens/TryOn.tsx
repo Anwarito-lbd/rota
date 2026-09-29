@@ -16,7 +16,8 @@ import { TRYON_LIVE_MODEL, TRYON_PHOTO_MODEL, garmentPrompt, getTryOnToken, tryO
 import { useStore } from '../state/store';
 import { OVER_INK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
-import { CameraIcon, ImagesIcon, SparkleIcon } from '../ui/icons';
+import { CameraIcon, CrownIcon, ImagesIcon, SparkleIcon } from '../ui/icons';
+import { PurchaseUnavailable, TRYON_PRICE_EUR, useCommunity } from '../data/community';
 import { Display, GhostButton, Header, Note, PrimaryButton, Screen, Txt } from '../ui/kit';
 import { FadeIn, Pulse, PressScale, Segmented, tap } from '../ui/motion';
 
@@ -258,7 +259,23 @@ export function TryOn() {
   // Apple 5.1.2(i) / EU AI Act art. 50: name the AI provider and get consent
   // before any image leaves the device. Asked once per visit.
   const [consented, setConsented] = useState(false);
+  const community = useCommunity();
+  // Rota Pro includes try-on; otherwise one credit per session.
+  const [unlocked, setUnlocked] = useState(community.pro || !community.purchasesAvailable);
+  const [payNote, setPayNote] = useState<string | null>(null);
   const garment = listing?.photos[0];
+  const unlockWithCredit = () => {
+    if (community.consumeTryOn()) setUnlocked(true);
+  };
+  const buyOne = async () => {
+    setPayNote(null);
+    try {
+      await community.buyTryOn(1);
+      setUnlocked(true);
+    } catch (e) {
+      setPayNote(e instanceof PurchaseUnavailable ? t('pro.iapSoon') : String(e));
+    }
+  };
 
   return (
     <Screen bottomInset={40}>
@@ -308,7 +325,30 @@ export function TryOn() {
         </View>
       ) : null}
 
-      {listing && garment && !consented ? (
+      {listing && garment && !unlocked && !community.pro && community.purchasesAvailable ? (
+        <FadeIn style={{ marginTop: 16, padding: 18, borderRadius: 20, backgroundColor: c.surf, borderWidth: 1, borderColor: c.accent, gap: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <CrownIcon size={22} color={c.accent} />
+            <Txt size={17} weight="bold">
+              {t('tryon.gateTitle')}
+            </Txt>
+          </View>
+          <Txt size={14} color={c.ink2}>
+            {t('tryon.gateBody')}
+          </Txt>
+          <PrimaryButton label={t('pro.subscribe')} onPress={() => set({ screen: 'pro', proFrom: 'tryon' })} />
+          {community.tryOnCredits > 0 ? (
+            <GhostButton label={`${t('pro.credits').replace('{n}', String(community.tryOnCredits))}`} tone="accent" onPress={unlockWithCredit} />
+          ) : (
+            <GhostButton label={`${t('pro.buyOne')} · ${m(TRYON_PRICE_EUR)}`} tone="accent" onPress={buyOne} />
+          )}
+          {payNote ? (
+            <Txt size={13} color={c.plum}>
+              {payNote}
+            </Txt>
+          ) : null}
+        </FadeIn>
+      ) : listing && garment && !consented ? (
         <FadeIn style={{ marginTop: 16, padding: 18, borderRadius: 20, backgroundColor: c.surf, borderWidth: 1, borderColor: c.accent, gap: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <SparkleIcon size={22} color={c.accent} />

@@ -19,7 +19,32 @@ import {
 import { useT } from '../i18n';
 import { useTheme } from '../theme/useTheme';
 import { FONT, ff } from '../theme/tokens';
-import { Radio, Txt } from './kit';
+import { ChevronRight, DressIcon, HandbagIcon, KidsIcon, PencilIcon, PlusIcon, RingIcon, SearchIcon, ShirtIcon, ShoeIcon, WatchIcon } from './icons';
+import { BackButton, Radio, Txt } from './kit';
+
+const CATEGORY_ICONS = {
+  dress: DressIcon,
+  shirt: ShirtIcon,
+  kids: KidsIcon,
+  shoe: ShoeIcon,
+  bag: HandbagIcon,
+  watch: WatchIcon,
+  ring: RingIcon,
+} as const;
+type IconKey = keyof typeof CATEGORY_ICONS;
+
+/** Top levels carry their own icon; groups get one from what they hold. */
+function iconFor(node: CategoryNode): IconKey | undefined {
+  if (node.icon) return node.icon;
+  const kind = node.id.split('.')[1];
+  if (kind === 'clothing') return node.id.startsWith('women') ? 'dress' : 'shirt';
+  if (kind === 'shoes') return 'shoe';
+  if (kind === 'bags') return 'bag';
+  if (kind === 'accessories') return 'watch';
+  if (kind === 'jewellery') return 'ring';
+  if (kind === 'girls' || kind === 'boys' || kind === 'baby') return 'kids';
+  return undefined;
+}
 
 /** The bordered "Catégorie  ＋" row from Vinted's listing form. */
 export function PickerRow({ label, value, onPress }: { label: string; value?: string | null; onPress: () => void }) {
@@ -44,9 +69,7 @@ export function PickerRow({ label, value, onPress }: { label: string; value?: st
       <Txt size={14} color={c.ink3} numberOfLines={1} style={{ flex: 1, textAlign: 'right' }}>
         {value ?? ''}
       </Txt>
-      <Txt size={value ? 16 : 22} color={c.ink2}>
-        {value ? '✎' : '+'}
-      </Txt>
+      {value ? <PencilIcon size={18} color={c.ink2} /> : <PlusIcon size={20} color={c.ink2} />}
     </Pressable>
   );
 }
@@ -67,14 +90,12 @@ function PickerModal({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onBack}>
       <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-        <View style={{ height: 52, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 }}>
-          <Pressable onPress={onBack} hitSlop={12} accessibilityRole="button" style={{ width: 40 }}>
-            <Txt size={24}>←</Txt>
-          </Pressable>
+        <View style={{ height: 60, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 }}>
+          <BackButton onPress={onBack} />
           <Txt size={17} weight="bold" center style={{ flex: 1 }} numberOfLines={1}>
             {title}
           </Txt>
-          <View style={{ width: 40 }} />
+          <View style={{ width: 44 }} />
         </View>
         {children}
       </View>
@@ -86,7 +107,7 @@ function SearchBox({ value, onChange, placeholder, autoFocus }: { value: string;
   const { c, fs } = useTheme();
   return (
     <View style={{ marginHorizontal: 16, marginBottom: 8, paddingHorizontal: 14, height: 46, borderRadius: 12, backgroundColor: c.surf2, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-      <Txt color={c.ink3}>⌕</Txt>
+      <SearchIcon size={16} color={c.ink3} />
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -105,31 +126,50 @@ function ListRow({
   subtitle,
   right,
   selected,
+  icon,
   onPress,
 }: {
   title: string;
   subtitle?: string;
   right: 'chevron' | 'radio';
   selected?: boolean;
+  icon?: IconKey;
   onPress: () => void;
 }) {
   const { c } = useTheme();
+  const Icon = icon ? CATEGORY_ICONS[icon] : null;
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 58, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.line }}
     >
+      {Icon ? <Icon size={24} color={c.accent} /> : null}
       <View style={{ flex: 1 }}>
         <Txt size={16}>{title}</Txt>
-        {subtitle ? (
-          <Txt size={13} color={right === 'chevron' ? c.accent : c.ink3} style={{ marginTop: 2 }} numberOfLines={1}>
+        {subtitle && right === 'radio' ? (
+          <Txt size={13} color={c.ink3} style={{ marginTop: 2 }} numberOfLines={1}>
             {subtitle}
           </Txt>
         ) : null}
       </View>
-      {right === 'chevron' ? <Txt size={20} color={c.ink3}>›</Txt> : <Radio on={!!selected} />}
+      {/* Like Vinted: the chosen category sits on the right of its parent. */}
+      {subtitle && right === 'chevron' ? (
+        <Txt size={14} color={c.accent} numberOfLines={1} style={{ maxWidth: '45%' }}>
+          {subtitle}
+        </Txt>
+      ) : null}
+      {right === 'chevron' ? <ChevronRight size={16} color={c.ink3} /> : <Radio on={!!selected} />}
     </Pressable>
+  );
+}
+
+function GroupLabel({ label }: { label: string }) {
+  const { c } = useTheme();
+  return (
+    <Txt size={14} color={c.ink3} style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 6 }}>
+      {label}
+    </Txt>
   );
 }
 
@@ -194,11 +234,31 @@ export function CategoryPicker({
         <FlatList
           data={nodes}
           keyExtractor={(n) => n.id}
+          ListHeaderComponent={
+            !current ? (
+              <>
+                {selected ? (
+                  <>
+                    <GroupLabel label={t('pick.suggestions')} />
+                    <ListRow
+                      title={selected.label[lang]}
+                      subtitle={selected.path.map((p) => p[lang]).join(' › ')}
+                      right="radio"
+                      selected
+                      onPress={() => pick(selected.id)}
+                    />
+                  </>
+                ) : null}
+                <GroupLabel label={t('pick.all')} />
+              </>
+            ) : null
+          }
           renderItem={({ item }) => {
             const within = selected && selected.id.startsWith(`${item.id}.`);
             return item.children ? (
               <ListRow
-                title={`${item.icon ? `${item.icon}  ` : ''}${item.label[lang]}`}
+                icon={iconFor(item)}
+                title={item.label[lang]}
                 subtitle={within ? selected.label[lang] : undefined}
                 right="chevron"
                 onPress={() => setTrail((tr) => [...tr, item])}
@@ -383,5 +443,86 @@ export function FitSlider({ value, onChange }: { value: number; onChange: (v: nu
         </Txt>
       </View>
     </View>
+  );
+}
+
+// ── Parcel size ────────────────────────────────────────────────
+
+export type ParcelSize = 's' | 'm' | 'l';
+export const PARCEL_SIZES: ParcelSize[] = ['s', 'm', 'l'];
+
+/** Shoes, coats and bags travel in a box; evening and bridal wear can be big. */
+export function recommendedParcel(categoryId: string | null): ParcelSize {
+  if (!categoryId) return 's';
+  if (/wedding|bridal|mariage/.test(categoryId)) return 'l';
+  if (/shoes|coat|jacket|bags/.test(categoryId)) return 'm';
+  return 's';
+}
+
+export function ParcelPicker({
+  visible,
+  value,
+  recommended,
+  onClose,
+  onPick,
+}: {
+  visible: boolean;
+  value: ParcelSize | null;
+  recommended: ParcelSize;
+  onClose: () => void;
+  onPick: (size: ParcelSize) => void;
+}) {
+  const { c } = useTheme();
+  const { t } = useT();
+  const insets = useSafeAreaInsets();
+  const current = value ?? recommended;
+  return (
+    <PickerModal visible={visible} title={t('list.parcel')} onBack={onClose}>
+      <View style={{ flex: 1 }}>
+        {PARCEL_SIZES.map((size) => (
+          <Pressable
+            key={size}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: current === size }}
+            onPress={() => onPick(size)}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 18, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: c.line }}
+          >
+            <View style={{ flex: 1 }}>
+              {size === recommended ? (
+                <View style={{ alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 99, backgroundColor: c.accent, marginBottom: 6 }}>
+                  <Txt size={12} weight="bold" color={c.onAccent}>
+                    {t('list.recommended')}
+                  </Txt>
+                </View>
+              ) : null}
+              <Txt size={17} weight="semi">
+                {t(`list.parcel.${size}` as 'list.parcel.s')}
+              </Txt>
+              <Txt size={15} color={c.ink3} style={{ marginTop: 3 }}>
+                {t(`list.parcel.${size}Body` as 'list.parcel.sBody')}
+              </Txt>
+            </View>
+            <Radio on={current === size} />
+          </Pressable>
+        ))}
+        <Txt size={13} color={c.ink3} style={{ paddingHorizontal: 18, paddingTop: 14 }}>
+          {t('list.parcelHint')}
+        </Txt>
+      </View>
+      <View style={{ paddingHorizontal: 18, paddingBottom: insets.bottom + 12 }}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            if (!value) onPick(recommended);
+            onClose();
+          }}
+          style={{ height: 52, borderRadius: 999, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Txt size={16} weight="bold" color={c.onAccent}>
+            {t('list.done')}
+          </Txt>
+        </Pressable>
+      </View>
+    </PickerModal>
   );
 }

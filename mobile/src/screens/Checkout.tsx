@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CheckIcon } from '../ui/icons';
 import { View } from 'react-native';
 import { useListing } from '../data/listings';
 import { paymentsConfigured, usePayRental } from '../data/payments';
@@ -43,9 +44,7 @@ function Confirmation() {
           justifyContent: 'center',
         }}
       >
-        <Txt size={26} weight="bold" color={c.onAccent}>
-          ✓
-        </Txt>
+        <CheckIcon size={30} color={c.onAccent} />
       </View>
       <Display size={38} style={{ marginTop: 20, textAlign: 'center' }}>
         {t('checkout.confirmedTitle')}
@@ -141,7 +140,7 @@ export function Checkout() {
         ).id;
       const outcome = await payRental(rentalId, session.user.email);
       if (outcome === 'paid') {
-        set({ confirmed: true, activeRentalId: rentalId, payConsent: false });
+        set({ confirmed: true, activeRentalId: rentalId, payConsent: false, agreedOffer: null });
       } else {
         // The dates stay held for the payment window; the rental page can finish it.
         setUnpaidRental(rentalId);

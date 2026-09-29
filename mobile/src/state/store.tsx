@@ -21,6 +21,8 @@ const initialState: AppState = {
   feedTab: 'foryou',
 
   authMode: null,
+  signupStep: 0,
+  emailFlow: false,
   username: '',
   email: '',
   pw: '',
@@ -77,6 +79,7 @@ const initialState: AppState = {
 
   offer: false,
   offerIdx: 1,
+  agreedOffer: null,
   favs: {},
   pinSaves: { p2: true, p5: true },
 
@@ -103,6 +106,10 @@ const initialState: AppState = {
   commentsFor: null,
   saveTarget: null,
   createSheet: false,
+  captured: null,
+  followList: null,
+  storyAuthorId: null,
+  proFrom: null,
   socialReport: null,
   tryOnListingId: null,
   afterVerify: null,
@@ -212,7 +219,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     state.themeMode === 'system' ? (system === 'light' ? 'light' : 'dark') : state.themeMode;
   const currency = config.currency;
   const m = useCallback(
-    (n: number) => (currency === '€' ? `${n} ${currency}` : `${currency}${n}`),
+    (n: number) => {
+      // Whole amounts stay short ("25 €"); cents always show two digits ("7,50 €").
+      const cents = Math.round(n * 100);
+      const text = cents % 100 === 0 ? String(cents / 100) : (cents / 100).toFixed(2);
+      return currency === '€' ? `${text.replace('.', ',')} ${currency}` : `${currency}${text}`;
+    },
     [currency],
   );
 

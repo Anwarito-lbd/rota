@@ -139,7 +139,7 @@ async function sendPushes() {
 }
 
 Deno.serve(async (req) => {
-  if (!isCron(req)) return json({ error: 'unauthorized' }, 401);
+  if (!(await isCron(req))) return json({ error: 'unauthorized' }, 401);
   const payments = await runPaymentJobs().catch((e) => ({ error: String(e) }));
   const emails = await sendEmails().catch((e) => ({ error: String(e) }));
   const pushes = await sendPushes().catch((e) => ({ error: String(e) }));
