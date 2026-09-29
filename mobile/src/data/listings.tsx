@@ -22,6 +22,8 @@ export interface Listing {
   categoryId: string | null;
   /** -2 runs very small … 0 true to size … 2 runs very large; null for one-size. */
   sizeFit: number | null;
+  /** Free text the lender wrote (migration 016). */
+  description?: string | null;
   /** Every size the lender offers. A single one means no size picker. */
   sizes: string[];
   occasion: string | null;
@@ -98,6 +100,7 @@ interface ListingRow {
   distribution?: string | null;
   category_id?: string | null;
   size_fit?: number | null;
+  description?: string | null;
   distribution_reason?: string | null;
   distribution_note?: string | null;
   created_at: string;
@@ -125,6 +128,7 @@ function toListing(row: ListingRow): Listing {
     category: row.category,
     categoryId: row.category_id ?? null,
     sizeFit: row.size_fit ?? null,
+    description: row.description ?? null,
     sizes,
     occasion: row.occasion,
     price: row.price_per_day,

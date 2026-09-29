@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { uploadMedia } from '../lib/upload';
 import type { MediaItem } from '../state/types';
+import { DEMO_LISTINGS, DEMO_ME } from './demo';
 
 export type RentalStatus =
   | 'booked'
@@ -383,6 +384,72 @@ export async function respondToClaim(claimId: string, response: string): Promise
 }
 
 /** Every rental this member is part of, newest first. */
+// ─── demo rentals ─────────────────────────────────────────────
+
+const dayIso = (offset: number) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
+
+/** A few rentals so the demo shows upcoming, current, past and lent pieces. */
+function demoRentals(): Rental[] {
+  const plan: { listing: number; start: number; days: number; status: RentalStatus; lending?: boolean }[] = [
+    { listing: 0, start: 6, days: 3, status: 'booked' },
+    { listing: 3, start: -1, days: 3, status: 'in_progress' },
+    { listing: 5, start: -30, days: 2, status: 'closed' },
+    { listing: 2, start: 12, days: 2, status: 'booked', lending: true },
+  ];
+  return plan.flatMap((p, i) => {
+    const l = DEMO_LISTINGS[p.listing % DEMO_LISTINGS.length];
+    if (!l) return [];
+    const rent = l.price * p.days;
+    const fee = Math.round(rent * 0.1 * 100) / 100;
+    const start = dayIso(p.start);
+    const end = dayIso(p.start + p.days - 1);
+    return [
+      {
+        id: `demo-rental-${i + 1}`,
+        listingId: l.id,
+        renterId: p.lending ? 'u_juliette' : DEMO_ME.id,
+        ownerId: p.lending ? DEMO_ME.id : l.ownerId,
+        status: p.status,
+        startDate: start,
+        endDate: end,
+        days: p.days,
+        delivery: 'meet' as const,
+        rentAmount: rent,
+        renterServiceFee: fee,
+        ownerServiceFee: fee,
+        shippingFee: 0,
+        cleaningFee: l.cleaning.byLender ? l.cleaning.fee : 0,
+        totalCharged: rent + fee + (l.cleaning.byLender ? l.cleaning.fee : 0),
+        ownerPayout: rent - fee,
+        approvedValue: l.approvedValue ?? 0,
+        maxLiability: l.approvedValue ?? 0,
+        depositRequired: false,
+        depositAmount: 0,
+        lateFeePerDay: 5,
+        lateFeeCap: 150,
+        lateFeesCharged: 0,
+        gracePeriodHours: 24,
+        claimWindowHours: 24,
+        nonReturnReviewDays: 7,
+        policyVersion: 'demo',
+        consentVersion: 'demo',
+        consentText: '',
+        handoverConfirmedAt: p.status === 'booked' ? null : new Date(Date.parse(start)).toISOString(),
+        returnDueAt: new Date(Date.parse(end) + 864e5).toISOString(),
+        returnConfirmedAt: p.status === 'closed' ? new Date(Date.parse(end) + 864e5).toISOString() : null,
+        claimWindowEndsAt: null,
+        createdAt: new Date(Date.now() - (10 - i) * 864e5).toISOString(),
+        paymentStatus: 'paid' as const,
+        paymentDueBy: null,
+        holdStatus: 'none' as const,
+        lateFeesCollected: 0,
+        listingTitle: l.title,
+        listingPhoto: l.photos[0] ?? null,
+      },
+    ];
+  });
+}
+
 export function useMyRentals(userId: string | undefined) {
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [loading, setLoading] = useState(true);
@@ -390,7 +457,12 @@ export function useMyRentals(userId: string | undefined) {
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    if (!supabase || !userId) {
+    if (!supabase) {
+      setRentals(demoRentals());
+      setLoading(false);
+      return;
+    }
+    if (!userId) {
       setRentals([]);
       setLoading(false);
       return;

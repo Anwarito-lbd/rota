@@ -7,7 +7,7 @@ import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useListing } from '../data/listings';
+import { useListing, useListings } from '../data/listings';
 import {
   MEETING_PLACES,
   looksOffApp,
@@ -22,16 +22,42 @@ import { useT } from '../i18n';
 import { useStore } from '../state/store';
 import { ff } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
-import { ChevronLeft, DotsIcon, PinIcon, SendIcon, ShieldCheckIcon, TabMessagesIcon } from '../ui/icons';
+import { ChevronLeft, DotsIcon, PinIcon, SearchIcon, SendIcon, ShieldCheckIcon, TabMessagesIcon } from '../ui/icons';
 import { Amount, Display, Note, Screen, Sheet, Txt } from '../ui/kit';
 import { Avatar, FadeIn, IdBadge, PressScale, Skeleton, tap, timeAgo } from '../ui/motion';
 import { StoriesRow } from './Community';
+
+type InboxFilter = 'all' | 'renting' | 'lending' | 'unread';
 
 function Inbox() {
   const { set } = useStore();
   const { c } = useTheme();
   const { t, lang } = useT();
-  const { threads } = useInbox();
+  const { threads: all } = useInbox();
+  const { byId } = useListings();
+  const social = useSocial();
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<InboxFilter>('all');
+
+  // Like Airbnb's inbox: search, then All / Renting / Lending / Unread.
+  const q = query.trim().toLowerCase();
+  const threads =
+    all === null
+      ? null
+      : all.filter((th) => {
+          const listing = th.listingId ? byId(th.listingId) : null;
+          if (filter === 'unread' && !th.unread) return false;
+          if (filter === 'lending' && !(listing && listing.ownerId === social.meId)) return false;
+          if (filter === 'renting' && !(listing && listing.ownerId !== social.meId)) return false;
+          if (!q) return true;
+          return [th.other.username, th.lastBody ?? '', listing?.title ?? ''].some((v) => v.toLowerCase().includes(q));
+        });
+  const filters: [InboxFilter, string][] = [
+    ['all', t('inbox.all')],
+    ['renting', t('inbox.renting')],
+    ['lending', t('inbox.lending')],
+    ['unread', t('inbox.unread')],
+  ];
 
   return (
     <Screen>
@@ -39,12 +65,45 @@ function Inbox() {
       <View style={{ marginHorizontal: -18, marginTop: 6 }}>
         <StoriesRow />
       </View>
+      <View style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 10, height: 46, paddingHorizontal: 16, borderRadius: 999, backgroundColor: c.surf2 }}>
+        <SearchIcon size={18} color={c.ink3} />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder={t('inbox.search')}
+          placeholderTextColor={c.ink3}
+          accessibilityLabel={t('inbox.search')}
+          style={{ flex: 1, ...ff('reg'), fontSize: 15, color: c.ink, outlineWidth: 0 } as object}
+        />
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 12 }}>
+        {filters.map(([key, label]) => {
+          const on = filter === key;
+          return (
+            <Pressable
+              key={key}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              onPress={() => setFilter(key)}
+              style={{ paddingHorizontal: 16, height: 36, borderRadius: 999, justifyContent: 'center', backgroundColor: on ? c.accent : c.surf2 }}
+            >
+              <Txt size={14} weight="semi" color={on ? c.onAccent : c.ink}>
+                {label}
+              </Txt>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
       {threads === null ? (
         <View style={{ marginTop: 20, gap: 12 }}>
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} height={64} radius={20} />
           ))}
         </View>
+      ) : threads.length === 0 && (all?.length ?? 0) > 0 ? (
+        <Txt center color={c.ink3} style={{ marginTop: 40 }}>
+          {t('inbox.noMatch')}
+        </Txt>
       ) : threads.length === 0 ? (
         <FadeIn style={{ marginTop: 70, alignItems: 'center', paddingHorizontal: 20 }}>
           <View
@@ -67,8 +126,10 @@ function Inbox() {
           </Txt>
         </FadeIn>
       ) : (
-        <View style={{ marginTop: 16, gap: 4 }}>
-          {threads.map((th, i) => (
+        <View style={{ marginTop: 4, gap: 4 }}>
+          {threads.map((th, i) => {
+            const listing = th.listingId ? byId(th.listingId) : null;
+            return (
             <FadeIn key={th.id} delay={Math.min(i, 8) * 40}>
               <PressScale
                 scaleTo={0.98}
@@ -76,7 +137,17 @@ function Inbox() {
                 accessibilityLabel={`${th.other.username}${th.unread ? `, ${th.unread}` : ''}`}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 4, borderRadius: 16 }}
               >
-                <Avatar uri={th.other.avatar} size={52} />
+                {listing?.photos[0] ? (
+                  // The piece, with who you talk to in the corner.
+                  <View style={{ width: 56, height: 56 }}>
+                    <Image source={{ uri: listing.photos[0] }} style={{ width: 52, height: 52, borderRadius: 12 }} contentFit="cover" />
+                    <View style={{ position: 'absolute', right: -2, bottom: -2, borderRadius: 99, borderWidth: 2, borderColor: c.bg }}>
+                      <Avatar uri={th.other.avatar} size={26} />
+                    </View>
+                  </View>
+                ) : (
+                  <Avatar uri={th.other.avatar} size={56} />
+                )}
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Txt weight={th.unread ? 'bold' : 'semi'} numberOfLines={1} style={{ flexShrink: 1 }}>
@@ -91,6 +162,14 @@ function Inbox() {
                     {th.lastMine ? `${t('msg.you')} : ` : ''}
                     {th.lastKind === 'meetpoint' ? th.lastBody : (th.lastBody ?? '')}
                   </Txt>
+                  {listing ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 99, backgroundColor: listing.ownerId === social.meId ? c.plum : c.accent }} />
+                      <Txt size={12} color={c.ink3} numberOfLines={1} style={{ flexShrink: 1 }}>
+                        {listing.ownerId === social.meId ? t('inbox.youLend') : t('inbox.youRent')} · {listing.title}
+                      </Txt>
+                    </View>
+                  ) : null}
                 </View>
                 {th.unread ? (
                   <View
@@ -111,7 +190,8 @@ function Inbox() {
                 ) : null}
               </PressScale>
             </FadeIn>
-          ))}
+            );
+          })}
         </View>
       )}
     </Screen>
