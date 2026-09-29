@@ -22,7 +22,7 @@ export interface MessageMeta {
   listingId?: string;
   perDay?: number;
   days?: number;
-  /** offer_answer */
+  /** offer_answer; on an offer, the server row (migration 026) */
   offerId?: string;
   accepted?: boolean;
 }
@@ -230,6 +230,21 @@ const toMessage = (r: MessageRow): Message => ({
   meta: r.meta,
   createdAt: r.created_at,
 });
+
+/** Creates the offer on the server (migration 026); the demo has none. Returns its id. */
+export async function makeOffer(listingId: string, perDay: number, days: number): Promise<string | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('make_offer', { p_listing: listingId, p_per_day: perDay, p_days: days });
+  if (error) throw new Error(error.message);
+  return ((Array.isArray(data) ? data[0] : data) as { id: string } | null)?.id ?? null;
+}
+
+/** The lender's answer, recorded on the server before it is shown in the thread. */
+export async function answerOffer(offerId: string | undefined, accept: boolean): Promise<void> {
+  if (!supabase || !offerId) return;
+  const { error } = await supabase.rpc('answer_offer', { p_offer: offerId, p_accept: accept });
+  if (error) throw new Error(error.message);
+}
 
 /** Sends one message; also used outside a thread (an offer sent from a listing). */
 export async function sendMessage(

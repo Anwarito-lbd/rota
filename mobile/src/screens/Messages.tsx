@@ -11,6 +11,7 @@ import { useListing, useListings } from '../data/listings';
 import {
   MEETING_PLACES,
   looksOffApp,
+  answerOffer,
   offerState,
   useInbox,
   useThread,
@@ -19,6 +20,7 @@ import {
 } from '../data/messages';
 import { useSocial } from '../data/social';
 import { useT } from '../i18n';
+import { friendlyError } from '../lib/errors';
 import { useStore } from '../state/store';
 import { ff } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
@@ -470,13 +472,19 @@ function Conversation({ id }: { id: string }) {
                 status={offerState(msg, messages)}
                 askPrice={listing && listing.id === offerListing ? listing.price : null}
                 otherName={th?.other.username ?? ''}
-                onAnswer={(accepted) =>
-                  submit(accepted ? 'Offre acceptée' : 'Offre refusée', 'offer_answer', { offerId: msg.id, accepted })
-                }
+                onAnswer={async (accepted) => {
+                  try {
+                    await answerOffer(msg.meta?.offerId, accepted);
+                  } catch (e) {
+                    setError(friendlyError(e, t));
+                    return;
+                  }
+                  submit(accepted ? 'Offre acceptée' : 'Offre refusée', 'offer_answer', { offerId: msg.id, accepted });
+                }}
                 onRent={() =>
                   offerListing &&
                   set({
-                    agreedOffer: { listingId: offerListing, perDay: msg.meta?.perDay ?? 0 },
+                    agreedOffer: { listingId: offerListing, perDay: msg.meta?.perDay ?? 0, offerId: msg.meta?.offerId },
                     activeId: offerListing,
                     screen: 'booking',
                     thread: null,

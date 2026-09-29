@@ -24,11 +24,13 @@ export function useBooking(listing: Listing | null): Booking {
   const firstRental = useFirstRental(session?.user.id);
   const [start, end] = state.dates;
   const ship = state.delivery === 'ship';
-  // An offer the lender accepted in messages. Only the demo applies it: the
-  // server still prices rentals from the listing, and what we show must be
-  // what is charged.
+  // An offer the lender accepted in messages. With the live backend it must
+  // be a server offer (migration 026), which book_rental prices from, so what
+  // we show is what is charged.
   const agreed =
-    !backendConfigured && listing && state.agreedOffer?.listingId === listing.id ? state.agreedOffer.perDay : null;
+    listing && state.agreedOffer?.listingId === listing.id && (!backendConfigured || state.agreedOffer.offerId)
+      ? state.agreedOffer.perDay
+      : null;
   const perDay = agreed ?? listing?.price ?? 0;
 
   const quote = quoteCheckout({

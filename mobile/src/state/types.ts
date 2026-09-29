@@ -174,7 +174,7 @@ export interface AppState {
   offer: boolean;
   offerIdx: number;
   /** A per-day price the lender accepted in messages; booking that piece uses it. */
-  agreedOffer: { listingId: string; perDay: number } | null;
+  agreedOffer: { listingId: string; perDay: number; offerId?: string } | null;
   favs: Flags;
   pinSaves: Flags;
 

@@ -204,6 +204,7 @@ export function Checkout() {
             delivery: state.delivery,
             consentText,
             methodLabel: 'stripe',
+            offerId: state.agreedOffer?.listingId === listing.id ? (state.agreedOffer.offerId ?? null) : null,
           })
         ).id;
       const outcome = await payRental(rentalId, session.user.email);

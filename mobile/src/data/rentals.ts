@@ -207,6 +207,8 @@ export async function bookRental(args: {
   delivery: 'ship' | 'meet';
   consentText: string;
   methodLabel?: string | null;
+  /** An offer the lender accepted (migration 026): the server prices from it. */
+  offerId?: string | null;
 }): Promise<Rental> {
   const { data, error } = await client().rpc('book_rental', {
     p_listing: args.listingId,
@@ -215,6 +217,7 @@ export async function bookRental(args: {
     p_delivery: args.delivery,
     p_consent_text: args.consentText,
     p_method_label: args.methodLabel ?? null,
+    p_offer: args.offerId ?? null,
   });
   if (error) throw new Error(error.message);
   const row = (Array.isArray(data) ? data[0] : data) as RentalRow | null;

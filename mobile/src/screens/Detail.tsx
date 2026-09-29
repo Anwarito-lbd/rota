@@ -3,11 +3,11 @@ import { Image } from 'expo-image';
 import { Platform, Pressable, ScrollView, Share, TextInput, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useListing } from '../data/listings';
-import { sendMessage, startConversation } from '../data/messages';
+import { makeOffer, sendMessage, startConversation } from '../data/messages';
 import { useSocial } from '../data/social';
-import { backendConfigured } from '../lib/auth';
 import { BRAND } from '../lib/config';
 import { useT, type TranslationKey } from '../i18n';
+import { friendlyError } from '../lib/errors';
 import { FEES } from '../lib/fees';
 import { OFFER_TIERS, useBooking } from '../state/selectors';
 import { useStore } from '../state/store';
@@ -82,9 +82,8 @@ export function Detail() {
   const social = useSocial();
   const { width } = useWindowDimensions();
   const [photo, setPhoto] = useState(0);
-  // Offers run in the demo only for now: the server still prices a rental from
-  // the listing, so an accepted offer could not be honoured at payment yet.
-  const offersOpen = !!listing?.acceptOffers && !backendConfigured && listing.ownerId !== social.meId && !listing.owner.vacation;
+  // Offers are priced by the server once accepted (migration 026).
+  const offersOpen = !!listing?.acceptOffers && listing.ownerId !== social.meId && !listing.owner.vacation;
 
   if (!listing) {
     return (
@@ -478,6 +477,7 @@ function AreaMap({ label }: { label: string }) {
 
 function OfferSheet({ days }: { days: number }) {
   const { state, set, m } = useStore();
+  const { t } = useT();
   const { c, amount } = useTheme();
   const listing = useListing(state.activeId);
   const [idx, setIdx] = useState<number | 'custom'>(state.offerIdx);
@@ -502,16 +502,18 @@ function OfferSheet({ days }: { days: number }) {
     setBusy(true);
     setError(null);
     try {
+      const offerId = await makeOffer(listing.id, perDay, days);
       const id = await startConversation(listing.ownerId, listing.id);
       await sendMessage(id, `Offre : ${m(perDay)} / jour pour ${days} ${dayWord}`, 'offer', {
         listingId: listing.id,
         perDay,
         days,
+        ...(offerId ? { offerId } : {}),
       });
       tap('success');
       set({ offer: false, screen: 'messages', thread: id });
-    } catch {
-      setError("L'offre n'est pas partie. Réessayez.");
+    } catch (e) {
+      setError(friendlyError(e, t));
     } finally {
       setBusy(false);
     }
