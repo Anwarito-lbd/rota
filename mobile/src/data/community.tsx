@@ -57,6 +57,11 @@ interface CommunityValue {
   postStory: (uri: string, caption?: string) => Promise<void>;
 
   pro: boolean;
+  /**
+   * Pro and try-on credits can be bought (demo only until App Store / Play
+   * billing is wired). While false, try-on stays open to everyone as before.
+   */
+  purchasesAvailable: boolean;
   tryOnCredits: number;
   subscribe: () => Promise<void>;
   cancelPro: () => void;
@@ -157,10 +162,12 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       .then(({ data }) => {
         const db = supabase!;
         setStories(
-          ((data ?? []) as unknown as { id: string; author_id: string; media_path: string; caption: string | null; created_at: string; author: { username: string; avatar_url: string | null; identity_status: string } | null }[]).map((s) => ({
+          ((data ?? []) as unknown as { id: string; author_id: string; media_path: string; caption: string | null; created_at: string; author: { username: string; avatar_url: string | null; identity_status: string } | null }[])
+            .filter((s) => !/^[a-z]+:/i.test(s.media_path))
+            .map((s) => ({
             id: s.id,
             author: { id: s.author_id, username: s.author?.username ?? 'membre', avatar: s.author?.avatar_url ?? null, verified: s.author?.identity_status === 'verified' },
-            media: s.media_path.startsWith('http') ? s.media_path : db.storage.from('post-media').getPublicUrl(s.media_path).data.publicUrl,
+            media: db.storage.from('post-media').getPublicUrl(s.media_path).data.publicUrl,
             caption: s.caption,
             createdAt: s.created_at,
           })),
@@ -248,6 +255,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     markSeen: (id) => setSeen((s) => (s.includes(id) ? s : [...s, id])),
     postStory,
     pro,
+    purchasesAvailable: demo,
     tryOnCredits,
     subscribe,
     cancelPro: () => setPro(false),
@@ -303,7 +311,7 @@ export function useFollowList(memberId: string | null, kind: 'followers' | 'foll
     return () => {
       cancelled = true;
     };
-  }, [memberId, kind, social]);
+  }, [memberId, kind, social.demo, social.meId, social.followingIds, social.isBlocked]);
 
   return people;
 }

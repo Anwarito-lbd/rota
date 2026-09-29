@@ -261,7 +261,7 @@ export function TryOn() {
   const [consented, setConsented] = useState(false);
   const community = useCommunity();
   // Rota Pro includes try-on; otherwise one credit per session.
-  const [unlocked, setUnlocked] = useState(community.pro);
+  const [unlocked, setUnlocked] = useState(community.pro || !community.purchasesAvailable);
   const [payNote, setPayNote] = useState<string | null>(null);
   const garment = listing?.photos[0];
   const unlockWithCredit = () => {
@@ -325,7 +325,7 @@ export function TryOn() {
         </View>
       ) : null}
 
-      {listing && garment && !unlocked && !community.pro ? (
+      {listing && garment && !unlocked && !community.pro && community.purchasesAvailable ? (
         <FadeIn style={{ marginTop: 16, padding: 18, borderRadius: 20, backgroundColor: c.surf, borderWidth: 1, borderColor: c.accent, gap: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <CrownIcon size={22} color={c.accent} />

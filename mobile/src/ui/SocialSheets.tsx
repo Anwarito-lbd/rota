@@ -48,6 +48,11 @@ export function CommentsSheet() {
     setRating(0);
   }, [state.commentsFor]);
 
+  // The field may only mount once a reply starts (own look, or already reviewed).
+  useEffect(() => {
+    if (replyTo) input.current?.focus();
+  }, [replyTo]);
+
   const close = () => set({ commentsFor: null });
   const top = comments.filter((cm) => !cm.parentId);
   const repliesOf = (id: string) => comments.filter((cm) => cm.parentId === id);
@@ -105,10 +110,7 @@ export function CommentsSheet() {
           <View style={{ flexDirection: 'row', gap: 16, marginTop: 4 }}>
             <Pressable
               hitSlop={8}
-              onPress={() => {
-                setReplyTo(cm);
-                input.current?.focus();
-              }}
+              onPress={() => setReplyTo(cm)}
             >
               <Txt size={12} weight="semi" color={c.ink3}>
                 {t('comments.reply')}

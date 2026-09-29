@@ -140,7 +140,7 @@ export function Checkout() {
         ).id;
       const outcome = await payRental(rentalId, session.user.email);
       if (outcome === 'paid') {
-        set({ confirmed: true, activeRentalId: rentalId, payConsent: false });
+        set({ confirmed: true, activeRentalId: rentalId, payConsent: false, agreedOffer: null });
       } else {
         // The dates stay held for the payment window; the rental page can finish it.
         setUnpaidRental(rentalId);

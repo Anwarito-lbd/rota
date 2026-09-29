@@ -372,7 +372,15 @@ export function Detail() {
         {offersOpen ? (
           <GhostButton label={t('detail.offer')} tone="accent" onPress={() => set({ offer: true })} style={{ minHeight: 54 }} />
         ) : null}
-        <PrimaryButton label={t('detail.viewDates')} onPress={() => go('booking')} style={{ flex: 1 }} />
+        <PrimaryButton
+          label={t('detail.viewDates')}
+          onPress={() => {
+            // Booking from the listing is at the listed price; an accepted offer books from its message.
+            set({ agreedOffer: null });
+            go('booking');
+          }}
+          style={{ flex: 1 }}
+        />
       </View>
 
       <OfferSheet days={days} />

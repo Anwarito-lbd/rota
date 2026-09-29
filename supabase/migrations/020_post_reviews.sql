@@ -38,3 +38,15 @@ $$;
 create trigger post_comments_review_check before insert on public.post_comments
   for each row execute function public.post_comments_review_check();
 revoke execute on function public.post_comments_review_check() from public, anon, authenticated;
+
+-- A post's author may clear replies under it, never someone's review
+-- (hiding bad reviews would mislead other members). Reviewers still delete
+-- their own, and reported reviews go through moderation.
+drop policy if exists "Comment and post authors delete comments" on public.post_comments;
+create policy "Comment and post authors delete comments"
+  on public.post_comments for delete to authenticated
+  using (
+    author_id = (select auth.uid())
+    or (parent_id is not null
+        and exists (select 1 from public.posts p where p.id = post_id and p.author_id = (select auth.uid())))
+  );

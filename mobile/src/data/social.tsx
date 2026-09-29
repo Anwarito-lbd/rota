@@ -709,7 +709,7 @@ type CommentRow = {
   parent_id: string | null;
   author_id: string;
   body: string;
-  rating: number | null;
+  rating?: number | null;
   created_at: string;
   like_count: number | null;
   author: { username: string; avatar_url: string | null } | null;
@@ -729,11 +729,18 @@ export function useComments(postId: string | null) {
     let cancelled = false;
     setLoading(true);
     const db = supabase;
-    db.from('post_comments')
-      .select('id, post_id, parent_id, author_id, body, rating, created_at, like_count, author:profiles!post_comments_author_id_fkey(username, avatar_url)')
-      .eq('post_id', postId)
-      .order('created_at')
-      .limit(300)
+    const load = (withRating: boolean) =>
+      db
+        .from('post_comments')
+        .select(
+          `id, post_id, parent_id, author_id, body, ${withRating ? 'rating, ' : ''}created_at, like_count, author:profiles!post_comments_author_id_fkey(username, avatar_url)`,
+        )
+        .eq('post_id', postId)
+        .order('created_at')
+        .limit(300);
+    // Until migration 020 runs there is no rating column: read comments without stars.
+    load(true)
+      .then((res) => (res.error ? load(false) : res))
       .then(async ({ data }) => {
         const rows = (data ?? []) as unknown as CommentRow[];
         const { data: mine } = meId
@@ -749,7 +756,7 @@ export function useComments(postId: string | null) {
             authorId: r.author_id,
             author: { username: r.author?.username ?? 'membre', avatar: r.author?.avatar_url ?? null },
             body: r.body,
-            rating: r.rating,
+            rating: r.rating ?? null,
             createdAt: r.created_at,
             likeCount: r.like_count ?? 0,
             liked: likedIds.has(r.id),
