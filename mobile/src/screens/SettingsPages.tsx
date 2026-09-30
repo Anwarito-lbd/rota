@@ -48,6 +48,7 @@ import { DeleteAccountSheet } from '../ui/DeleteAccountSheet';
 import { FlatHelp, FlatIntro, FlatPage as BasePage, FlatRow, FlatSection, FlatToggle, Pill } from '../ui/Flat';
 import { CheckIcon, PencilIcon } from '../ui/icons';
 import { usePolicy } from '../lib/policy';
+import { BusinessForm } from '../ui/BusinessForm';
 import { MediaSlot } from '../ui/MediaSlot';
 import { PayoutsCard } from '../ui/Payouts';
 
@@ -273,8 +274,8 @@ export function ProfileSettings() {
         <FlatInput label={t('set.about')} value={bio} onChangeText={(v) => setBio(v.slice(0, 300))} placeholder={t('set.bioPlaceholder')} multiline />
       </FlatSection>
       <FlatSection>
-        <FlatRow label={t('set.myLocation')} detail={locating ? t('common.loading') : city || '—'} onPress={locate} />
-        <FlatToggle label={t('set.showCity')} on={showCity} onPress={() => setShowCity((v) => !v)} last />
+        <FlatRow label={t('set.myLocation')} detail={locating ? t('common.loading') : city || '—'} onPress={locate} last />
+        <FlatHelp>{t('set.cityWhere')}</FlatHelp>
       </FlatSection>
       <View style={{ paddingHorizontal: 18 }}>
         <Status error={error} />
@@ -387,6 +388,15 @@ export function AccountSettings() {
         {!paymentsConfigured ? <FlatHelp>{t('error.paymentsUnavailable')}</FlatHelp> : null}
       </FlatSection>
 
+      <FlatSection>
+        <FlatRow
+          label={t('shop.row')}
+          sub={profile?.accountType === 'business' ? (profile.businessVerified ? t('badge.shop') : t('shop.pendingShort')) : t('shop.rowSub')}
+          onPress={() => go('set.business')}
+          last
+        />
+      </FlatSection>
+
       <FlatSection title={t('set.connectedAccounts')}>
         {(['apple', 'google'] as const).map((p, i) => (
           <FlatRow
@@ -407,9 +417,6 @@ export function AccountSettings() {
         <FlatHelp>{t('set.connectedHelp')}</FlatHelp>
       </FlatSection>
 
-      <FlatSection>
-        <FlatRow label={t('set.changePassword')} onPress={() => go('set.security')} last />
-      </FlatSection>
       <FlatSection>
         <FlatRow label={t('set.deleteAccount')} tone="plum" onPress={() => setDeleting(true)} last />
       </FlatSection>
@@ -755,7 +762,6 @@ export function SecuritySettings() {
   return (
     <FlatPage title={t('set.security')} onBack={() => go('settings')}>
       <FlatIntro title={t('set.securityTitle')} body={t('set.securityBody')} />
-      <FlatRow label={t('settings.email')} sub={t('set.emailSub')} onPress={() => go('set.account')} />
       <FlatRow label={t('set.password')} sub={t('set.passwordSub')} onPress={() => toggle('password')} />
       {open === 'password' ? <PasswordForm /> : null}
       <FlatRow label={t('set.twoStep')} sub={t('set.twoStepSub')} onPress={() => toggle('twoStep')} />
@@ -838,6 +844,23 @@ export function PushSettings() {
           on={prefs.pushClaims}
           disabled={off}
           onPress={() => set({ pushClaims: !prefs.pushClaims })}
+          last
+        />
+      </FlatSection>
+      <FlatSection title={t('set.pushCommunity')}>
+        <FlatToggle
+          label={t('set.catMessages')}
+          body={t('set.catMessagesBody')}
+          on={prefs.pushMessages}
+          disabled={off}
+          onPress={() => set({ pushMessages: !prefs.pushMessages })}
+        />
+        <FlatToggle
+          label={t('set.catSocial')}
+          body={t('set.catSocialBody')}
+          on={prefs.pushSocial}
+          disabled={off}
+          onPress={() => set({ pushSocial: !prefs.pushSocial })}
           last
         />
       </FlatSection>
@@ -1006,6 +1029,21 @@ export function PrivacySettings() {
       </FlatSection>
       <View style={{ paddingHorizontal: 18 }}>
         <Status error={error} />
+      </View>
+    </FlatPage>
+  );
+}
+
+// ── Compte boutique ────────────────────────────────────────────
+
+export function BusinessSettings() {
+  const { go } = useStore();
+  const { t } = useT();
+  return (
+    <FlatPage title={t('shop.row')} onBack={() => go('set.account')}>
+      <FlatIntro title={t('shop.title')} body={t('shop.intro')} />
+      <View style={{ padding: 18 }}>
+        <BusinessForm onDone={() => go('set.account')} />
       </View>
     </FlatPage>
   );

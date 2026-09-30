@@ -19,6 +19,7 @@ import {
 } from 'react';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
+import { badgesFrom, type BadgeCols } from './badges';
 import { uploadMedia } from '../lib/upload';
 import type { MediaItem } from '../state/types';
 import { DEMO_COMMENTS, DEMO_FOLLOWING, DEMO_ME, DEMO_MEMBERS, DEMO_POSTS } from './demo';
@@ -46,7 +47,16 @@ export interface Author {
   avatar: string | null;
   certified: boolean;
   identityVerified: boolean;
+  /** Rota Pro member: a crown next to the name (028). */
+  pro?: boolean;
+  /** A shop whose SIRET the company register confirmed (028). */
+  business?: boolean;
+  businessName?: string | null;
 }
+
+/** Demo members who are Pro or a verified shop, so the badges can be seen. */
+const DEMO_PRO = new Set(['u_juliette', 'u_camille']);
+const DEMO_SHOPS: Record<string, string> = { u_manon: 'Maison Manon' };
 
 export interface Post {
   id: string;
@@ -215,12 +225,12 @@ interface PostRow {
   comment_count: number;
   created_at: string;
   distribution: Post['distribution'];
-  author: { username: string; avatar_url: string | null; certified: boolean; identity_status: string } | null;
+  author: ({ username: string; avatar_url: string | null; certified: boolean; identity_status: string } & BadgeCols) | null;
   tags: { listing_id: string; media_index: number; x: number; y: number }[] | null;
 }
 
 const POST_SELECT =
-  '*, author:profiles!posts_author_id_fkey(username, avatar_url, certified, identity_status), tags:post_tags(listing_id, media_index, x, y)';
+  '*, author:profiles!posts_author_id_fkey(username, avatar_url, certified, identity_status, pro_until, account_type, business_verified, business_name), tags:post_tags(listing_id, media_index, x, y)';
 
 function toPost(row: PostRow): Post {
   return {
@@ -231,6 +241,7 @@ function toPost(row: PostRow): Post {
       avatar: row.author?.avatar_url ?? null,
       certified: row.author?.certified ?? false,
       identityVerified: row.author?.identity_status === 'verified',
+      ...badgesFrom(row.author),
     },
     kind: row.kind,
     media: row.media_paths.map(postMediaUrl),
@@ -256,6 +267,9 @@ function demoAuthor(id: string): Author {
     avatar: m?.avatar ?? null,
     certified: m?.certified ?? false,
     identityVerified: m?.identityVerified ?? false,
+    pro: DEMO_PRO.has(id),
+    business: !!DEMO_SHOPS[id],
+    businessName: DEMO_SHOPS[id] ?? null,
   };
 }
 
@@ -892,7 +906,7 @@ export function useMember(memberId: string | null): Member | null {
     let cancelled = false;
     const db = supabase;
     Promise.all([
-      db.from('profiles').select('id, username, avatar_url, certified, identity_status, bio').eq('id', memberId).maybeSingle(),
+      db.from('profiles').select('id, username, avatar_url, certified, identity_status, bio, pro_until, account_type, business_verified, business_name').eq('id', memberId).maybeSingle(),
       db.from('follows').select('follower_id', { count: 'exact', head: true }).eq('followee_id', memberId),
       db.from('follows').select('followee_id', { count: 'exact', head: true }).eq('follower_id', memberId),
     ]).then(([p, followers, following]) => {
@@ -903,6 +917,7 @@ export function useMember(memberId: string | null): Member | null {
         avatar: p.data.avatar_url,
         certified: p.data.certified,
         identityVerified: p.data.identity_status === 'verified',
+        ...badgesFrom(p.data),
         bio: p.data.bio,
         followers: followers.count ?? 0,
         following: following.count ?? 0,

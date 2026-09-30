@@ -9,6 +9,7 @@ import {
 } from 'react';
 import type { Distribution, DistributionReason } from '../lib/moderation';
 import { supabase } from '../lib/supabase';
+import { badgesFrom } from './badges';
 import { DEMO_LISTINGS } from './demo';
 
 /** A listing as the screens need it: owner joined, storage paths resolved. */
@@ -22,6 +23,8 @@ export interface Listing {
   categoryId: string | null;
   /** -2 runs very small … 0 true to size … 2 runs very large; null for one-size. */
   sizeFit: number | null;
+  /** Free text the lender wrote (migration 016). */
+  description?: string | null;
   /** Every size the lender offers. A single one means no size picker. */
   sizes: string[];
   occasion: string | null;
@@ -57,6 +60,11 @@ export interface Listing {
     avatar: string | null;
     certified: boolean;
     identityVerified: boolean;
+    /** The lender paused every piece (migration 023). */
+    vacation?: boolean;
+    pro?: boolean;
+    business?: boolean;
+    businessName?: string | null;
   };
 }
 
@@ -65,6 +73,11 @@ interface OwnerRow {
   avatar_url: string | null;
   certified: boolean;
   identity_status: string;
+  vacation?: boolean | null;
+  pro_until?: string | null;
+  account_type?: string | null;
+  business_verified?: boolean | null;
+  business_name?: string | null;
 }
 
 interface ListingRow {
@@ -98,6 +111,7 @@ interface ListingRow {
   distribution?: string | null;
   category_id?: string | null;
   size_fit?: number | null;
+  description?: string | null;
   distribution_reason?: string | null;
   distribution_note?: string | null;
   created_at: string;
@@ -105,7 +119,7 @@ interface ListingRow {
 }
 
 const SELECT =
-  '*, owner:profiles!listings_owner_id_fkey(username, avatar_url, certified, identity_status)';
+  '*, owner:profiles!listings_owner_id_fkey(username, avatar_url, certified, identity_status, vacation, pro_until, account_type, business_verified, business_name)';
 
 /** Storage paths live in the row; the listing-media bucket is public. */
 function publicUrl(path: string | null | undefined): string | null {
@@ -125,6 +139,7 @@ function toListing(row: ListingRow): Listing {
     category: row.category,
     categoryId: row.category_id ?? null,
     sizeFit: row.size_fit ?? null,
+    description: row.description ?? null,
     sizes,
     occasion: row.occasion,
     price: row.price_per_day,
@@ -149,6 +164,8 @@ function toListing(row: ListingRow): Listing {
       avatar: owner?.avatar_url ?? null,
       certified: owner?.certified ?? false,
       identityVerified: owner?.identity_status === 'verified',
+      vacation: !!owner?.vacation,
+      ...badgesFrom(owner),
     },
   };
 }
@@ -160,6 +177,8 @@ interface ListingsValue {
   error: string | null;
   refresh: () => void;
   byId: (id: string | null) => Listing | null;
+  /** Every listing this member may read, including paused lenders' pieces. */
+  all: Listing[];
 }
 
 const ListingsContext = createContext<ListingsValue | null>(null);
@@ -169,7 +188,7 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
   // Everything this member may read: distributed listings, limited ones
   // (reachable by link) and their own, whatever their state.
   const [all, setAll] = useState<Listing[]>([]);
-  const listings = useMemo(() => all.filter((l) => l.distribution === 'public'), [all]);
+  const listings = useMemo(() => all.filter((l) => l.distribution === 'public' && !l.owner.vacation), [all]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -206,8 +225,8 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
   const byId = useCallback((id: string | null) => all.find((l) => l.id === id) ?? null, [all]);
 
   const value = useMemo<ListingsValue>(
-    () => ({ listings, loading, error, refresh, byId }),
-    [listings, loading, error, refresh, byId],
+    () => ({ listings, loading, error, refresh, byId, all }),
+    [listings, loading, error, refresh, byId, all],
   );
 
   return <ListingsContext.Provider value={value}>{children}</ListingsContext.Provider>;

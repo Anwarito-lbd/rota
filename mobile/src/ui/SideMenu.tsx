@@ -1,32 +1,17 @@
 /**
- * The Dressing menu, opened from ☰ like Instagram or TikTok: everything that
- * isn't your profile — favourites, rentals, payments, verification, settings,
- * rules, fees and help — in one panel that slides in from the right.
+ * The Dressing menu, opened from ☰ like Instagram or TikTok: Réglages, then
+ * what isn't a setting — Rota Pro, the planner, saved boards, rentals and
+ * activity — in one panel that slides in from the right.
  */
 import { useEffect, useRef, type ReactElement } from 'react';
-import { Animated, Easing, Linking, Modal, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, Modal, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCommunity } from '../data/community';
-import { useSocial } from '../data/social';
 import { useT, type TranslationKey } from '../i18n';
-import { useAuth } from '../lib/auth';
-import { BRAND } from '../lib/config';
 import { useStore } from '../state/store';
 import type { Screen } from '../state/types';
 import { useTheme } from '../theme/useTheme';
-import {
-  BookIcon,
-  CalendarIcon,
-  ChevronRight,
-  CloseIcon,
-  CrownIcon,
-  GearIcon,
-  HeartIcon,
-  HelpIcon,
-  ReceiptIcon,
-  ShieldCheckIcon,
-  WalletIcon,
-} from './icons';
+import { BookmarkIcon, CalendarIcon, ChevronRight, CloseIcon, CrownIcon, GearIcon, HeartIcon, SparkleIcon } from './icons';
 import { Txt } from './kit';
 import { useReducedMotion } from './motion';
 
@@ -42,8 +27,6 @@ export function SideMenu({ visible, onClose }: { visible: boolean; onClose: () =
   const { set, go } = useStore();
   const { c } = useTheme();
   const { t } = useT();
-  const { isStaff } = useAuth();
-  const social = useSocial();
   const community = useCommunity();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -71,31 +54,19 @@ export function SideMenu({ visible, onClose }: { visible: boolean; onClose: () =
     if (item.to) go(item.to);
   };
 
+  // Settings, payments, rules, fees, help and admin live in Réglages only;
+  // this menu keeps what isn't a setting, like Instagram's.
   const groups: Item[][] = [
+    [{ label: 'settings.title', Icon: GearIcon, to: 'settings' }],
     [
       { label: 'pro.row', Icon: CrownIcon, to: 'pro', detail: community.pro ? t('pro.active') : undefined },
-      { label: 'planner.title', Icon: CalendarIcon, to: 'planner' },
+      { label: 'planner.title', Icon: SparkleIcon, to: 'planner' },
     ],
     [
-      { label: 'boards.title', Icon: HeartIcon, to: 'boards' },
+      { label: 'boards.saved', Icon: BookmarkIcon, to: 'boards' },
       { label: 'rentals.title', Icon: CalendarIcon, to: 'rentals' },
-      { label: 'set.payments', Icon: WalletIcon, to: 'set.payments' },
+      { label: 'activity.title', Icon: HeartIcon, to: 'activity' },
     ],
-    [
-      {
-        label: 'verify.title',
-        Icon: ShieldCheckIcon,
-        to: 'verify',
-        detail: social.identity === 'verified' ? t('settings.verified') : t('settings.toVerify'),
-      },
-      { label: 'settings.title', Icon: GearIcon, to: 'settings' },
-    ],
-    [
-      { label: 'settings.guidelines', Icon: BookIcon, to: 'guidelines' },
-      { label: 'closet.feesProtection', Icon: ReceiptIcon, to: 'fees' },
-      { label: 'closet.help', Icon: HelpIcon, onPress: () => Linking.openURL(`mailto:${BRAND.supportEmail}`).catch(() => undefined) },
-    ],
-    ...(isStaff ? [[{ label: 'admin.title' as TranslationKey, Icon: GearIcon, to: 'admin' as Screen }]] : []),
   ];
 
   return (

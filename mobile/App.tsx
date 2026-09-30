@@ -4,9 +4,10 @@ import {
   useFonts,
 } from '@expo-google-fonts/instrument-serif';
 import { StripeProvider } from '@stripe/stripe-react-native';
+import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, type ReactElement } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { paymentsConfigured, stripePublishableKey, stripeUrlScheme } from './src/data/payments';
 import { AuthProvider, useAuth } from './src/lib/auth';
@@ -32,7 +33,7 @@ import { Compose } from './src/screens/Compose';
 import { Guidelines } from './src/screens/Guidelines';
 import { NearMap } from './src/screens/NearMap';
 import { Camera } from './src/screens/Camera';
-import { ActivityScreen, FollowList, PlannerScreen, ProScreen, StoryViewer } from './src/screens/Community';
+import { ActivityScreen, FollowList, HighlightViewer, PlannerScreen, ProScreen, StoryViewer } from './src/screens/Community';
 import { Settings } from './src/screens/Settings';
 import { Blocked, Boards, PostScreen, UserProfile } from './src/screens/Social';
 import { TryOn } from './src/screens/TryOn';
@@ -48,7 +49,9 @@ import {
   SecuritySettings,
   ShippingSettings,
   ThemeSettings,
+  BusinessSettings,
 } from './src/screens/SettingsPages';
+import { ModerationDecisions } from './src/screens/Decisions';
 import { StoreProvider, useStore } from './src/state/store';
 import type { Screen as ScreenKey } from './src/state/types';
 import { useTheme } from './src/theme/useTheme';
@@ -100,6 +103,8 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   'set.language': LanguageSettings,
   'set.theme': ThemeSettings,
   'set.privacy': PrivacySettings,
+  'set.decisions': ModerationDecisions,
+  'set.business': BusinessSettings,
   post: PostScreen,
   user: UserProfile,
   profile: UserProfile,
@@ -108,6 +113,7 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   follows: FollowList,
   activity: ActivityScreen,
   story: StoryViewer,
+  highlight: HighlightViewer,
   pro: ProScreen,
   planner: PlannerScreen,
   compose: Compose,
@@ -120,7 +126,7 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
 };
 
 /** Full-screen flows that hide the tab bar. */
-const NO_TABS: ScreenKey[] = ['onboard', 'map', 'compose', 'tryon', 'verify', 'camera', 'story'];
+const NO_TABS: ScreenKey[] = ['onboard', 'map', 'compose', 'tryon', 'verify', 'camera', 'story', 'highlight', 'detail', 'booking', 'checkout'];
 /** Screens whose photos run under the floating tab bar. */
 const FULL_BLEED: ScreenKey[] = ['feed', 'post'];
 
@@ -135,6 +141,28 @@ function Shell() {
       set({ signedIn: true, emailVerified: true, screen: 'feed' });
     }
   }, [session, state.screen, state.obStep, set]);
+
+  // Tapping a push opens what it is about: the conversation, or the post.
+  useEffect(() => {
+    const open = (data: Record<string, unknown> | undefined) => {
+      if (!data || !session) return;
+      if (typeof data.conversation === 'string') set({ screen: 'messages', thread: data.conversation });
+      else if (typeof data.post === 'string') set({ screen: 'post', activePostId: data.post });
+      else if (typeof data.kind === 'string' && data.kind === 'social_follow') set({ screen: 'activity' });
+    };
+    // Not on the web, and Expo Go may lack it: push taps only exist on phones.
+    if (Platform.OS === 'web') return;
+    try {
+      const last = Notifications.getLastNotificationResponse();
+      if (last) open(last.notification.request.content.data as Record<string, unknown>);
+      const sub = Notifications.addNotificationResponseReceivedListener((r) =>
+        open(r.notification.request.content.data as Record<string, unknown>),
+      );
+      return () => sub.remove();
+    } catch {
+      return;
+    }
+  }, [session, set]);
 
   // Signed out (from Settings, a closed account, an expired session): back to
   // the welcome screen. Only on the change from signed in to signed out.

@@ -29,7 +29,7 @@ export async function usernameFree(username: string) {
 
 export async function saveProfile(
   userId: string,
-  patch: { username?: string; bio?: string | null; city?: string | null; showCity?: boolean; avatarUrl?: string },
+  patch: { username?: string; bio?: string | null; city?: string | null; showCity?: boolean; avatarUrl?: string; vacation?: boolean },
 ) {
   const row: Record<string, unknown> = {};
   if (patch.username !== undefined) row.username = patch.username;
@@ -37,6 +37,7 @@ export async function saveProfile(
   if (patch.city !== undefined) row.city = patch.city;
   if (patch.showCity !== undefined) row.show_city = patch.showCity;
   if (patch.avatarUrl !== undefined) row.avatar_url = patch.avatarUrl;
+  if (patch.vacation !== undefined) row.vacation = patch.vacation;
   const { error } = await db().from('profiles').update(row).eq('id', userId);
   if (error) throw new Error(error.code === '23505' ? 'username_taken' : error.message);
 }
@@ -145,6 +146,10 @@ export interface Preferences {
   pushBookings: boolean;
   pushReminders: boolean;
   pushClaims: boolean;
+  /** New messages (migration 025). */
+  pushMessages: boolean;
+  /** Likes, new followers, reviews, replies and reposts (migration 025). */
+  pushSocial: boolean;
 }
 
 const DEFAULT_PREFS: Preferences = {
@@ -153,6 +158,8 @@ const DEFAULT_PREFS: Preferences = {
   pushBookings: true,
   pushReminders: true,
   pushClaims: true,
+  pushMessages: true,
+  pushSocial: true,
 };
 
 const COLUMNS: Record<keyof Preferences, string> = {
@@ -161,6 +168,8 @@ const COLUMNS: Record<keyof Preferences, string> = {
   pushBookings: 'push_bookings',
   pushReminders: 'push_reminders',
   pushClaims: 'push_claims',
+  pushMessages: 'push_messages',
+  pushSocial: 'push_social',
 };
 
 export function usePreferences(enabled: boolean) {
@@ -180,6 +189,8 @@ export function usePreferences(enabled: boolean) {
             pushBookings: data.push_bookings,
             pushReminders: data.push_reminders,
             pushClaims: data.push_claims,
+            pushMessages: data.push_messages ?? true,
+            pushSocial: data.push_social ?? true,
           });
         }
         setLoading(false);

@@ -45,6 +45,8 @@ export type Screen =
   | 'set.language'
   | 'set.theme'
   | 'set.privacy'
+  | 'set.decisions'
+  | 'set.business'
   | 'post'
   | 'user'
   | 'map'
@@ -55,6 +57,7 @@ export type Screen =
   | 'follows'
   | 'activity'
   | 'story'
+  | 'highlight'
   | 'pro'
   | 'planner';
 
@@ -62,7 +65,7 @@ export type Screen =
  * 0 welcome · 'auth' credentials · 'otp' e-mail code · 1 guidelines gate
  * · 2 permission priming. Two-step verification is handled by ui/Mfa.tsx.
  */
-export type ObStep = 0 | 1 | 2 | 'auth' | 'otp';
+export type ObStep = 0 | 1 | 2 | 'auth' | 'otp' | 'business';
 
 export type Theme = 'dark' | 'light';
 /** What the member picked in Settings; 'system' follows the phone. */
@@ -110,6 +113,10 @@ export interface AppState {
   signupStep: 0 | 1 | 2;
   /** True while a member goes through the e-mail sign-up, so later steps count from it. */
   emailFlow: boolean;
+  /** Chosen at the first sign-up step: a person or a shop (028). */
+  signupAccount: 'personal' | 'business';
+  /** Demo only: my shop, checked on the phone. For real it is on the profile. */
+  business: { name: string; siret: string; verified: boolean } | null;
   username: string;
   email: string;
   pw: string;
@@ -172,7 +179,7 @@ export interface AppState {
   offer: boolean;
   offerIdx: number;
   /** A per-day price the lender accepted in messages; booking that piece uses it. */
-  agreedOffer: { listingId: string; perDay: number } | null;
+  agreedOffer: { listingId: string; perDay: number; offerId?: string } | null;
   favs: Flags;
   pinSaves: Flags;
 
@@ -213,6 +220,8 @@ export interface AppState {
   followList: { memberId: string; kind: 'followers' | 'following' } | null;
   /** Whose stories the story viewer opened on. */
   storyAuthorId: string | null;
+  /** Highlight opened in the viewer, and whose profile to go back to. */
+  highlight: { memberId: string; id: string } | null;
   /** Where to go back to after the Pro page. */
   proFrom: Screen | null;
   /** What "Signaler" was opened on, beyond listings. */

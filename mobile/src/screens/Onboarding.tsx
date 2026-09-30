@@ -27,6 +27,7 @@ import {
   Screen,
   Txt,
 } from '../ui/kit';
+import { BusinessForm } from '../ui/BusinessForm';
 import { MediaSlot } from '../ui/MediaSlot';
 import { FadeIn, Logo, PressScale } from '../ui/motion';
 import { useT, type TranslationKey } from '../i18n';
@@ -354,9 +355,12 @@ function StepBar({ step, total }: { step: number; total: number }) {
 }
 
 /** Step number and total for the code, rules and permission screens. */
-function useObProgress(screen: 'otp' | 'rules' | 'perms') {
+function useObProgress(screen: 'otp' | 'business' | 'rules' | 'perms') {
   const { state } = useStore();
-  if (state.emailFlow) return { step: { otp: 4, rules: 5, perms: 6 }[screen], total: 6 };
+  if (state.emailFlow && state.signupAccount === 'business') {
+    return { step: { otp: 4, business: 5, rules: 6, perms: 7 }[screen], total: 7 };
+  }
+  if (state.emailFlow) return { step: { otp: 4, business: 4, rules: 5, perms: 6 }[screen], total: 6 };
   return { step: screen === 'perms' ? 2 : 1, total: 2 };
 }
 
@@ -419,13 +423,35 @@ function SignupSteps() {
     <View style={{ flex: 1 }}>
       <Screen bottomInset={140}>
         <BackButton onPress={back} />
-        <StepBar step={step + 1} total={6} />
+        <StepBar step={step + 1} total={state.signupAccount === 'business' ? 7 : 6} />
         <Display size={34} style={{ marginTop: 8 }}>
           {copy.title}
         </Display>
         <Txt size={15} color={c.ink2} style={{ marginTop: 10 }}>
           {copy.body}
         </Txt>
+
+        {step === 0 ? (
+          <View style={{ marginTop: 20, flexDirection: 'row', gap: 8 }}>
+            {(['personal', 'business'] as const).map((kind) => {
+              const on = state.signupAccount === kind;
+              return (
+                <Pressable
+                  key={kind}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => set({ signupAccount: kind })}
+                  style={{ flex: 1, padding: 14, borderRadius: 16, borderWidth: 1.5, borderColor: on ? c.accent : c.line2, backgroundColor: on ? c.accentSoft : 'transparent' }}
+                >
+                  <Txt weight="bold">{kind === 'personal' ? 'Particulier' : 'Boutique'}</Txt>
+                  <Txt size={12} color={c.ink2} style={{ marginTop: 2 }}>
+                    {kind === 'personal' ? 'Je loue et prête mes pièces' : 'Je suis une entreprise (SIRET)'}
+                  </Txt>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
 
         <View style={{ marginTop: 22 }}>
           {step === 0 ? (
@@ -607,7 +633,8 @@ function EmailOtp() {
 
   const confirm = async () => {
     if (busy) return;
-    if (!backendConfigured) return set({ signedIn: true, emailVerified: true, otpErr: false, obStep: 1 });
+    const after = state.signupAccount === 'business' ? 'business' : 1;
+    if (!backendConfigured) return set({ signedIn: true, emailVerified: true, otpErr: false, obStep: after });
     setBusy(true);
     const failure = await confirmEmail({ email: state.email, code: state.otpInput });
     setBusy(false);
@@ -615,7 +642,7 @@ function EmailOtp() {
       setError(failure);
       return set({ otpErr: true });
     }
-    set({ signedIn: true, emailVerified: true, otpErr: false, obStep: 1 });
+    set({ signedIn: true, emailVerified: true, otpErr: false, obStep: after });
   };
 
   const resend = async () => {
@@ -677,6 +704,28 @@ function EmailOtp() {
           disabled={busy || state.otpInput.length < CODE_MIN}
         />
       </FooterBar>
+    </View>
+  );
+}
+
+/** A shop's SIRET, checked in the company register (028). */
+function BusinessStep() {
+  const { set } = useStore();
+  const { c } = useTheme();
+  const progress = useObProgress('business');
+  return (
+    <View style={{ flex: 1 }}>
+      <Screen bottomInset={40}>
+        <StepBar step={progress.step} total={progress.total} />
+        <Display size={34} style={{ marginTop: 8 }}>
+          Votre boutique
+        </Display>
+        <Txt size={15} color={c.ink2} style={{ marginTop: 10, marginBottom: 20 }}>
+          Nous vérifions votre SIRET dans le registre public des entreprises. Si tout correspond, votre profil affiche
+          tout de suite le badge « Boutique vérifiée ».
+        </Txt>
+        <BusinessForm onDone={() => set({ obStep: 1 })} />
+      </Screen>
     </View>
   );
 }
@@ -851,6 +900,7 @@ export function Onboarding() {
   const { state } = useStore();
   if (state.obStep === 'auth') return <AuthForm />;
   if (state.obStep === 'otp') return <EmailOtp />;
+  if (state.obStep === 'business') return <BusinessStep />;
   if (state.obStep === 1) return <RulesGate />;
   if (state.obStep === 2) return <Perms />;
   return <Welcome />;

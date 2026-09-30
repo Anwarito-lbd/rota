@@ -16,4 +16,5 @@ export const LEGAL_URLS = {
   privacy: `${BRAND.site}/confidentialite`,
   guidelines: `${BRAND.site}/regles`,
   support: `${BRAND.site}/aide`,
+  legal: `${BRAND.site}/mentions-legales`,
 } as const;

@@ -137,8 +137,51 @@ export function render(c: EmailContext): { subject: string; text: string } | nul
   return { subject: p.subject, text: `${GREETING[p.lang](c.username)}\n\n${p.body}\n\n${SIGN[p.lang]}` };
 }
 
+/**
+ * Push-only kinds (migration 025): messages and the social layer. They
+ * never become e-mails. `actor` is the member who did it.
+ */
+const PUSH: Record<string, Record<Lang, (c: EmailContext) => [title: string, body: string]>> = {
+  message_received: {
+    fr: (c) => [`@${c.payload.actor}`, typeof c.payload.preview === 'string' ? c.payload.preview : 'Vous a envoyé un message.'],
+    en: (c) => [`@${c.payload.actor}`, typeof c.payload.preview === 'string' ? c.payload.preview : 'Sent you a message.'],
+    es: (c) => [`@${c.payload.actor}`, typeof c.payload.preview === 'string' ? c.payload.preview : 'Te ha enviado un mensaje.'],
+  },
+  social_like: {
+    fr: (c) => ['Rota', `@${c.payload.actor} a aimé votre look.`],
+    en: (c) => ['Rota', `@${c.payload.actor} liked your look.`],
+    es: (c) => ['Rota', `A @${c.payload.actor} le gustó tu look.`],
+  },
+  social_follow: {
+    fr: (c) => ['Rota', `@${c.payload.actor} vous suit.`],
+    en: (c) => ['Rota', `@${c.payload.actor} started following you.`],
+    es: (c) => ['Rota', `@${c.payload.actor} empezó a seguirte.`],
+  },
+  social_review: {
+    fr: (c) => [`@${c.payload.actor} a laissé un avis`, `${'★'.repeat(Number(c.payload.rating) || 0)} ${c.payload.preview ?? ''}`.trim()],
+    en: (c) => [`@${c.payload.actor} left a review`, `${'★'.repeat(Number(c.payload.rating) || 0)} ${c.payload.preview ?? ''}`.trim()],
+    es: (c) => [`@${c.payload.actor} dejó una reseña`, `${'★'.repeat(Number(c.payload.rating) || 0)} ${c.payload.preview ?? ''}`.trim()],
+  },
+  social_reply: {
+    fr: (c) => [`@${c.payload.actor} vous a répondu`, String(c.payload.preview ?? '')],
+    en: (c) => [`@${c.payload.actor} replied to you`, String(c.payload.preview ?? '')],
+    es: (c) => [`@${c.payload.actor} te respondió`, String(c.payload.preview ?? '')],
+  },
+  social_repost: {
+    fr: (c) => ['Rota', `@${c.payload.actor} a republié votre look.`],
+    en: (c) => ['Rota', `@${c.payload.actor} reposted your look.`],
+    es: (c) => ['Rota', `@${c.payload.actor} republicó tu look.`],
+  },
+};
+
 /** The same message as a phone notification: the subject as title, the first sentence as body. */
 export function renderPush(c: EmailContext): { title: string; body: string } | null {
+  const lang: Lang = c.lang === 'en' || c.lang === 'es' ? c.lang : 'fr';
+  const pushOnly = PUSH[c.kind]?.[lang];
+  if (pushOnly) {
+    const [title, body] = pushOnly(c);
+    return { title, body: body.length > 178 ? `${body.slice(0, 177)}…` : body };
+  }
   const p = parts(c);
   if (!p) return null;
   const first = p.body.split(/(?<=[.!?])\s/)[0];

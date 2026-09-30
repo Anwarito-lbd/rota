@@ -15,11 +15,14 @@ export function MessageButton({
   listingId,
   label,
   style,
+  compact,
 }: {
   memberId: string;
   listingId?: string | null;
   label?: string;
   style?: StyleProp<ViewStyle>;
+  /** Instagram-size button for profile headers: filled, no icon. */
+  compact?: boolean;
 }) {
   const { set } = useStore();
   const { c } = useTheme();
@@ -52,10 +55,11 @@ export function MessageButton({
         accessibilityLabel={label ?? t('msg.write')}
         style={[
           {
-            minHeight: 46,
-            borderRadius: 999,
-            borderWidth: 1,
+            minHeight: compact ? 36 : 46,
+            borderRadius: compact ? 10 : 999,
+            borderWidth: compact ? 0 : 1,
             borderColor: c.line2,
+            backgroundColor: compact ? c.surf2 : 'transparent',
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
@@ -66,8 +70,8 @@ export function MessageButton({
           style,
         ]}
       >
-        <TabMessagesIcon color={c.ink} />
-        <Txt weight="bold">{label ?? t('msg.write')}</Txt>
+        {compact ? null : <TabMessagesIcon color={c.ink} />}
+        <Txt size={compact ? 14 : 16} weight="bold">{label ?? t('msg.write')}</Txt>
       </PressScale>
       {error ? (
         <Txt size={12} color={c.plum} style={{ marginTop: 6 }}>

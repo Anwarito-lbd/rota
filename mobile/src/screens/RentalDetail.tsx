@@ -14,7 +14,8 @@ import {
 import { rentalShippingAddress, type Address } from '../data/account';
 import { usePayRental } from '../data/payments';
 import { useT, type TranslationKey } from '../i18n';
-import { useAuth } from '../lib/auth';
+import { backendConfigured, useAuth } from '../lib/auth';
+import { DEMO_ME } from '../data/demo';
 import { dateTimeLabel, rangeLabel } from '../lib/dates';
 import { friendlyError } from '../lib/errors';
 import { returnStatus } from '../lib/fees';
@@ -352,7 +353,7 @@ export function RentalDetail() {
   const { t, lang } = useT();
   const { session } = useAuth();
   const policy = usePolicy();
-  const uid = session?.user.id;
+  const uid = session?.user.id ?? (backendConfigured ? undefined : DEMO_ME.id);
 
   const { rentals, loading, refresh } = useMyRentals(uid);
   const rental = rentals.find((r) => r.id === state.activeRentalId) ?? null;

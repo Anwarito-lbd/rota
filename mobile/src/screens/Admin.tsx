@@ -223,7 +223,7 @@ function Moderation() {
 // ── Social (posts, comments, messages, profiles — migration 010) ──
 
 interface SocialRow {
-  kind: 'post' | 'comment' | 'message' | 'member' | 'appeal' | 'web';
+  kind: 'post' | 'comment' | 'message' | 'member' | 'story' | 'appeal' | 'web';
   target_id: string;
   member_id: string | null;
   member_username: string;
@@ -240,6 +240,12 @@ const SOCIAL_ACTIONS: Record<SocialRow['kind'], { action: string; label: Transla
   post: [
     { action: 'publish', label: 'admin.publish', primary: true },
     { action: 'limit', label: 'admin.limit' },
+    { action: 'remove', label: 'admin.remove', danger: true },
+    { action: 'dismiss', label: 'admin.dismiss' },
+  ],
+  // Stories from unverified members wait here, and reported ones (024).
+  story: [
+    { action: 'publish', label: 'admin.publish', primary: true },
     { action: 'remove', label: 'admin.remove', danger: true },
     { action: 'dismiss', label: 'admin.dismiss' },
   ],
