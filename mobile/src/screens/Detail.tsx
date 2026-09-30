@@ -40,6 +40,7 @@ import {
 } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
 import { usePolicy } from '../lib/policy';
+import { NameBadges } from '../ui/Badges';
 import { MessageButton } from '../ui/MessageButton';
 import { PressScale, tap } from '../ui/motion';
 
@@ -263,6 +264,7 @@ export function Detail() {
                   {t('detail.lentBy')} @{listing.owner.username}
                 </Txt>
                 {listing.owner.certified ? <CertifiedMark /> : null}
+                <NameBadges memberId={listing.ownerId} badges={listing.owner} />
               </View>
               <Txt size={13} color={c.ink2}>
                 {listing.owner.identityVerified ? t('detail.idVerified') : t('detail.idNotVerified')}

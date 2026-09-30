@@ -48,6 +48,7 @@ import { DeleteAccountSheet } from '../ui/DeleteAccountSheet';
 import { FlatHelp, FlatIntro, FlatPage as BasePage, FlatRow, FlatSection, FlatToggle, Pill } from '../ui/Flat';
 import { CheckIcon, PencilIcon } from '../ui/icons';
 import { usePolicy } from '../lib/policy';
+import { BusinessForm } from '../ui/BusinessForm';
 import { MediaSlot } from '../ui/MediaSlot';
 import { PayoutsCard } from '../ui/Payouts';
 
@@ -385,6 +386,15 @@ export function AccountSettings() {
           last
         />
         {!paymentsConfigured ? <FlatHelp>{t('error.paymentsUnavailable')}</FlatHelp> : null}
+      </FlatSection>
+
+      <FlatSection>
+        <FlatRow
+          label={t('shop.row')}
+          sub={profile?.accountType === 'business' ? (profile.businessVerified ? t('badge.shop') : t('shop.pendingShort')) : t('shop.rowSub')}
+          onPress={() => go('set.business')}
+          last
+        />
       </FlatSection>
 
       <FlatSection title={t('set.connectedAccounts')}>
@@ -1019,6 +1029,21 @@ export function PrivacySettings() {
       </FlatSection>
       <View style={{ paddingHorizontal: 18 }}>
         <Status error={error} />
+      </View>
+    </FlatPage>
+  );
+}
+
+// ── Compte boutique ────────────────────────────────────────────
+
+export function BusinessSettings() {
+  const { go } = useStore();
+  const { t } = useT();
+  return (
+    <FlatPage title={t('shop.row')} onBack={() => go('set.account')}>
+      <FlatIntro title={t('shop.title')} body={t('shop.intro')} />
+      <View style={{ padding: 18 }}>
+        <BusinessForm onDone={() => go('set.account')} />
       </View>
     </FlatPage>
   );

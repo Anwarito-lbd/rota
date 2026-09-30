@@ -9,6 +9,7 @@ import {
 } from 'react';
 import type { Distribution, DistributionReason } from '../lib/moderation';
 import { supabase } from '../lib/supabase';
+import { badgesFrom } from './badges';
 import { DEMO_LISTINGS } from './demo';
 
 /** A listing as the screens need it: owner joined, storage paths resolved. */
@@ -61,6 +62,9 @@ export interface Listing {
     identityVerified: boolean;
     /** The lender paused every piece (migration 023). */
     vacation?: boolean;
+    pro?: boolean;
+    business?: boolean;
+    businessName?: string | null;
   };
 }
 
@@ -70,6 +74,10 @@ interface OwnerRow {
   certified: boolean;
   identity_status: string;
   vacation?: boolean | null;
+  pro_until?: string | null;
+  account_type?: string | null;
+  business_verified?: boolean | null;
+  business_name?: string | null;
 }
 
 interface ListingRow {
@@ -111,7 +119,7 @@ interface ListingRow {
 }
 
 const SELECT =
-  '*, owner:profiles!listings_owner_id_fkey(username, avatar_url, certified, identity_status, vacation)';
+  '*, owner:profiles!listings_owner_id_fkey(username, avatar_url, certified, identity_status, vacation, pro_until, account_type, business_verified, business_name)';
 
 /** Storage paths live in the row; the listing-media bucket is public. */
 function publicUrl(path: string | null | undefined): string | null {
@@ -157,6 +165,7 @@ function toListing(row: ListingRow): Listing {
       certified: owner?.certified ?? false,
       identityVerified: owner?.identity_status === 'verified',
       vacation: !!owner?.vacation,
+      ...badgesFrom(owner),
     },
   };
 }

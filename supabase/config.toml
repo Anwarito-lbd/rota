@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.iap-webhook]
 verify_jwt = false
+
+[functions.verify-business]
+verify_jwt = false

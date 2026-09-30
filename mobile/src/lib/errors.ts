@@ -23,6 +23,8 @@ const KNOWN: [RegExp, TranslationKey][] = [
   [/expired/i, 'error.bookingExpired'],
   [/Not allowed/i, 'error.notAllowed'],
   [/owner_on_vacation/i, 'detail.onVacation'],
+  [/siret_invalid/i, 'shop.siretInvalid'],
+  [/siret_taken/i, 'shop.notFound'],
   [/offer_out_of_range/i, 'offer.outOfRange'],
   [/offer_invalid|offer_closed/i, 'offer.invalid'],
 ];

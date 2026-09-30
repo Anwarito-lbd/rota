@@ -19,6 +19,11 @@ export interface Profile {
   showCity: boolean;
   /** Every piece paused (migration 023). */
   vacation: boolean;
+  /** Pro until (028), and the shop account with its register check. */
+  proUntil: string | null;
+  accountType: 'personal' | 'business';
+  businessName: string | null;
+  businessVerified: boolean;
   /** False after Apple/Google sign-in until the member picks a username (migration 011). */
   usernameConfirmed: boolean;
 }
@@ -136,6 +141,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           bio: data.bio ?? null,
           showCity: data.show_city ?? true,
           vacation: data.vacation ?? false,
+          proUntil: data.pro_until ?? null,
+          accountType: data.account_type === 'business' ? 'business' : 'personal',
+          businessName: data.business_name ?? null,
+          businessVerified: !!data.business_verified,
           usernameConfirmed: data.username_confirmed ?? true,
         });
       });

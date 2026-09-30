@@ -21,6 +21,7 @@ import { useTheme } from '../theme/useTheme';
 import { ChevronLeft, DotsIcon, GridIcon, ImagesIcon, MenuIcon, PinIcon, PlusIcon, ShareIcon, ShieldCheckIcon, TagIcon } from './icons';
 import { CertifiedMark, Display, Field, PrimaryButton, Sheet, Txt } from './kit';
 import { AppealSheet } from './Moderation';
+import { ProCrown, ShopBadge, useMemberBadges } from './Badges';
 import { Avatar, FadeIn, IdBadge, PressScale, Skeleton, compact, tap } from './motion';
 import { MessageButton } from './MessageButton';
 
@@ -59,6 +60,7 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
       ? state.vacation
       : !!profile?.vacation
     : publicListings.some((l) => l.ownerId === memberId && l.owner.vacation);
+  const badges = useMemberBadges(memberId, member);
   const verified = me ? social.identity === 'verified' : !!member?.identityVerified;
   const cell = (Math.min(width, 720) - GAP * 2) / 3;
 
@@ -128,9 +130,13 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
             <ChevronLeft color={c.ink} />
           </PressScale>
         ) : null}
-        <Txt size={20} weight="bold" numberOfLines={1} style={{ flex: 1, textAlign: onBack ? 'center' : 'left', paddingLeft: onBack ? 0 : 6 }}>
-          {username}
-        </Txt>
+        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: onBack ? 'center' : 'flex-start', gap: 6, paddingLeft: onBack ? 0 : 6 }}>
+          <Txt size={20} weight="bold" numberOfLines={1} style={{ flexShrink: 1 }}>
+            {username}
+          </Txt>
+          {badges.business ? <ShopBadge compact /> : null}
+          {badges.pro ? <ProCrown size={17} /> : null}
+        </View>
         {me ? (
           <>
             <PressScale onPress={() => set({ screen: 'camera' })} accessibilityLabel={t('create.title')} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
@@ -188,11 +194,17 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
           <View style={{ marginTop: 12, gap: 3 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <Txt size={15} weight="bold">
-                {username}
+                {badges.businessName ?? username}
               </Txt>
               {(me ? profile?.certified : member?.certified) ? <CertifiedMark size={15} /> : null}
               {verified ? <IdBadge compact label={t('verify.badge')} /> : null}
+              {badges.pro ? <ProCrown size={16} /> : null}
             </View>
+            {badges.business ? (
+              <View style={{ flexDirection: 'row', marginTop: 2 }}>
+                <ShopBadge />
+              </View>
+            ) : null}
             {bio ? (
               <Txt size={14} color={c.ink}>
                 {bio}

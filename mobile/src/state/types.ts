@@ -46,6 +46,7 @@ export type Screen =
   | 'set.theme'
   | 'set.privacy'
   | 'set.decisions'
+  | 'set.business'
   | 'post'
   | 'user'
   | 'map'
@@ -64,7 +65,7 @@ export type Screen =
  * 0 welcome · 'auth' credentials · 'otp' e-mail code · 1 guidelines gate
  * · 2 permission priming. Two-step verification is handled by ui/Mfa.tsx.
  */
-export type ObStep = 0 | 1 | 2 | 'auth' | 'otp';
+export type ObStep = 0 | 1 | 2 | 'auth' | 'otp' | 'business';
 
 export type Theme = 'dark' | 'light';
 /** What the member picked in Settings; 'system' follows the phone. */
@@ -112,6 +113,10 @@ export interface AppState {
   signupStep: 0 | 1 | 2;
   /** True while a member goes through the e-mail sign-up, so later steps count from it. */
   emailFlow: boolean;
+  /** Chosen at the first sign-up step: a person or a shop (028). */
+  signupAccount: 'personal' | 'business';
+  /** Demo only: my shop, checked on the phone. For real it is on the profile. */
+  business: { name: string; siret: string; verified: boolean } | null;
   username: string;
   email: string;
   pw: string;

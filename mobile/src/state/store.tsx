@@ -23,6 +23,8 @@ const initialState: AppState = {
   authMode: null,
   signupStep: 0,
   emailFlow: false,
+  signupAccount: 'personal',
+  business: null,
   username: '',
   email: '',
   pw: '',

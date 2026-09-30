@@ -26,6 +26,7 @@ import {
   CrownIcon,
   RepostIcon,
 } from './icons';
+import { NameBadges } from './Badges';
 import { Sheet, Txt } from './kit';
 import { useTheme } from '../theme/useTheme';
 import { TAB_BAR_SPACE } from './TabBar';
@@ -485,6 +486,7 @@ export function PostCard({ post, height, distanceKm }: { post: Post; height: num
             @{post.author.username}
           </Txt>
           {post.author.identityVerified ? <IdBadge compact label={t('post.idVerified')} /> : null}
+          <NameBadges memberId={post.authorId} badges={post.author} over />
           <Txt size={13} color="rgba(247,242,248,0.6)">
             · {timeAgo(post.createdAt, lang)}
           </Txt>

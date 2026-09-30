@@ -7,7 +7,7 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, type ReactElement } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { paymentsConfigured, stripePublishableKey, stripeUrlScheme } from './src/data/payments';
 import { AuthProvider, useAuth } from './src/lib/auth';
@@ -49,6 +49,7 @@ import {
   SecuritySettings,
   ShippingSettings,
   ThemeSettings,
+  BusinessSettings,
 } from './src/screens/SettingsPages';
 import { ModerationDecisions } from './src/screens/Decisions';
 import { StoreProvider, useStore } from './src/state/store';
@@ -103,6 +104,7 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   'set.theme': ThemeSettings,
   'set.privacy': PrivacySettings,
   'set.decisions': ModerationDecisions,
+  'set.business': BusinessSettings,
   post: PostScreen,
   user: UserProfile,
   profile: UserProfile,
@@ -148,12 +150,18 @@ function Shell() {
       else if (typeof data.post === 'string') set({ screen: 'post', activePostId: data.post });
       else if (typeof data.kind === 'string' && data.kind === 'social_follow') set({ screen: 'activity' });
     };
-    const last = Notifications.getLastNotificationResponse();
-    if (last) open(last.notification.request.content.data as Record<string, unknown>);
-    const sub = Notifications.addNotificationResponseReceivedListener((r) =>
-      open(r.notification.request.content.data as Record<string, unknown>),
-    );
-    return () => sub.remove();
+    // Not on the web, and Expo Go may lack it: push taps only exist on phones.
+    if (Platform.OS === 'web') return;
+    try {
+      const last = Notifications.getLastNotificationResponse();
+      if (last) open(last.notification.request.content.data as Record<string, unknown>);
+      const sub = Notifications.addNotificationResponseReceivedListener((r) =>
+        open(r.notification.request.content.data as Record<string, unknown>),
+      );
+      return () => sub.remove();
+    } catch {
+      return;
+    }
   }, [session, set]);
 
   // Signed out (from Settings, a closed account, an expired session): back to
