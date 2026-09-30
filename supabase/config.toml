@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.report]
 verify_jwt = false
+
+[functions.iap-webhook]
+verify_jwt = false

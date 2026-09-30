@@ -264,8 +264,8 @@ export function TryOn() {
   const [unlocked, setUnlocked] = useState(community.pro || !community.purchasesAvailable);
   const [payNote, setPayNote] = useState<string | null>(null);
   const garment = listing?.photos[0];
-  const unlockWithCredit = () => {
-    if (community.consumeTryOn()) setUnlocked(true);
+  const unlockWithCredit = async () => {
+    if (await community.consumeTryOn()) setUnlocked(true);
   };
   const buyOne = async () => {
     setPayNote(null);

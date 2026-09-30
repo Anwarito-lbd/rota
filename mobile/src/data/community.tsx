@@ -67,7 +67,7 @@ interface CommunityValue {
   cancelPro: () => void;
   buyTryOn: (count?: number) => Promise<void>;
   /** Uses one try-on: free with Pro, otherwise one credit. False when none left. */
-  consumeTryOn: () => boolean;
+  consumeTryOn: () => Promise<boolean>;
 }
 
 const Ctx = createContext<CommunityValue | null>(null);
@@ -112,6 +112,22 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
   const [seenStories, setSeen] = useState<string[]>([]);
   const [pro, setPro] = useState(false);
   const [tryOnCredits, setCredits] = useState(0);
+
+  // Pro and credits for real come from the server (migration 027): only the
+  // store webhook writes them, the phone just reads.
+  useEffect(() => {
+    if (demo || !supabase || !meId) return;
+    supabase
+      .from('member_entitlements')
+      .select('pro_until, tryon_credits')
+      .eq('user_id', meId)
+      .maybeSingle()
+      .then(({ data }) => {
+        const row = data as { pro_until: string | null; tryon_credits: number } | null;
+        setPro(!!row?.pro_until && Date.parse(row.pro_until) > Date.now());
+        setCredits(row?.tryon_credits ?? 0);
+      });
+  }, [demo, meId]);
 
   // Reposts by the people I follow, shown in "Suivis" with a label.
   useEffect(() => {
@@ -220,14 +236,20 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     [demo],
   );
 
-  const consumeTryOn = useCallback(() => {
+  const consumeTryOn = useCallback(async () => {
+    if (!demo && supabase) {
+      // The server spends the credit, so two phones can't use the same one.
+      const { data } = await supabase.rpc('consume_tryon');
+      if (data === true && !pro) setCredits((n) => Math.max(0, n - 1));
+      return data === true;
+    }
     if (pro) return true;
     if (tryOnCredits > 0) {
       setCredits((n) => n - 1);
       return true;
     }
     return false;
-  }, [pro, tryOnCredits]);
+  }, [demo, pro, tryOnCredits]);
 
   const storyAuthors = useMemo(() => {
     const seen = new Set<string>();

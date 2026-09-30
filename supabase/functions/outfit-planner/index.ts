@@ -7,9 +7,8 @@
 // it; anything else it returns is dropped. The app labels the result as
 // AI-generated (EU AI Act art. 50).
 //
-// Pro entitlement: checked here once in-app purchases are wired (App Store /
-// Play receipts). Until then any signed-in member can call it, and the app
-// shows the planner to Pro members only.
+// Rota Pro only: the store purchase is recorded by `iap-webhook` (027), and
+// each member gets at most DAILY_LIMIT plans a day.
 //
 // Secret: ANTHROPIC_API_KEY.
 
@@ -18,6 +17,8 @@ import { admin, json, userFrom } from '../_shared/clients.ts';
 
 const anthropic = new Anthropic();
 const MODEL = 'claude-sonnet-5';
+/** Planner calls per member per day. */
+const DAILY_LIMIT = 30;
 
 const SCHEMA = {
   type: 'object',
@@ -34,6 +35,11 @@ Deno.serve(async (req) => {
   const user = await userFrom(req);
   if (!user) return json({ error: 'unauthorized' }, 401);
   if (!Deno.env.get('ANTHROPIC_API_KEY')) return json({ error: 'planner_not_configured' }, 503);
+  // Rota Pro only (migration 027), and a daily ceiling so no account can run up the AI bill.
+  const { data: pro } = await admin.rpc('is_pro', { p_user: user.id });
+  if (pro !== true) return json({ error: 'pro_required' }, 402);
+  const { data: allowed } = await admin.rpc('bump_ai_usage', { p_user: user.id, p_limit: DAILY_LIMIT });
+  if (allowed !== true) return json({ error: 'daily_limit' }, 429);
 
   const body = await req.json().catch(() => ({}));
   const occasion = typeof body?.occasion === 'string' ? body.occasion.slice(0, 40) : 'Tous les jours';
