@@ -83,7 +83,8 @@ begin
       (select case when member_a = a then a_state else b_state end from public.conversations where id = conv) = 'declined',
     'declined_sender_can_insert', mid is not null,
     'declined_sender_helper_true', ok,
-    'declined_message_hidden', coalesce((select hidden from public.messages where id = mid), false),
+    'declined_message_shadowed', coalesce((select (to_jsonb(m) ->> 'shadowed')::boolean and not m.hidden
+                                             from public.messages m where m.id = mid), false),
     'declined_no_push', not exists (select 1 from public.notifications where user_id = a and dedupe_key = 'message:' || mid::text));
   perform pg_temp.claims(a); set local role authenticated;
   select count(*) into n from public.messages where conversation_id = conv;
@@ -94,6 +95,35 @@ begin
   perform pg_temp.claims(b); set local role authenticated;
   out := out || jsonb_build_object('declined_sender_inbox_shows_own',
     coalesce((select last_body = 'Encore' and not request from public.my_conversations() where conversation_id = conv), false));
+  reset role;
+
+  -- 031c: a moderator un-hiding the message does not expose a shadow-dropped one.
+  update public.messages set hidden = false where id = mid;
+  perform pg_temp.claims(a); set local role authenticated;
+  select count(*) into n from public.messages where conversation_id = conv;
+  out := out || jsonb_build_object('moderator_unhide_keeps_shadow', n = 0);
+  reset role;
+
+  -- 031c: the sender can read neither the shadow flag nor the conversation's last_message_at.
+  err := null;
+  perform pg_temp.claims(b); set local role authenticated;
+  begin
+    execute 'select shadowed from public.messages where id = $1' using mid;
+  exception when others then err := sqlstate;
+  end;
+  reset role;
+  out := out || jsonb_build_object('shadowed_denied', err = '42501');
+  err := null;
+  perform pg_temp.claims(b); set local role authenticated;
+  begin
+    perform last_message_at from public.conversations where id = conv;
+  exception when others then err := sqlstate;
+  end;
+  reset role;
+  out := out || jsonb_build_object('last_message_at_denied', err = '42501');
+  perform pg_temp.claims(b); set local role authenticated;
+  select count(*) into n from public.messages where id = mid;
+  out := out || jsonb_build_object('sender_still_sees_own', n = 1);
   reset role;
 
   -- Read receipts and request states are not readable by members.

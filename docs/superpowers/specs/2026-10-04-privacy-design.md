@@ -102,7 +102,7 @@ The app mirrors these rules only in demo mode and for UI states (lock screen, "D
   - **Push:** the worker sends no push for it (`notify_social` checks the state).
   - **Read receipts:** the other side's read time is not exposed. Read times are not exposed to members at all for now (the app shows none); a receipts RPC can come later.
   - **Inbox:** the conversation shows only under "Demandes".
-- **RPCs:** `accept_message_request(conv)` and `decline_message_request(conv)`. Decline hides the conversation for the recipient and the sender can't send again. Both are idempotent.
+- **RPCs:** `accept_message_request(conv)` and `decline_message_request(conv)`. Decline hides the conversation for the recipient and the sender's new messages are silently dropped (stored, never shown or pushed to the recipient). Both are idempotent.
 - **`member_preferences.push_previews bool default true`:** when false, the worker sends "Nouveau message" with no text.
 
 ### Soft delete and file purge
