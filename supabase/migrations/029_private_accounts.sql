@@ -2,6 +2,7 @@
 -- by column (city, lang, identity_status and settings stay private); blocks also
 -- hide the profile row, listings, favourites and bookings; 18+ declared at sign-up.
 -- Spec: docs/superpowers/specs/2026-10-04-privacy-design.md
+-- Live history: the final revoke (trigger functions) was applied as a second entry, private_accounts_trigger_grants.
 
 alter table public.profiles
   add column if not exists is_private boolean not null default false,

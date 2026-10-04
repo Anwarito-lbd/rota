@@ -64,6 +64,15 @@ begin
   out := out || jsonb_build_object('card_accepted', public.profile_card(o) ->> 'follow_status' = 'accepted');
   reset role;
 
+  -- o is still private: a stranger learns nothing of o's followers, even from f's side.
+  perform pg_temp.claims(s); set local role authenticated;
+  select count(*) into n from public.follows where followee_id = o;
+  out := out || jsonb_build_object('stranger_no_private_followers', n = 0);
+  select count(*) into n from public.follows where follower_id = f and followee_id = o;
+  out := out || jsonb_build_object('stranger_no_private_edge_via_follower', n = 0);
+  out := out || jsonb_build_object('no_oracle_for_others', not public.can_view_social(f, o));
+  reset role;
+
   -- Going public accepts the remaining request.
   update public.profiles set is_private = false where id = o;
   out := out || jsonb_build_object('public_accepts_pending',
@@ -91,6 +100,48 @@ begin
           'authenticated', 'adult29@test.rota', '{"username":"adult29test","adult":"true"}', now(), now());
   out := out || jsonb_build_object('adult_recorded',
     (select adult_confirmed_at is not null from public.profiles where id = '00000000-0000-4000-8000-000000000029'));
+
+  -- Follow, unfollow, go private, request again: the request still notifies.
+  declare r uuid := pg_temp.member('nr'); t uuid := pg_temp.member('nt');
+  begin
+    perform pg_temp.claims(r); set local role authenticated;
+    insert into public.follows (followee_id) values (t);
+    delete from public.follows where follower_id = r and followee_id = t;
+    reset role;
+    update public.profiles set is_private = true where id = t;
+    perform pg_temp.claims(r); set local role authenticated;
+    insert into public.follows (followee_id) values (t);
+    reset role;
+    out := out || jsonb_build_object('rerequest_notifies',
+      exists (select 1 from public.notifications where user_id = t and kind = 'social_follow_request'));
+  end;
+
+  -- Write grants: anon writes nothing, members insert or delete no profile row.
+  out := out || jsonb_build_object('anon_no_profile_writes',
+    not (has_table_privilege('anon', 'public.profiles', 'INSERT')
+         or has_table_privilege('anon', 'public.profiles', 'UPDATE')
+         or has_table_privilege('anon', 'public.profiles', 'DELETE')
+         or has_any_column_privilege('anon', 'public.profiles', 'INSERT')
+         or has_any_column_privilege('anon', 'public.profiles', 'UPDATE')),
+    'member_no_profile_insert_delete',
+    not (has_any_column_privilege('authenticated', 'public.profiles', 'INSERT')
+         or has_table_privilege('authenticated', 'public.profiles', 'DELETE')
+         or has_table_privilege('authenticated', 'public.profiles', 'TRUNCATE')));
+  perform pg_temp.claims(f); set local role authenticated;
+  update public.profiles set bio = 'still editable' where id = f;
+  reset role;
+  out := out || jsonb_build_object('member_edits_own_bio',
+    (select bio from public.profiles where id = f) = 'still editable');
+
+  -- A closed account: stories hidden from an accepted follower, minimal card.
+  update public.profiles set deleted_at = now() where id = o;
+  perform pg_temp.claims(f); set local role authenticated;
+  select count(*) into n from public.stories where author_id = o;
+  out := out || jsonb_build_object('closed_no_stories', n = 0);
+  j := public.profile_card(o);
+  out := out || jsonb_build_object('closed_card_minimal',
+    (j ->> 'deleted')::boolean and not (j ->> 'can_view')::boolean and not (j ? 'bio') and not (j ? 'followers'));
+  reset role;
 
   raise exception 'RESULT %', out;
 end $$;
