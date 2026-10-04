@@ -100,7 +100,7 @@ The app mirrors these rules only in demo mode and for UI states (lock screen, "D
   - refused with `messages_closed` when `message_policy = 'following'` or `'nobody'` and neither of the above holds.
 - **While pending:**
   - **Push:** the worker sends no push for it (`notify_social` checks the state).
-  - **Read receipts:** the other side's read time is not exposed. `a_read_at`/`b_read_at` move behind an RPC `conversation_meta()` that hides it for a pending recipient or a restricted pair.
+  - **Read receipts:** the other side's read time is not exposed. Read times are not exposed to members at all for now (the app shows none); a receipts RPC can come later.
   - **Inbox:** the conversation shows only under "Demandes".
 - **RPCs:** `accept_message_request(conv)` and `decline_message_request(conv)`. Decline hides the conversation for the recipient and the sender can't send again. Both are idempotent.
 - **`member_preferences.push_previews bool default true`:** when false, the worker sends "Nouveau message" with no text.
