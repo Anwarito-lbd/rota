@@ -16,7 +16,7 @@ Missing compared with Instagram and TikTok: a private account with follow reques
 ## Decisions
 | Topic | Decision |
 |---|---|
-| Private account | Social content is private: posts, stories, highlights, follower and following lists. Following needs a request. **Listings stay public and rentable.** A non-follower sees username, photo, bio, badges and listings. |
+| Private account | **Dropped on 2026-10-05: every account is public.** Following is instant, and posts, highlights and follower lists are visible to every member who isn't blocked. Stories stay followers-only, as they were before this work. Migration 034 locks `profiles.is_private` to false. The follow-request machinery from 029 stays in the database but never triggers, and the app shows no private-account UI. |
 | Messages | "Who can message me": everyone (default), people I follow, or nobody. A first message from someone I don't follow lands in **Requests**: no push, no read receipt, and the sender isn't told. Conversations about a listing, offer or rental always arrive directly. |
 | Interaction controls | Mute (posts and/or stories), restrict, who can review/comment (everyone, followers or nobody, per account and per post), hidden words, hide like counts (per account and per post). |
 | Deletion | A 30-day bin ("Récemment supprimé") for posts and stories. Purged rows and files are gone. Expired stories are purged 30 days after expiry unless they are in a highlight. |
