@@ -251,6 +251,13 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     return false;
   }, [demo, pro, tryOnCredits]);
 
+  // Blocked members, and members whose stories I muted, stay out of the tray.
+  const { isBlocked, mutedStoryIds } = social;
+  const hidden = useCallback(
+    (id: string) => isBlocked(id) || mutedStoryIds.includes(id),
+    [isBlocked, mutedStoryIds],
+  );
+
   const storyAuthors = useMemo(() => {
     const seen = new Set<string>();
     const list: Person[] = [];
@@ -260,18 +267,18 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       list.push(mine[0].author);
     }
     for (const s of stories) {
-      if (seen.has(s.author.id) || social.isBlocked(s.author.id)) continue;
+      if (seen.has(s.author.id) || hidden(s.author.id)) continue;
       seen.add(s.author.id);
       list.push(s.author);
     }
     return list;
-  }, [stories, meId, social]);
+  }, [stories, meId, hidden]);
 
   const value: CommunityValue = {
     isReposted: (id) => reposted.includes(id),
     toggleRepost,
     repostedBy,
-    stories: stories.filter((s) => !social.isBlocked(s.author.id)),
+    stories: stories.filter((s) => !hidden(s.author.id)),
     storyAuthors,
     seenStories,
     markSeen: (id) => setSeen((s) => (s.includes(id) ? s : [...s, id])),

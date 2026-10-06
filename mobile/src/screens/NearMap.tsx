@@ -52,8 +52,8 @@ export function NearMapView({ embedded = false }: { embedded?: boolean }) {
     if (!pos) return;
     setDenied(false);
     setLocated(true);
-    // Only the rounded area is used from here on.
-    setCenter({ lat: Math.round(pos.coords.latitude * 200) / 200, lng: Math.round(pos.coords.longitude * 200) / 200 });
+    // Only the rounded area (0.01°, about 1 km) is used from here on.
+    setCenter({ lat: Math.round(pos.coords.latitude * 100) / 100, lng: Math.round(pos.coords.longitude * 100) / 100 });
   }, []);
 
   useEffect(() => {

@@ -48,7 +48,7 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
 
   const blocked = !me && !!memberId && social.isBlocked(memberId);
   const following = !!memberId && social.isFollowing(memberId);
-  const posts = social.posts.filter((p) => p.authorId === memberId);
+  const posts = memberId ? social.postsOf(memberId) : [];
   const pieces = me ? myListings : publicListings.filter((l) => l.ownerId === memberId);
   const hasStory = !!memberId && community.storyAuthors.some((a) => a.id === memberId);
   const username = (me ? profile?.username : null) ?? member?.username ?? (me && social.demo ? DEMO_ME.username : '');

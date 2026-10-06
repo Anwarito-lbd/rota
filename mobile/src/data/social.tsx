@@ -152,7 +152,10 @@ interface SocialValue {
   /** True when running on demo data (no Supabase project configured). */
   demo: boolean;
   meId: string | null;
+  /** The feed: no blocked or muted authors. */
   posts: Post[];
+  /** One member's posts for their profile: muting hides them from the feed only. */
+  postsOf: (memberId: string) => Post[];
   loading: boolean;
   error: string | null;
   refresh: () => void;
@@ -177,6 +180,9 @@ interface SocialValue {
   block: (memberId: string) => Promise<void>;
   unblock: (memberId: string) => Promise<void>;
 
+  /** Members whose stories I muted (030): the story tray leaves them out. */
+  mutedStoryIds: string[];
+
   report: (target: { kind: 'post' | 'comment' | 'member' | 'message'; id: string }, reason: SocialReportReason, note?: string) => Promise<void>;
 
   publish: (input: PublishInput) => Promise<{ id: string; live: boolean }>;
@@ -193,9 +199,9 @@ const SocialContext = createContext<SocialValue | null>(null);
 
 // ─── helpers ──────────────────────────────────────────────────
 
-/** 0.005° grid, the same rounding migration 009 applies server-side. */
+/** 0.01° grid (about 1 km), the same rounding migration 032 applies server-side. */
 export function coarsen(area: Area): Area {
-  return { lat: Math.round(area.lat * 200) / 200, lng: Math.round(area.lng * 200) / 200, label: area.label };
+  return { lat: Math.round(area.lat * 100) / 100, lng: Math.round(area.lng * 100) / 100, label: area.label };
 }
 
 export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
@@ -322,6 +328,8 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       : [],
   );
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
+  const [mutedPosts, setMutedPosts] = useState<Set<string>>(new Set());
+  const [mutedStories, setMutedStories] = useState<Set<string>>(new Set());
   const [demoIdentity, setDemoIdentity] = useState<IdentityStatus>('none');
 
   // ── initial load (Supabase) ──
@@ -375,6 +383,11 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     db.from('member_blocks').select('blocked_id').then(({ data }) => {
       setBlocked(new Set((data ?? []).map((r) => r.blocked_id as string)));
     });
+    db.from('member_mutes').select('muted_id, mute_posts, mute_stories').then(({ data }) => {
+      const rows = (data ?? []) as { muted_id: string; mute_posts: boolean; mute_stories: boolean }[];
+      setMutedPosts(new Set(rows.filter((r) => r.mute_posts).map((r) => r.muted_id)));
+      setMutedStories(new Set(rows.filter((r) => r.mute_stories).map((r) => r.muted_id)));
+    });
     db.from('boards')
       .select('id, name, is_private, items:board_items(post_id, listing_id)')
       .eq('owner_id', meId)
@@ -394,7 +407,14 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   }, [demo, meId, tick]);
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
-  const visible = useMemo(() => posts.filter((p) => !blocked.has(p.authorId)), [posts, blocked]);
+  const visible = useMemo(
+    () => posts.filter((p) => !blocked.has(p.authorId) && !mutedPosts.has(p.authorId)),
+    [posts, blocked, mutedPosts],
+  );
+  const postsOf = useCallback(
+    (memberId: string) => (blocked.has(memberId) ? [] : posts.filter((p) => p.authorId === memberId)),
+    [posts, blocked],
+  );
   const postById = useCallback((id: string | null) => posts.find((p) => p.id === id) ?? null, [posts]);
 
   // ── follows ──
@@ -602,9 +622,14 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     async (postId: string) => {
       setPosts((ps) => ps.filter((p) => p.id !== postId));
       if (demo || !supabase) return;
-      await supabase.from('posts').delete().eq('id', postId);
+      // Goes to the 30-day bin (032); the purge job deletes it for good.
+      const { data, error: e } = await supabase.rpc('delete_post', { p_post: postId });
+      if (e || data !== true) {
+        refresh();
+        throw new Error(e?.message ?? 'not_deleted');
+      }
     },
-    [demo],
+    [demo, refresh],
   );
 
   const nearby = useCallback<SocialValue['nearby']>(
@@ -626,9 +651,9 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       }
       return rows
         .map((r) => ({ post: known.get(r.post_id), km: r.km }))
-        .filter((r): r is { post: Post; km: number } => !!r.post && !blocked.has(r.post.authorId));
+        .filter((r): r is { post: Post; km: number } => !!r.post && !blocked.has(r.post.authorId) && !mutedPosts.has(r.post.authorId));
     },
-    [demo, visible, blocked],
+    [demo, visible, blocked, mutedPosts],
   );
 
   // ── identity (Stripe Identity: document + selfie, hosted by Stripe) ──
@@ -657,6 +682,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       demo,
       meId,
       posts: visible,
+      postsOf,
       loading,
       error,
       refresh,
@@ -676,6 +702,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       blockedIds: [...blocked],
       block,
       unblock,
+      mutedStoryIds: [...mutedStories],
       report,
       publish,
       deletePost,
@@ -684,8 +711,8 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       verifyId,
     }),
     [
-      demo, meId, visible, loading, error, refresh, postById, challenges, following, toggleFollow, liked, toggleLike,
-      boards, isSaved, saveTo, removeFrom, createBoard, blocked, block, unblock, report, publish, deletePost, nearby,
+      demo, meId, visible, postsOf, loading, error, refresh, postById, challenges, following, toggleFollow, liked, toggleLike,
+      boards, isSaved, saveTo, removeFrom, createBoard, blocked, block, unblock, mutedStories, report, publish, deletePost, nearby,
       identity, verifyId,
     ],
   );
