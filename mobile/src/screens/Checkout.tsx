@@ -46,7 +46,7 @@ function MiniButton({ label, onPress }: { label: string; onPress: () => void }) 
 }
 
 function Confirmation() {
-  const { state, go, m } = useStore();
+  const { state, go, finish, m } = useStore();
   const { c } = useTheme();
   const { t, lang } = useT();
   const listing = useListing(state.activeId);
@@ -119,7 +119,8 @@ function Confirmation() {
         </View>
       ) : null}
 
-      <PrimaryButton label={t('checkout.viewRental')} onPress={() => go('rentals')} style={{ marginTop: 26 }} />
+      {/* Leaves the booking flow: back from the rental list must not reopen checkout. */}
+      <PrimaryButton label={t('checkout.viewRental')} onPress={() => finish({ screen: 'rentals' }, ['booking', 'checkout'])} style={{ marginTop: 26 }} />
       <GhostButton label={t('checkout.keepExploring')} onPress={() => go('discover')} style={{ marginTop: 10 }} />
     </Screen>
   );
@@ -141,7 +142,7 @@ function Disclosure({ label, value, strong }: { label: string; value: string; st
 }
 
 export function Checkout() {
-  const { state, set, go, m, back } = useStore();
+  const { state, set, go, m, back, finish } = useStore();
   const { c } = useTheme();
   const { t, lang } = useT();
   const insets = useSafeAreaInsets();
@@ -184,7 +185,8 @@ export function Checkout() {
   const pay = async () => {
     if (!state.payConsent) return setError(t('consent.required'));
     // The demo has no payments: show what a paid booking looks like.
-    if (!backendConfigured) return set({ confirmed: true, activeRentalId: null, payConsent: false, agreedOffer: null });
+    // Paid: drop the booking step from history, so back cannot reach a second payment.
+    if (!backendConfigured) return finish({ confirmed: true, activeRentalId: null, payConsent: false, agreedOffer: null }, ['booking']);
     if (!session) return setError(t('checkout.signIn'));
     if (!paymentsConfigured) return setError(t('error.paymentsUnavailable'));
     setBusy(true);
@@ -209,7 +211,7 @@ export function Checkout() {
         ).id;
       const outcome = await payRental(rentalId, session.user.email);
       if (outcome === 'paid') {
-        set({ confirmed: true, activeRentalId: rentalId, payConsent: false, agreedOffer: null });
+        finish({ confirmed: true, activeRentalId: rentalId, payConsent: false, agreedOffer: null }, ['booking']);
       } else {
         // The dates stay held for the payment window; the rental page can finish it.
         setUnpaidRental(rentalId);

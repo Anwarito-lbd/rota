@@ -71,6 +71,11 @@ const TAB_GROUPS: Record<string, Screen[]> = {
   ],
 };
 
+/** The tab a screen belongs to; screens outside every group belong to the feed. */
+export function rootFor(screen: Screen): TabKey {
+  return TABS.find(({ key }) => key === screen || (TAB_GROUPS[key] ?? []).includes(screen))?.key ?? 'feed';
+}
+
 export function TabBar() {
   const { state, set, go, config } = useStore();
   const { c, dark } = useTheme();
@@ -86,12 +91,7 @@ export function TabBar() {
         accessibilityLabel={t('create.title')}
         haptic="medium"
         scaleTo={0.88}
-        onPress={() => {
-          // Like a tab press, the create flow starts a fresh history; it keeps
-          // only the screen it was opened from, so closing the camera returns there.
-          set({ history: [] });
-          set({ screen: 'camera' });
-        }}
+        onPress={() => set({ screen: 'camera' })}
         style={{
           width: 52,
           height: 52,

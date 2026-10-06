@@ -28,7 +28,7 @@ function toItem(a: ImagePicker.ImagePickerAsset, source: 'camera' | 'library'): 
 }
 
 export function Compose() {
-  const { state, set, go, m, back } = useStore();
+  const { state, set, go, m, back, finish } = useStore();
   const { c } = useTheme();
   const { t, lang } = useT();
   const { width } = useWindowDimensions();
@@ -151,7 +151,13 @@ export function Compose() {
         </FadeIn>
         <PrimaryButton
           label={done.live ? t('verify.continue') : t('verify.gateCta')}
-          onPress={() => (done.live ? set({ screen: 'post', activePostId: done.id }) : set({ screen: 'verify', afterVerify: 'feed' }))}
+          // Published: leave the camera and composer out of history, so back
+          // does not reopen an empty composer.
+          onPress={() =>
+            done.live
+              ? finish({ screen: 'post', activePostId: done.id }, ['camera', 'compose'])
+              : finish({ screen: 'verify', afterVerify: 'feed' }, ['camera', 'compose'])
+          }
           style={{ marginTop: 28 }}
         />
         <Pressable onPress={() => go('feed')} style={{ alignItems: 'center', paddingVertical: 16 }}>

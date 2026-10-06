@@ -297,7 +297,12 @@ export function TryOn() {
               </Txt>
             </View>
             <PressScale
-              onPress={() => set({ screen: 'detail', activeId: listing.id })}
+              onPress={() => {
+                // Came from this piece: go back to it instead of stacking it again.
+                const top = state.history[state.history.length - 1];
+                if (top?.screen === 'detail' && top.activeId === listing.id) back({ screen: 'detail', activeId: listing.id });
+                else set({ screen: 'detail', activeId: listing.id });
+              }}
               style={{ paddingHorizontal: 14, minHeight: 38, borderRadius: 999, backgroundColor: c.accent, justifyContent: 'center' }}
             >
               <Txt size={13} weight="bold" color={c.onAccent}>

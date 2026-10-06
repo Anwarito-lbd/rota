@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -135,23 +136,26 @@ type Patch = Partial<AppState> | ((s: AppState) => Partial<AppState>);
 // where you came from. The rules, in order:
 //  1. A patch that sets `history` itself is taken as is (back, resets).
 //  2. Entering or leaving onboarding clears the history (sign-in, sign-out).
-//  3. A new screen, or the same screen showing another member, piece or post
-//     (profile → profile), pushes the previous screen and its context.
+//  3. A new screen, or the same screen showing another member, piece, post
+//     or conversation (profile → profile), pushes the previous screen and
+//     its context.
 //     Anything else (a sheet, a filter, a viewer moving to its next story)
 //     changes nothing.
-// `go` to one of the four tab roots also clears it, like a tab press.
+// `go` (or `finish`) to one of the four tab roots also clears it, like a
+// tab press.
 
 const HISTORY_CAP = 30;
 
 /** Screens that show one thing; opening another one counts as navigating. */
-const IDENTITY: Partial<Record<Screen, 'profileId' | 'activeId' | 'activePostId'>> = {
+const IDENTITY: Partial<Record<Screen, 'profileId' | 'activeId' | 'activePostId' | 'thread'>> = {
   user: 'profileId',
   profile: 'profileId',
   detail: 'activeId',
   post: 'activePostId',
+  messages: 'thread',
 };
 
-const TAB_ROOTS: Screen[] = ['feed', 'discover', 'messages', 'closet'];
+export const TAB_ROOTS: Screen[] = ['feed', 'discover', 'messages', 'closet'];
 
 /** Transient overlays every navigation closes. */
 const CLOSED: Partial<AppState> = {
@@ -198,6 +202,12 @@ interface Store {
    * piece, post…). With no history, open `fallback` instead.
    */
   back: (fallback: Screen | Partial<AppState>) => void;
+  /**
+   * End a flow: drop the trailing history entries on the `drop` screens
+   * (e.g. the booking steps after a payment), then apply `patch` without
+   * recording the current screen, so back never returns into the flow.
+   */
+  finish: (patch: Partial<AppState>, drop: Screen[]) => void;
   theme: Theme;
   dark: boolean;
   /** Format an amount in the configured currency. */
@@ -252,11 +262,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState((s) => navigate(s, { ...CLOSED, screen, ...(TAB_ROOTS.includes(screen) ? { history: [] } : {}) }));
   }, []);
 
+  // The history as last rendered: a second tap before the next render (a
+  // double tap on a back button) must not pop a second screen.
+  const rendered = useRef(state.history);
+  rendered.current = state.history;
+
   const back = useCallback((fallback: Screen | Partial<AppState>) => {
+    const seen = rendered.current;
     setState((s) => {
+      if (s.history !== seen) return s;
       const prev = s.history[s.history.length - 1];
       if (!prev) return { ...s, ...CLOSED, ...(typeof fallback === 'string' ? { screen: fallback } : fallback), history: [] };
       return { ...s, ...CLOSED, ...prev, history: s.history.slice(0, -1) };
+    });
+  }, []);
+
+  const finish = useCallback((patch: Partial<AppState>, drop: Screen[]) => {
+    setState((s) => {
+      const history = [...s.history];
+      while (history.length && drop.includes(history[history.length - 1].screen)) history.pop();
+      const screen = patch.screen ?? s.screen;
+      return { ...s, ...CLOSED, ...patch, history: TAB_ROOTS.includes(screen) ? [] : history };
     });
   }, []);
 
@@ -294,13 +320,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setConfig,
       go,
       back,
+      finish,
       theme,
       dark: theme === 'dark',
       m,
       toggleFlag,
       setMedia,
     }),
-    [state, config, set, setConfig, go, back, theme, m, toggleFlag, setMedia],
+    [state, config, set, setConfig, go, back, finish, theme, m, toggleFlag, setMedia],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

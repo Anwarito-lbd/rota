@@ -53,7 +53,7 @@ import {
 } from './src/screens/SettingsPages';
 import { HiddenWords, MutedAccounts, RecentlyDeleted, RestrictedAccounts } from './src/screens/PrivacyPages';
 import { ModerationDecisions } from './src/screens/Decisions';
-import { StoreProvider, useStore } from './src/state/store';
+import { StoreProvider, TAB_ROOTS, useStore } from './src/state/store';
 import type { Screen as ScreenKey } from './src/state/types';
 import { useTheme } from './src/theme/useTheme';
 import { GhostButton, Display, Screen, Txt } from './src/ui/kit';
@@ -61,7 +61,7 @@ import { MfaChallenge } from './src/ui/Mfa';
 import { UsernamePrompt } from './src/ui/UsernamePrompt';
 import { ReportSheet } from './src/ui/Moderation';
 import { CommentsSheet, CreateSheet, SaveSheet, SocialReportSheet } from './src/ui/SocialSheets';
-import { TAB_BAR_SPACE, TabBar } from './src/ui/TabBar';
+import { rootFor, TAB_BAR_SPACE, TabBar } from './src/ui/TabBar';
 
 /** Screens still being ported from the web build. */
 function ComingSoon() {
@@ -169,20 +169,22 @@ function Shell() {
     }
   }, [session, set]);
 
-  // Android back button: close an open conversation, else go back one screen.
-  // With nowhere to go back to, let the system handle it (leave the app).
+  // Android back button: go back one screen (an open conversation is a
+  // history entry too). With no history, a deeper screen goes to its tab's
+  // root; only a tab root or onboarding hands the press to the system (leaves
+  // the app). Not while a sign-in step covers the app.
+  const screen = state.screen;
   const canGoBack = state.history.length > 0;
-  const threadOpen = state.screen === 'messages' && !!state.thread;
+  const covered = loading || (!!session && needsMfa) || (!!session && !!profile && !profile.usernameConfirmed);
   useEffect(() => {
     if (Platform.OS === 'web') return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (threadOpen) set({ thread: null });
-      else if (canGoBack) back('feed');
-      else return false;
+      if (covered || screen === 'onboard' || (!canGoBack && TAB_ROOTS.includes(screen))) return false;
+      back(rootFor(screen));
       return true;
     });
     return () => sub.remove();
-  }, [canGoBack, threadOpen, set, back]);
+  }, [screen, canGoBack, covered, back]);
 
   // Signed out (from Settings, a closed account, an expired session): back to
   // the welcome screen. Only on the change from signed in to signed out.

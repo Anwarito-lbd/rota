@@ -350,7 +350,7 @@ function Bubble({ m, mine, onLongPress }: { m: Message; mine: boolean; onLongPre
 }
 
 function Conversation({ id }: { id: string }) {
-  const { set, m } = useStore();
+  const { set, m, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const insets = useSafeAreaInsets();
@@ -396,7 +396,7 @@ function Conversation({ id }: { id: string }) {
           borderBottomColor: c.line,
         }}
       >
-        <PressScale onPress={() => set({ thread: null })} accessibilityLabel={t('common.back')} style={{ width: 40, height: 40, justifyContent: 'center' }}>
+        <PressScale onPress={() => back({ screen: 'messages', thread: null })} accessibilityLabel={t('common.back')} style={{ width: 40, height: 40, justifyContent: 'center' }}>
           <ChevronLeft color={c.ink} />
         </PressScale>
         <Pressable

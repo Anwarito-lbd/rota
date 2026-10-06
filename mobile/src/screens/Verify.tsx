@@ -39,7 +39,7 @@ function Spinner() {
 }
 
 export function Verify() {
-  const { state, go, back } = useStore();
+  const { state, back, finish } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const social = useSocial();
@@ -61,12 +61,12 @@ export function Verify() {
     }
   };
 
-  // Return to the screen that asked: pop it when we came from there, so
-  // its back button still works; otherwise open it.
+  // Return to the screen that asked: pop it when we came from there;
+  // otherwise open it without keeping this screen in history.
   const next = () => {
     const to = state.afterVerify ?? 'feed';
     if (state.history[state.history.length - 1]?.screen === to) back(to);
-    else go(to);
+    else finish({ screen: to }, []);
   };
   const pending = busy || status === 'pending';
 

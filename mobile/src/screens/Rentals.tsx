@@ -9,7 +9,7 @@ import { returnStatus } from '../lib/fees';
 import { usePolicy } from '../lib/policy';
 import { useStore } from '../state/store';
 import { useTheme } from '../theme/useTheme';
-import { Chip, Display, GhostButton, Screen, Txt } from '../ui/kit';
+import { Chip, GhostButton, Header, Screen, Txt } from '../ui/kit';
 import { MediaSlot } from '../ui/MediaSlot';
 
 const STATUS_KEY: Record<RentalStatus, TranslationKey> = {
@@ -105,7 +105,7 @@ function RentalCard({ rental, mine }: { rental: Rental; mine: boolean }) {
 }
 
 export function Rentals() {
-  const { state, set, go } = useStore();
+  const { state, set, go, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const { session } = useAuth();
@@ -118,7 +118,7 @@ export function Rentals() {
 
   return (
     <Screen bottomInset={120}>
-      <Display size={34}>{t('rentals.title')}</Display>
+      <Header title={t('rentals.title')} onBack={() => back('closet')} size={34} />
       <Txt size={15} color={c.ink2} style={{ marginTop: 4 }}>
         {t('rentals.subtitle')}
       </Txt>
