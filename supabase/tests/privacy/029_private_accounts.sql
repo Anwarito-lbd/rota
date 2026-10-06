@@ -6,6 +6,9 @@ declare
   q uuid := pg_temp.member('pq');  -- second requester
   lst uuid; n int; j jsonb; denied boolean := false; out jsonb := '{}';
 begin
+  -- 034 forbids private accounts; this test still covers the private path, so it lifts
+  -- the constraint inside its own transaction (the final raise rolls it back).
+  alter table public.profiles drop constraint profiles_always_public;
   update public.profiles set identity_status = 'verified', city = 'Paris', show_city = false where id = o;
   insert into public.posts (author_id, kind, media_paths) values (o, 'fit', array[o::text || '/p.jpg']);
   insert into public.stories (author_id, media_path) values (o, o::text || '/s.jpg');

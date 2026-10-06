@@ -8,6 +8,9 @@ declare
   j jsonb; jo jsonb; k text; err text; alias1 text; alias2 text; old_name text;
   missing text[] := '{}'; out jsonb := '{}';
 begin
+  -- 034 forbids private accounts; the closure's pending-request path is still tested,
+  -- so the constraint is lifted inside this transaction (the final raise rolls it back).
+  alter table public.profiles drop constraint profiles_always_public;
   insert into public.business_details (user_id, siret, declared_name, status) values (m, '91450006100017', 'Shop', 'pending');
   insert into public.member_entitlements (user_id, tryon_credits) values (m, 3);
   insert into public.iap_events (event_id, user_id, kind, product_id) values ('evt-test-033', m, 'purchase', 'tryon_1');
