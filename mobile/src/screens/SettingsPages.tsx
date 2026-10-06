@@ -4,7 +4,7 @@
  */
 import * as Notifications from 'expo-notifications';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Linking, Pressable, Text, TextInput, View } from 'react-native';
+import { AccessibilityInfo, Linking, Pressable, Text, TextInput, View } from 'react-native';
 import {
   changePassword,
   closeAccount,
@@ -35,6 +35,7 @@ import {
   verifyIdentity,
   type SavedMethod,
 } from '../data/payments';
+import { useSocial } from '../data/social';
 import { LANGUAGES, useT, type TranslationKey } from '../i18n';
 import { useAuth } from '../lib/auth';
 import { friendlyError } from '../lib/errors';
@@ -856,6 +857,13 @@ export function PushSettings() {
           onPress={() => set({ pushMessages: !prefs.pushMessages })}
         />
         <FlatToggle
+          label={t('set.pushPreviews')}
+          body={t('set.pushPreviewsBody')}
+          on={prefs.pushPreviews}
+          disabled={off || !prefs.pushMessages}
+          onPress={() => set({ pushPreviews: !prefs.pushPreviews })}
+        />
+        <FlatToggle
           label={t('set.catSocial')}
           body={t('set.catSocialBody')}
           on={prefs.pushSocial}
@@ -983,6 +991,8 @@ export function ThemeSettings() {
 
 export function PrivacySettings() {
   const { t } = useT();
+  const { go } = useStore();
+  const social = useSocial();
   const { session, profile, refreshProfile } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1004,6 +1014,38 @@ export function PrivacySettings() {
     }
   };
 
+  // Interactions: who can write, who can review, like counts.
+  const [priv, setPriv] = useState({
+    hideLikeCounts: profile?.hideLikeCounts ?? false,
+    messagePolicy: profile?.messagePolicy ?? 'everyone',
+    commentPolicy: profile?.commentPolicy ?? 'everyone',
+  });
+  useEffect(() => {
+    if (profile) setPriv({ hideLikeCounts: profile.hideLikeCounts, messagePolicy: profile.messagePolicy, commentPolicy: profile.commentPolicy });
+  }, [profile]);
+  const save = async (patch: Partial<typeof priv>) => {
+    const before = priv;
+    setPriv({ ...priv, ...patch });
+    setError(null);
+    if (!session) return;
+    try {
+      await saveProfile(session.user.id, patch);
+      refreshProfile();
+    } catch (e) {
+      setPriv(before);
+      setError(friendlyError(e, t));
+    }
+  };
+  const policy = (v: string) => t(`priv.${v}` as TranslationKey);
+  // The policy rows cycle on tap; the new value is read out right away.
+  const cycle = (patch: Partial<typeof priv>, value: string) => {
+    AccessibilityInfo.announceForAccessibility(policy(value));
+    save(patch);
+  };
+  const nextMessage = { everyone: 'following', following: 'nobody', nobody: 'everyone' } as const;
+  const nextComment = { everyone: 'followers', followers: 'nobody', nobody: 'everyone' } as const;
+  const blockedCount = social.blockedIds.length;
+
   const exportData = async () => {
     setBusy(true);
     setError(null);
@@ -1019,6 +1061,39 @@ export function PrivacySettings() {
     <FlatPage title={t('set.privacy')}>
       <FlatSection first title={t('set.privacyProfile')}>
         <FlatToggle label={t('set.showCity')} body={t('set.showCityBody')} on={showCity} onPress={toggleCity} last />
+      </FlatSection>
+      <FlatSection title={t('priv.interactions')}>
+        <FlatRow
+          label={t('priv.messages')}
+          sub={t('priv.msgHelp')}
+          detail={policy(priv.messagePolicy)}
+          accessibilityLabel={`${t('priv.messages')} : ${policy(priv.messagePolicy)}`}
+          accessibilityHint={`${t('priv.msgHelp')} ${t('priv.tapToChange')}`}
+          onPress={() => cycle({ messagePolicy: nextMessage[priv.messagePolicy] }, nextMessage[priv.messagePolicy])}
+        />
+        <FlatRow
+          label={t('priv.reviews')}
+          detail={policy(priv.commentPolicy)}
+          accessibilityLabel={`${t('priv.reviews')} : ${policy(priv.commentPolicy)}`}
+          accessibilityHint={t('priv.tapToChange')}
+          onPress={() => cycle({ commentPolicy: nextComment[priv.commentPolicy] }, nextComment[priv.commentPolicy])}
+        />
+        <FlatRow label={t('priv.hiddenWords')} onPress={() => go('set.words')} />
+        <FlatToggle
+          label={t('priv.likes')}
+          body={t('priv.likesBody')}
+          on={priv.hideLikeCounts}
+          onPress={() => save({ hideLikeCounts: !priv.hideLikeCounts })}
+          last
+        />
+      </FlatSection>
+      <FlatSection title={t('priv.accounts')}>
+        <FlatRow label={t('priv.muted')} onPress={() => go('set.mutes')} />
+        <FlatRow label={t('priv.restricted')} onPress={() => go('set.restricts')} />
+        <FlatRow label={t('set.blocked')} detail={blockedCount ? String(blockedCount) : undefined} onPress={() => go('blocked')} last />
+      </FlatSection>
+      <FlatSection title={t('priv.content')}>
+        <FlatRow label={t('priv.bin')} onPress={() => go('set.bin')} last />
       </FlatSection>
       <FlatSection title={t('set.privacyData')}>
         <FlatRow label={busy ? t('common.loading') : t('set.downloadData')} onPress={exportData} last />

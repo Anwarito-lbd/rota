@@ -225,17 +225,21 @@ export function GhostButton({
   onPress,
   tone = 'ink',
   style,
+  accessibilityLabel,
 }: {
   label: string;
   onPress: () => void;
   tone?: 'ink' | 'plum' | 'accent';
   style?: StyleProp<ViewStyle>;
+  /** When the label alone is ambiguous (several in a list). */
+  accessibilityLabel?: string;
 }) {
   const { c, fs } = useTheme();
   const color = tone === 'plum' ? c.plum : tone === 'accent' ? c.accent : c.ink;
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       style={({ pressed }) => [
         {

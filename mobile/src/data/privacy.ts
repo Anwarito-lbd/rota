@@ -49,11 +49,13 @@ export function demoMutes() {
 /**
  * Loads once, again on `reload()` and after any privacy change. A loader
  * throws on a server error; the hook keeps the last value and exposes the
- * message so a screen can offer a retry instead of an empty list.
+ * message so a screen can offer a retry instead of an empty list. The
+ * last item is true until the first answer, so "empty" never flashes.
  */
-function useLive<T>(load: () => Promise<T>, initial: T): [T, () => void, string | null] {
+function useLive<T>(load: () => Promise<T>, initial: T): [T, () => void, string | null, boolean] {
   const [value, setValue] = useState<T>(initial);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
   const reload = useCallback(() => setTick((n) => n + 1), []);
   useEffect(() => {
@@ -64,9 +66,12 @@ function useLive<T>(load: () => Promise<T>, initial: T): [T, () => void, string 
           if (cancelled) return;
           setValue(v);
           setError(null);
+          setLoading(false);
         },
         (e: unknown) => {
-          if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+          if (cancelled) return;
+          setError(e instanceof Error ? e.message : String(e));
+          setLoading(false);
         },
       );
     };
@@ -78,7 +83,7 @@ function useLive<T>(load: () => Promise<T>, initial: T): [T, () => void, string 
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tick]);
-  return [value, reload, error];
+  return [value, reload, error, loading];
 }
 
 const avatarUrl = (path: string | null) =>

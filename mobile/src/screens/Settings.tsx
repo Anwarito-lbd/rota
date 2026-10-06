@@ -86,11 +86,6 @@ export function Settings() {
 
       <FlatSection title={t('set.sectionPrivacy')}>
         <FlatRow label={t('set.privacy')} onPress={() => go('set.privacy')} />
-        <FlatRow
-          label={t('set.blocked')}
-          detail={social.blockedIds.length ? String(social.blockedIds.length) : undefined}
-          onPress={() => go('blocked')}
-        />
         <FlatRow label={t('decisions.title')} onPress={() => go('set.decisions')} last />
       </FlatSection>
 

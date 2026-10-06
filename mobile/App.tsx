@@ -51,6 +51,7 @@ import {
   ThemeSettings,
   BusinessSettings,
 } from './src/screens/SettingsPages';
+import { HiddenWords, MutedAccounts, RecentlyDeleted, RestrictedAccounts } from './src/screens/PrivacyPages';
 import { ModerationDecisions } from './src/screens/Decisions';
 import { StoreProvider, useStore } from './src/state/store';
 import type { Screen as ScreenKey } from './src/state/types';
@@ -105,6 +106,10 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   'set.privacy': PrivacySettings,
   'set.decisions': ModerationDecisions,
   'set.business': BusinessSettings,
+  'set.mutes': MutedAccounts,
+  'set.restricts': RestrictedAccounts,
+  'set.words': HiddenWords,
+  'set.bin': RecentlyDeleted,
   post: PostScreen,
   user: UserProfile,
   profile: UserProfile,

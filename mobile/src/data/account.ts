@@ -165,6 +165,8 @@ export interface Preferences {
   pushMessages: boolean;
   /** Likes, new followers, reviews, replies and reposts (migration 025). */
   pushSocial: boolean;
+  /** Message text in push notifications (migration 031). */
+  pushPreviews: boolean;
 }
 
 const DEFAULT_PREFS: Preferences = {
@@ -175,6 +177,7 @@ const DEFAULT_PREFS: Preferences = {
   pushClaims: true,
   pushMessages: true,
   pushSocial: true,
+  pushPreviews: true,
 };
 
 const COLUMNS: Record<keyof Preferences, string> = {
@@ -185,6 +188,7 @@ const COLUMNS: Record<keyof Preferences, string> = {
   pushClaims: 'push_claims',
   pushMessages: 'push_messages',
   pushSocial: 'push_social',
+  pushPreviews: 'push_previews',
 };
 
 export function usePreferences(enabled: boolean) {
@@ -206,6 +210,7 @@ export function usePreferences(enabled: boolean) {
             pushClaims: data.push_claims,
             pushMessages: data.push_messages ?? true,
             pushSocial: data.push_social ?? true,
+            pushPreviews: data.push_previews ?? true,
           });
         }
         setLoading(false);

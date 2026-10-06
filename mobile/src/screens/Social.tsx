@@ -253,7 +253,7 @@ export function Blocked() {
   const ids = social.blockedIds;
   return (
     <Screen>
-      <Header title={t('set.blocked')} onBack={() => go('settings')} />
+      <Header title={t('set.blocked')} onBack={() => go('set.privacy')} />
       <Txt size={14} color={c.ink2} style={{ marginTop: 10 }}>
         {t('blocked.body')}
       </Txt>
