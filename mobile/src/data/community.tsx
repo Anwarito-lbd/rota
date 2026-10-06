@@ -318,7 +318,8 @@ export function useFollowList(memberId: string | null, kind: 'followers' | 'foll
           : kind === 'following'
             ? others.slice(2, 8).map((m) => m.id)
             : [...(social.followingIds.includes(memberId) ? [DEMO_ME.id] : []), ...others.slice(0, 7).map((m) => m.id)];
-      setPeople(ids.filter((id) => !social.isBlocked(id)).map(person));
+      // The demo lists can name the same member twice (DEMO_ME is also a member).
+      setPeople([...new Set(ids)].filter((id) => !social.isBlocked(id)).map(person));
       return;
     }
     let cancelled = false;

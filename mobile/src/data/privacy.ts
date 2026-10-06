@@ -4,7 +4,7 @@
  * no follow requests here. Demo mode keeps everything in memory so each
  * screen can be tried without a server.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 export interface MiniMember { id: string; username: string; avatar: string | null }
@@ -50,26 +50,34 @@ export function demoMutes() {
  * Loads once, again on `reload()` and after any privacy change. A loader
  * throws on a server error; the hook keeps the last value and exposes the
  * message so a screen can offer a retry instead of an empty list. The
- * last item is true until the first answer, so "empty" never flashes.
+ * last item is true while a first load or a retry is running, so "empty"
+ * never flashes. Only the latest request may update the state.
  */
 function useLive<T>(load: () => Promise<T>, initial: T): [T, () => void, string | null, boolean] {
   const [value, setValue] = useState<T>(initial);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
-  const reload = useCallback(() => setTick((n) => n + 1), []);
+  const latest = useRef(0);
+  const reload = useCallback(() => {
+    setError(null);
+    setLoading(true);
+    setTick((n) => n + 1);
+  }, []);
   useEffect(() => {
     let cancelled = false;
     const run = () => {
+      const request = ++latest.current;
+      const stale = () => cancelled || request !== latest.current;
       load().then(
         (v) => {
-          if (cancelled) return;
+          if (stale()) return;
           setValue(v);
           setError(null);
           setLoading(false);
         },
         (e: unknown) => {
-          if (cancelled) return;
+          if (stale()) return;
           setError(e instanceof Error ? e.message : String(e));
           setLoading(false);
         },

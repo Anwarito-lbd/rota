@@ -995,7 +995,14 @@ export function PrivacySettings() {
   const social = useSocial();
   const { session, profile, refreshProfile } = useAuth();
   const [busy, setBusy] = useState(false);
+  // Export errors show under "Mes données"; save errors next to the switches.
   const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const fail = (e: unknown, show: (m: string) => void) => {
+    const message = friendlyError(e, t);
+    show(message);
+    AccessibilityInfo.announceForAccessibility(message);
+  };
   const [showCity, setShowCity] = useState(profile?.showCity ?? true);
   useEffect(() => {
     if (profile) setShowCity(profile.showCity);
@@ -1004,13 +1011,14 @@ export function PrivacySettings() {
   const toggleCity = async () => {
     const next = !showCity;
     setShowCity(next);
+    setSaveError(null);
     if (!session) return;
     try {
       await saveProfile(session.user.id, { showCity: next });
       refreshProfile();
     } catch (e) {
       setShowCity(!next);
-      setError(friendlyError(e, t));
+      fail(e, setSaveError);
     }
   };
 
@@ -1023,26 +1031,32 @@ export function PrivacySettings() {
   useEffect(() => {
     if (profile) setPriv({ hideLikeCounts: profile.hideLikeCounts, messagePolicy: profile.messagePolicy, commentPolicy: profile.commentPolicy });
   }, [profile]);
+  /** Optimistic; true once saved (or in demo, where nothing is stored). */
   const save = async (patch: Partial<typeof priv>) => {
     const before = priv;
     setPriv({ ...priv, ...patch });
-    setError(null);
-    if (!session) return;
+    setSaveError(null);
+    if (!session) return true;
     try {
       await saveProfile(session.user.id, patch);
       refreshProfile();
+      return true;
     } catch (e) {
       setPriv(before);
-      setError(friendlyError(e, t));
+      fail(e, setSaveError);
+      return false;
     }
   };
   const policy = (v: string) => t(`priv.${v}` as TranslationKey);
-  // The policy rows cycle on tap; the new value is read out right away.
-  const cycle = (patch: Partial<typeof priv>, value: string) => {
-    AccessibilityInfo.announceForAccessibility(policy(value));
-    save(patch);
+  const policyA11y = (label: string, value: string) => t('priv.policyA11y').replace('{label}', label).replace('{value}', policy(value));
+  // The policy rows cycle on tap; the new value is read out once it is saved.
+  const cycle = async (patch: Partial<typeof priv>, value: string) => {
+    if (await save(patch)) AccessibilityInfo.announceForAccessibility(policy(value));
   };
-  const nextMessage = { everyone: 'following', following: 'nobody', nobody: 'everyone' } as const;
+  // Messages: everyone or people I follow. An older 'nobody' reads as 'following'.
+  const messagePolicy = priv.messagePolicy === 'everyone' ? 'everyone' : 'following';
+  const nextMessage = messagePolicy === 'everyone' ? 'following' : 'everyone';
+  const msgHelp = t(messagePolicy === 'everyone' ? 'priv.msgHelpEveryone' : 'priv.msgHelpFollowing');
   const nextComment = { everyone: 'followers', followers: 'nobody', nobody: 'everyone' } as const;
   const blockedCount = social.blockedIds.length;
 
@@ -1052,7 +1066,7 @@ export function PrivacySettings() {
     try {
       await exportMyData();
     } catch (e) {
-      setError(friendlyError(e, t));
+      fail(e, setError);
     } finally {
       setBusy(false);
     }
@@ -1065,16 +1079,16 @@ export function PrivacySettings() {
       <FlatSection title={t('priv.interactions')}>
         <FlatRow
           label={t('priv.messages')}
-          sub={t('priv.msgHelp')}
-          detail={policy(priv.messagePolicy)}
-          accessibilityLabel={`${t('priv.messages')} : ${policy(priv.messagePolicy)}`}
-          accessibilityHint={`${t('priv.msgHelp')} ${t('priv.tapToChange')}`}
-          onPress={() => cycle({ messagePolicy: nextMessage[priv.messagePolicy] }, nextMessage[priv.messagePolicy])}
+          sub={msgHelp}
+          detail={policy(messagePolicy)}
+          accessibilityLabel={policyA11y(t('priv.messages'), messagePolicy)}
+          accessibilityHint={`${msgHelp} ${t('priv.tapToChange')}`}
+          onPress={() => cycle({ messagePolicy: nextMessage }, nextMessage)}
         />
         <FlatRow
           label={t('priv.reviews')}
           detail={policy(priv.commentPolicy)}
-          accessibilityLabel={`${t('priv.reviews')} : ${policy(priv.commentPolicy)}`}
+          accessibilityLabel={policyA11y(t('priv.reviews'), priv.commentPolicy)}
           accessibilityHint={t('priv.tapToChange')}
           onPress={() => cycle({ commentPolicy: nextComment[priv.commentPolicy] }, nextComment[priv.commentPolicy])}
         />
@@ -1086,6 +1100,9 @@ export function PrivacySettings() {
           onPress={() => save({ hideLikeCounts: !priv.hideLikeCounts })}
           last
         />
+        <View style={{ paddingHorizontal: 18 }}>
+          <Status error={saveError} />
+        </View>
       </FlatSection>
       <FlatSection title={t('priv.accounts')}>
         <FlatRow label={t('priv.muted')} onPress={() => go('set.mutes')} />
@@ -1097,14 +1114,14 @@ export function PrivacySettings() {
       </FlatSection>
       <FlatSection title={t('set.privacyData')}>
         <FlatRow label={busy ? t('common.loading') : t('set.downloadData')} onPress={exportData} last />
+        <View style={{ paddingHorizontal: 18 }}>
+          <Status error={error} />
+        </View>
         <FlatHelp>{t('set.downloadHelp')}</FlatHelp>
       </FlatSection>
       <FlatSection title={t('set.whoSees')}>
         <FlatHelp>{t('set.whoSeesBody')}</FlatHelp>
       </FlatSection>
-      <View style={{ paddingHorizontal: 18 }}>
-        <Status error={error} />
-      </View>
     </FlatPage>
   );
 }

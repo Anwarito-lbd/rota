@@ -3,8 +3,8 @@
  * words and the reviews they held back, and the 30-day bin. Every account
  * is public, so there is no follow-request page.
  */
-import { useState } from 'react';
-import { ActivityIndicator, Image, Pressable, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, ActivityIndicator, Image, Pressable, View } from 'react-native';
 import {
   addHiddenWord,
   approveHiddenReview,
@@ -21,7 +21,7 @@ import {
   type MiniMember,
 } from '../data/privacy';
 import { saveProfile } from '../data/account';
-import { useT } from '../i18n';
+import { useT, type TranslationKey } from '../i18n';
 import { useAuth } from '../lib/auth';
 import { friendlyError } from '../lib/errors';
 import { useStore } from '../state/store';
@@ -31,10 +31,25 @@ import { Field, GhostButton, Txt } from '../ui/kit';
 
 // ── Building blocks ────────────────────────────────────────────
 
+/** Fills `{name}` placeholders in a translated template. */
+const fill = (template: string, values: Record<string, string | number>) =>
+  template.replace(/\{(\w+)\}/g, (all, k: string) => (k in values ? String(values[k]) : all));
+
+/** Days left in the bin, as "{n} jours", "1 jour" or "moins d'un jour". */
+function leftText(t: (k: TranslationKey) => string, n: number, base: 'priv.daysLeft' | 'priv.timeLeft') {
+  if (n <= 0) return t(`${base}None` as TranslationKey);
+  if (n === 1) return t(`${base}One` as TranslationKey);
+  return fill(t(base), { n });
+}
+
 /** Loading, load error (with a retry) or empty: whatever the list can't show yet. */
 function ListState({ loading, error, empty, onRetry }: { loading: boolean; error: string | null; empty: boolean; onRetry: () => void }) {
   const { t } = useT();
   const { c } = useTheme();
+  // Live regions are Android-only; announce so VoiceOver hears it too.
+  useEffect(() => {
+    if (error) AccessibilityInfo.announceForAccessibility(t('error.generic'));
+  }, [error, t]);
   if (error) {
     return (
       <View accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingVertical: 10 }}>
@@ -96,15 +111,37 @@ function MemberLine({ m, action, onPress, last }: { m: MiniMember; action: strin
   );
 }
 
-/** Runs an action and turns a failure into a line the member understands. */
+/**
+ * Runs an action and turns a failure into a line the member understands
+ * (also read out). With an id, a second tap on the same item while the
+ * first is still running is ignored.
+ */
 function useAction() {
   const { t } = useT();
   const [error, setError] = useState<string | null>(null);
-  const run = (action: () => Promise<unknown>) => {
-    setError(null);
-    action().catch((e) => setError(friendlyError(e, t)));
+  const pending = useRef(new Set<string>());
+  const [, setPendingCount] = useState(0);
+  const fail = (message: string) => {
+    setError(message);
+    AccessibilityInfo.announceForAccessibility(message);
   };
-  return { error, setError, run };
+  const run = (action: () => Promise<unknown>, id?: string) => {
+    if (id) {
+      if (pending.current.has(id)) return;
+      pending.current.add(id);
+      setPendingCount(pending.current.size);
+    }
+    setError(null);
+    action()
+      .catch((e) => fail(friendlyError(e, t)))
+      .finally(() => {
+        if (!id) return;
+        pending.current.delete(id);
+        setPendingCount(pending.current.size);
+      });
+  };
+  const isPending = (id: string) => pending.current.has(id);
+  return { error, setError, fail, run, isPending };
 }
 
 // ── Comptes en sourdine ────────────────────────────────────────
@@ -119,7 +156,7 @@ export function MutedAccounts() {
       <FlatSection first>
         <ListState loading={loading} error={loadError} empty={items.length === 0} onRetry={reload} />
         {items.map((m, i) => (
-          <MemberLine key={m.id} m={m} action={t('priv.unmute')} last={i === items.length - 1} onPress={() => run(() => setMute(m, false, false))} />
+          <MemberLine key={m.id} m={m} action={t('priv.unmute')} last={i === items.length - 1} onPress={() => run(() => setMute(m, false, false), m.id)} />
         ))}
       </FlatSection>
       <ActionError message={error} />
@@ -139,7 +176,7 @@ export function RestrictedAccounts() {
       <FlatSection first>
         <ListState loading={loading} error={loadError} empty={items.length === 0} onRetry={reload} />
         {items.map((m, i) => (
-          <MemberLine key={m.id} m={m} action={t('priv.unrestrict')} last={i === items.length - 1} onPress={() => run(() => setRestrict(m, false))} />
+          <MemberLine key={m.id} m={m} action={t('priv.unrestrict')} last={i === items.length - 1} onPress={() => run(() => setRestrict(m, false), m.id)} />
         ))}
       </FlatSection>
       <FlatHelp>{t('priv.restrictedHelp')}</FlatHelp>
@@ -159,7 +196,10 @@ export function HiddenWords() {
   const [reviews, reloadReviews, reviewsError, reviewsLoading] = useHiddenReviews();
   const [draft, setDraft] = useState('');
   const [defaults, setDefaults] = useState(profile?.hideDefaultWords ?? true);
-  const { error, setError, run } = useAction();
+  useEffect(() => {
+    if (profile) setDefaults(profile.hideDefaultWords);
+  }, [profile]);
+  const { error, setError, fail, run, isPending } = useAction();
 
   const toggleDefaults = async () => {
     const next = !defaults;
@@ -171,12 +211,16 @@ export function HiddenWords() {
       refreshProfile();
     } catch (e) {
       setDefaults(!next);
-      setError(friendlyError(e, t));
+      fail(friendlyError(e, t));
     }
   };
 
-  // A word already in the list (or too short) is ignored by addHiddenWord.
-  const add = () => run(() => addHiddenWord(draft).then(() => setDraft('')));
+  // Same rule as addHiddenWord; a word already in the list is ignored there.
+  const add = () => {
+    const length = draft.trim().length;
+    if (length < 2 || length > 40) return fail(t('priv.wordLength'));
+    run(() => addHiddenWord(draft).then(() => setDraft('')));
+  };
 
   return (
     <FlatPage title={t('priv.hiddenWords')} onBack={() => back('set.privacy')}>
@@ -191,13 +235,13 @@ export function HiddenWords() {
           <FlatRow
             key={w}
             label={w}
-            accessibilityLabel={`${t('common.delete')} « ${w} »`}
+            accessibilityLabel={fill(t('priv.deleteWordA11y'), { word: w })}
             right={
               <Txt size={15} color={c.plum}>
                 {t('common.delete')}
               </Txt>
             }
-            onPress={() => run(() => removeHiddenWord(w))}
+            onPress={() => run(() => removeHiddenWord(w), w)}
           />
         ))}
         <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', paddingHorizontal: 18, paddingTop: 12 }}>
@@ -206,6 +250,7 @@ export function HiddenWords() {
           </View>
           <GhostButton label={t('common.add')} tone="accent" onPress={add} />
         </View>
+        <ActionError message={error} />
         <FlatHelp>{t('priv.wordHint')}</FlatHelp>
       </FlatSection>
 
@@ -213,22 +258,22 @@ export function HiddenWords() {
         <FlatHelp>{t('priv.hiddenReviewsHelp')}</FlatHelp>
         <ListState loading={reviewsLoading} error={reviewsError} empty={reviews.length === 0} onRetry={reloadReviews} />
         {reviews.map((r, i) => (
-          <FlatRow
-            key={r.id}
-            label={r.author}
-            sub={r.body}
-            accessibilityLabel={`${t('priv.show')} : ${r.author}, ${r.body}`}
-            right={
-              <Txt size={15} weight="semi" color={c.accent}>
-                {t('priv.show')}
-              </Txt>
-            }
-            onPress={() => run(() => approveHiddenReview(r.id))}
-            last={i === reviews.length - 1}
-          />
+          <View key={r.id} style={{ opacity: isPending(r.id) ? 0.5 : 1 }}>
+            <FlatRow
+              label={r.author}
+              sub={r.body}
+              accessibilityLabel={fill(t('priv.showReviewA11y'), { name: r.author, body: r.body })}
+              right={
+                <Txt size={15} weight="semi" color={c.accent}>
+                  {t('priv.show')}
+                </Txt>
+              }
+              onPress={() => run(() => approveHiddenReview(r.id), r.id)}
+              last={i === reviews.length - 1}
+            />
+          </View>
         ))}
       </FlatSection>
-      <ActionError message={error} />
     </FlatPage>
   );
 }
@@ -240,7 +285,7 @@ export function RecentlyDeleted() {
   const { back } = useStore();
   const { c } = useTheme();
   const [items, reload, loadError, loading] = useRecentlyDeleted();
-  const { error, run } = useAction();
+  const { error, run, isPending } = useAction();
   return (
     <FlatPage title={t('priv.bin')} onBack={() => back('set.privacy')}>
       <FlatHelp>{t('priv.binHelp')}</FlatHelp>
@@ -248,14 +293,16 @@ export function RecentlyDeleted() {
       {items.length ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 2, paddingHorizontal: 2 }}>
           {items.map((it) => {
-            const left = t('priv.daysLeft').replace('{n}', String(daysLeft(it.deletedAt)));
+            const n = daysLeft(it.deletedAt);
+            const busy = isPending(it.id);
             return (
               <Pressable
                 key={it.id}
                 accessibilityRole="button"
-                accessibilityLabel={`${t('priv.restore')}, ${left}`}
-                onPress={() => run(() => restoreFromBin(it))}
-                style={({ pressed }) => ({ width: '32.6%', aspectRatio: 0.8, backgroundColor: c.surf2, opacity: pressed ? 0.7 : 1 })}
+                accessibilityLabel={fill(t(`priv.restoreA11y.${it.kind}`), { left: leftText(t, n, 'priv.timeLeft') })}
+                accessibilityState={{ busy }}
+                onPress={() => run(() => restoreFromBin(it), it.id)}
+                style={({ pressed }) => ({ width: '32.6%', aspectRatio: 0.8, backgroundColor: c.surf2, opacity: pressed || busy ? 0.6 : 1 })}
               >
                 {it.media ? <Image source={{ uri: it.media }} style={{ flex: 1 }} accessibilityIgnoresInvertColors /> : null}
                 <View
@@ -270,7 +317,7 @@ export function RecentlyDeleted() {
                   }}
                 >
                   <Txt size={11} color="#fff">
-                    {left}
+                    {leftText(t, n, 'priv.daysLeft')}
                   </Txt>
                 </View>
               </Pressable>
