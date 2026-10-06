@@ -389,10 +389,14 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   }, [demo, tick]);
 
   // ── what belongs to the signed-in member (Supabase) ──
+  // Who is signed in right now, so a late answer for a previous account is dropped.
+  const meRef = useRef(meId);
+  meRef.current = meId;
   const loadMutes = useCallback(() => {
-    if (demo || !supabase) return;
+    const me = meRef.current;
+    if (demo || !supabase || !me) return;
     supabase.from('member_mutes').select('muted_id, mute_posts, mute_stories').then(({ data, error: e }) => {
-      if (e) return;
+      if (e || meRef.current !== me) return;
       const rows = (data ?? []) as { muted_id: string; mute_posts: boolean; mute_stories: boolean }[];
       setMutedPosts(new Set(rows.filter((r) => r.mute_posts).map((r) => r.muted_id)));
       setMutedStories(new Set(rows.filter((r) => r.mute_stories).map((r) => r.muted_id)));
