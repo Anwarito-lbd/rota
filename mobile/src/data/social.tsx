@@ -24,6 +24,7 @@ import { uploadMedia } from '../lib/upload';
 import type { MediaItem } from '../state/types';
 import { DEMO_COMMENTS, DEMO_FOLLOWING, DEMO_ME, DEMO_MEMBERS, DEMO_POSTS } from './demo';
 import { paymentsConfigured, verifyIdentity } from './payments';
+import { demoBinAdd, demoMutes, onPrivacyChange } from './privacy';
 
 export type PostKind = 'fit' | 'dump';
 export type IdentityStatus = 'none' | 'pending' | 'verified' | 'rejected';
@@ -407,6 +408,18 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   }, [demo, meId, tick]);
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
+
+  // A mute, or a post back from the bin (data/privacy.ts): reload what depends on it.
+  useEffect(
+    () =>
+      onPrivacyChange(() => {
+        if (!demo) return refresh();
+        const mutes = demoMutes();
+        setMutedPosts(new Set(mutes.filter((m) => m.posts).map((m) => m.id)));
+        setMutedStories(new Set(mutes.filter((m) => m.stories).map((m) => m.id)));
+      }),
+    [demo, refresh],
+  );
   const visible = useMemo(
     () => posts.filter((p) => !blocked.has(p.authorId) && !mutedPosts.has(p.authorId)),
     [posts, blocked, mutedPosts],
@@ -621,7 +634,16 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   const deletePost = useCallback(
     async (postId: string) => {
       setPosts((ps) => ps.filter((p) => p.id !== postId));
-      if (demo || !supabase) return;
+      if (demo || !supabase) {
+        const post = posts.find((p) => p.id === postId);
+        if (post) {
+          demoBinAdd(
+            { kind: 'post', id: postId, media: post.media[0] ?? null, deletedAt: new Date().toISOString() },
+            () => setPosts((ps) => (ps.some((p) => p.id === postId) ? ps : [post, ...ps])),
+          );
+        }
+        return;
+      }
       // Goes to the 30-day bin (032); the purge job deletes it for good.
       const { data, error: e } = await supabase.rpc('delete_post', { p_post: postId });
       if (e || data !== true) {
@@ -629,7 +651,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         throw new Error(e?.message ?? 'not_deleted');
       }
     },
-    [demo, refresh],
+    [demo, posts, refresh],
   );
 
   const nearby = useCallback<SocialValue['nearby']>(
