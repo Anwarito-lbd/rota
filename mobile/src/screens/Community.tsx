@@ -178,7 +178,13 @@ export function StoryViewer() {
   const social = useSocial();
   const reduced = useReducedMotion();
 
-  const authors = community.storyAuthors;
+  // Opened from a profile whose stories I muted: show that member alone.
+  const authors = useMemo(() => {
+    const tray = community.storyAuthors;
+    if (!state.storyAuthorId || tray.some((a) => a.id === state.storyAuthorId)) return tray;
+    const theirs = community.stories.find((s) => s.author.id === state.storyAuthorId);
+    return theirs ? [theirs.author] : tray;
+  }, [community.storyAuthors, community.stories, state.storyAuthorId]);
   const [authorIndex, setAuthorIndex] = useState(Math.max(0, authors.findIndex((a) => a.id === state.storyAuthorId)));
   const author = authors[authorIndex];
   const own = useMemo(() => community.stories.filter((s) => s.author.id === author?.id).reverse(), [community.stories, author]);

@@ -50,7 +50,8 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
   const following = !!memberId && social.isFollowing(memberId);
   const posts = memberId ? social.postsOf(memberId) : [];
   const pieces = me ? myListings : publicListings.filter((l) => l.ownerId === memberId);
-  const hasStory = !!memberId && community.storyAuthors.some((a) => a.id === memberId);
+  // Muting stories only hides them from the tray: the ring still shows here.
+  const hasStory = !!memberId && community.stories.some((s) => s.author.id === memberId);
   const username = (me ? profile?.username : null) ?? member?.username ?? (me && social.demo ? DEMO_ME.username : '');
   const avatar = (me ? profile?.avatarUrl : null) ?? member?.avatar ?? (me && social.demo ? DEMO_ME.avatar : undefined) ?? undefined;
   const bio = (me ? profile?.bio : null) ?? member?.bio ?? null;

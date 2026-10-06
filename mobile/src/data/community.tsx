@@ -49,8 +49,9 @@ interface CommunityValue {
   /** Posts reposted by people I follow: post id → who reposted it. */
   repostedBy: Record<string, Person>;
 
+  /** Live stories, blocked members left out. Muted members' stay here so their profile can still open them. */
   stories: Story[];
-  /** Members with a live story, me first. */
+  /** The tray: members with a live story, me first, without blocked or story-muted members. */
   storyAuthors: Person[];
   seenStories: string[];
   markSeen: (storyId: string) => void;
@@ -278,7 +279,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     isReposted: (id) => reposted.includes(id),
     toggleRepost,
     repostedBy,
-    stories: stories.filter((s) => !hidden(s.author.id)),
+    stories: stories.filter((s) => !isBlocked(s.author.id)),
     storyAuthors,
     seenStories,
     markSeen: (id) => setSeen((s) => (s.includes(id) ? s : [...s, id])),

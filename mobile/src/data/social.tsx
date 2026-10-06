@@ -329,15 +329,23 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       : [],
   );
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
-  const [mutedPosts, setMutedPosts] = useState<Set<string>>(new Set());
-  const [mutedStories, setMutedStories] = useState<Set<string>>(new Set());
+  // Demo mutes live in data/privacy.ts and outlive this provider: start from them.
+  const [mutedPosts, setMutedPosts] = useState<Set<string>>(
+    () => new Set(demo ? demoMutes().filter((m) => m.posts).map((m) => m.id) : []),
+  );
+  const [mutedStories, setMutedStories] = useState<Set<string>>(
+    () => new Set(demo ? demoMutes().filter((m) => m.stories).map((m) => m.id) : []),
+  );
   const [demoIdentity, setDemoIdentity] = useState<IdentityStatus>('none');
 
   // ── initial load (Supabase) ──
+  // The spinner shows on the first load only; a reload swaps the posts in place.
+  const postsLoaded = useRef(false);
+  const [postsTick, setPostsTick] = useState(0);
   useEffect(() => {
     if (demo || !supabase) return;
     let cancelled = false;
-    setLoading(true);
+    if (!postsLoaded.current) setLoading(true);
     supabase
       .from('posts')
       .select(POST_SELECT)
@@ -350,9 +358,18 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         else {
           setError(null);
           setPosts(((data ?? []) as unknown as PostRow[]).map(toPost));
+          postsLoaded.current = true;
         }
         setLoading(false);
       });
+    return () => {
+      cancelled = true;
+    };
+  }, [demo, tick, postsTick]);
+
+  useEffect(() => {
+    if (demo || !supabase) return;
+    let cancelled = false;
     supabase
       .from('challenges')
       .select('id, title_fr, title_en, title_es')
@@ -372,8 +389,25 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   }, [demo, tick]);
 
   // ── what belongs to the signed-in member (Supabase) ──
+  const loadMutes = useCallback(() => {
+    if (demo || !supabase) return;
+    supabase.from('member_mutes').select('muted_id, mute_posts, mute_stories').then(({ data, error: e }) => {
+      if (e) return;
+      const rows = (data ?? []) as { muted_id: string; mute_posts: boolean; mute_stories: boolean }[];
+      setMutedPosts(new Set(rows.filter((r) => r.mute_posts).map((r) => r.muted_id)));
+      setMutedStories(new Set(rows.filter((r) => r.mute_stories).map((r) => r.muted_id)));
+    });
+  }, [demo]);
+
   useEffect(() => {
-    if (demo || !supabase || !meId) return;
+    if (demo || !supabase) return;
+    if (!meId) {
+      // Signed out: nobody else's blocks or mutes may filter what shows next.
+      setBlocked(new Set());
+      setMutedPosts(new Set());
+      setMutedStories(new Set());
+      return;
+    }
     const db = supabase;
     db.from('follows').select('followee_id').eq('follower_id', meId).then(({ data }) => {
       setFollowing(new Set((data ?? []).map((r) => r.followee_id as string)));
@@ -384,11 +418,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     db.from('member_blocks').select('blocked_id').then(({ data }) => {
       setBlocked(new Set((data ?? []).map((r) => r.blocked_id as string)));
     });
-    db.from('member_mutes').select('muted_id, mute_posts, mute_stories').then(({ data }) => {
-      const rows = (data ?? []) as { muted_id: string; mute_posts: boolean; mute_stories: boolean }[];
-      setMutedPosts(new Set(rows.filter((r) => r.mute_posts).map((r) => r.muted_id)));
-      setMutedStories(new Set(rows.filter((r) => r.mute_stories).map((r) => r.muted_id)));
-    });
+    loadMutes();
     db.from('boards')
       .select('id, name, is_private, items:board_items(post_id, listing_id)')
       .eq('owner_id', meId)
@@ -405,20 +435,24 @@ export function SocialProvider({ children }: { children: ReactNode }) {
           })),
         );
       });
-  }, [demo, meId, tick]);
+  }, [demo, meId, tick, loadMutes]);
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
 
-  // A mute, or a post back from the bin (data/privacy.ts): reload what depends on it.
+  // A mute, or a post back from the bin (data/privacy.ts): reload only what depends on it.
   useEffect(
     () =>
-      onPrivacyChange(() => {
-        if (!demo) return refresh();
-        const mutes = demoMutes();
-        setMutedPosts(new Set(mutes.filter((m) => m.posts).map((m) => m.id)));
-        setMutedStories(new Set(mutes.filter((m) => m.stories).map((m) => m.id)));
+      onPrivacyChange((kind) => {
+        if (demo) {
+          const mutes = demoMutes();
+          setMutedPosts(new Set(mutes.filter((m) => m.posts).map((m) => m.id)));
+          setMutedStories(new Set(mutes.filter((m) => m.stories).map((m) => m.id)));
+          return;
+        }
+        if (kind === 'mutes') loadMutes();
+        else if (kind === 'bin') setPostsTick((n) => n + 1);
       }),
-    [demo, refresh],
+    [demo, loadMutes],
   );
   const visible = useMemo(
     () => posts.filter((p) => !blocked.has(p.authorId) && !mutedPosts.has(p.authorId)),
@@ -633,25 +667,25 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
   const deletePost = useCallback(
     async (postId: string) => {
+      const post = posts.find((p) => p.id === postId);
+      const putBack = () => {
+        if (post) setPosts((ps) => (ps.some((p) => p.id === postId) ? ps : [post, ...ps]));
+      };
       setPosts((ps) => ps.filter((p) => p.id !== postId));
       if (demo || !supabase) {
-        const post = posts.find((p) => p.id === postId);
         if (post) {
-          demoBinAdd(
-            { kind: 'post', id: postId, media: post.media[0] ?? null, deletedAt: new Date().toISOString() },
-            () => setPosts((ps) => (ps.some((p) => p.id === postId) ? ps : [post, ...ps])),
-          );
+          demoBinAdd({ kind: 'post', id: postId, media: post.media[0] ?? null, deletedAt: new Date().toISOString() }, putBack);
         }
         return;
       }
       // Goes to the 30-day bin (032); the purge job deletes it for good.
       const { data, error: e } = await supabase.rpc('delete_post', { p_post: postId });
       if (e || data !== true) {
-        refresh();
+        putBack();
         throw new Error(e?.message ?? 'not_deleted');
       }
     },
-    [demo, posts, refresh],
+    [demo, posts],
   );
 
   const nearby = useCallback<SocialValue['nearby']>(
@@ -961,6 +995,8 @@ export function useMember(memberId: string | null): Member | null {
       });
       return;
     }
+    // Never leave the previous member on screen while this one loads.
+    setMember(null);
     let cancelled = false;
     // One call returns the card the server lets me see: counts, city only when shown,
     // and just the name across a block or for a closed account (029).
