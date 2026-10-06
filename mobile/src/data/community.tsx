@@ -146,15 +146,15 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     if (!supabase || !meId || social.followingIds.length === 0) return;
     supabase
       .from('reposts')
-      .select('post_id, user_id, profile:profiles!reposts_user_id_fkey(username, avatar_url, identity_status)')
+      .select('post_id, user_id, profile:profiles!reposts_user_id_fkey(username, avatar_url, identity_verified)')
       .in('user_id', social.followingIds)
       .order('created_at', { ascending: false })
       .limit(60)
       .then(({ data }) => {
         const map: Record<string, Person> = {};
-        for (const r of (data ?? []) as unknown as { post_id: string; user_id: string; profile: { username: string; avatar_url: string | null; identity_status: string } | null }[]) {
+        for (const r of (data ?? []) as unknown as { post_id: string; user_id: string; profile: { username: string; avatar_url: string | null; identity_verified: boolean | null } | null }[]) {
           if (!map[r.post_id]) {
-            map[r.post_id] = { id: r.user_id, username: r.profile?.username ?? 'membre', avatar: r.profile?.avatar_url ?? null, verified: r.profile?.identity_status === 'verified' };
+            map[r.post_id] = { id: r.user_id, username: r.profile?.username ?? 'membre', avatar: r.profile?.avatar_url ?? null, verified: r.profile?.identity_verified === true };
           }
         }
         setRepostedBy(map);
@@ -166,23 +166,23 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       .then(({ data }) => setReposted(((data ?? []) as { post_id: string }[]).map((r) => r.post_id)));
   }, [demo, meId, social.followingIds]);
 
-  // Live stories from the people I follow (RLS filters them).
+  // Live stories: public to every member (034); RLS drops blocked and deleted ones.
   useEffect(() => {
     if (demo || !supabase || !meId) return;
     supabase
       .from('stories')
-      .select('id, author_id, media_path, caption, created_at, author:profiles!stories_author_id_fkey(username, avatar_url, identity_status)')
+      .select('id, author_id, media_path, caption, created_at, author:profiles!stories_author_id_fkey(username, avatar_url, identity_verified)')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
       .limit(100)
       .then(({ data }) => {
         const db = supabase!;
         setStories(
-          ((data ?? []) as unknown as { id: string; author_id: string; media_path: string; caption: string | null; created_at: string; author: { username: string; avatar_url: string | null; identity_status: string } | null }[])
+          ((data ?? []) as unknown as { id: string; author_id: string; media_path: string; caption: string | null; created_at: string; author: { username: string; avatar_url: string | null; identity_verified: boolean | null } | null }[])
             .filter((s) => !/^[a-z]+:/i.test(s.media_path))
             .map((s) => ({
             id: s.id,
-            author: { id: s.author_id, username: s.author?.username ?? 'membre', avatar: s.author?.avatar_url ?? null, verified: s.author?.identity_status === 'verified' },
+            author: { id: s.author_id, username: s.author?.username ?? 'membre', avatar: s.author?.avatar_url ?? null, verified: s.author?.identity_verified === true },
             media: db.storage.from('post-media').getPublicUrl(s.media_path).data.publicUrl,
             caption: s.caption,
             createdAt: s.created_at,
@@ -317,17 +317,17 @@ export function useFollowList(memberId: string | null, kind: 'followers' | 'foll
     const [col, other] = kind === 'followers' ? ['followee_id', 'follower_id'] : ['follower_id', 'followee_id'];
     supabase
       .from('follows')
-      .select(`${other}, profile:profiles!follows_${other}_fkey(id, username, avatar_url, identity_status)`)
+      .select(`${other}, profile:profiles!follows_${other}_fkey(id, username, avatar_url, identity_verified)`)
       .eq(col, memberId)
       .order('created_at', { ascending: false })
       .limit(300)
       .then(({ data }) => {
         if (cancelled) return;
         setPeople(
-          ((data ?? []) as unknown as { profile: { id: string; username: string; avatar_url: string | null; identity_status: string } | null }[])
+          ((data ?? []) as unknown as { profile: { id: string; username: string; avatar_url: string | null; identity_verified: boolean | null } | null }[])
             .map((r) => r.profile)
             .filter((p): p is NonNullable<typeof p> => !!p && !social.isBlocked(p.id))
-            .map((p) => ({ id: p.id, username: p.username, avatar: p.avatar_url, verified: p.identity_status === 'verified' })),
+            .map((p) => ({ id: p.id, username: p.username, avatar: p.avatar_url, verified: p.identity_verified === true })),
         );
       });
     return () => {

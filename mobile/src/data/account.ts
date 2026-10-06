@@ -29,7 +29,18 @@ export async function usernameFree(username: string) {
 
 export async function saveProfile(
   userId: string,
-  patch: { username?: string; bio?: string | null; city?: string | null; showCity?: boolean; avatarUrl?: string; vacation?: boolean },
+  patch: {
+    username?: string;
+    bio?: string | null;
+    city?: string | null;
+    showCity?: boolean;
+    avatarUrl?: string;
+    vacation?: boolean;
+    hideLikeCounts?: boolean;
+    commentPolicy?: 'everyone' | 'followers' | 'nobody';
+    messagePolicy?: 'everyone' | 'following' | 'nobody';
+    hideDefaultWords?: boolean;
+  },
 ) {
   const row: Record<string, unknown> = {};
   if (patch.username !== undefined) row.username = patch.username;
@@ -38,6 +49,10 @@ export async function saveProfile(
   if (patch.showCity !== undefined) row.show_city = patch.showCity;
   if (patch.avatarUrl !== undefined) row.avatar_url = patch.avatarUrl;
   if (patch.vacation !== undefined) row.vacation = patch.vacation;
+  if (patch.hideLikeCounts !== undefined) row.hide_like_counts = patch.hideLikeCounts;
+  if (patch.commentPolicy !== undefined) row.comment_policy = patch.commentPolicy;
+  if (patch.messagePolicy !== undefined) row.message_policy = patch.messagePolicy;
+  if (patch.hideDefaultWords !== undefined) row.hide_default_words = patch.hideDefaultWords;
   const { error } = await db().from('profiles').update(row).eq('id', userId);
   if (error) throw new Error(error.code === '23505' ? 'username_taken' : error.message);
 }

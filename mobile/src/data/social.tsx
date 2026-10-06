@@ -111,6 +111,12 @@ export interface Member extends Author {
   bio: string | null;
   followers: number;
   following: number;
+  /** A block either way: the card only carries the name (029). */
+  blocked: boolean;
+  /** The account was closed. */
+  deleted: boolean;
+  /** Only when the member shows their city. */
+  city: string | null;
 }
 
 export type SocialReportReason =
@@ -225,12 +231,12 @@ interface PostRow {
   comment_count: number;
   created_at: string;
   distribution: Post['distribution'];
-  author: ({ username: string; avatar_url: string | null; certified: boolean; identity_status: string } & BadgeCols) | null;
+  author: ({ username: string; avatar_url: string | null; certified: boolean; identity_verified: boolean | null } & BadgeCols) | null;
   tags: { listing_id: string; media_index: number; x: number; y: number }[] | null;
 }
 
 const POST_SELECT =
-  '*, author:profiles!posts_author_id_fkey(username, avatar_url, certified, identity_status, pro_until, account_type, business_verified, business_name), tags:post_tags(listing_id, media_index, x, y)';
+  '*, author:profiles!posts_author_id_fkey(username, avatar_url, certified, identity_verified, pro_until, account_type, business_verified, business_name), tags:post_tags(listing_id, media_index, x, y)';
 
 function toPost(row: PostRow): Post {
   return {
@@ -240,7 +246,7 @@ function toPost(row: PostRow): Post {
       username: row.author?.username ?? 'membre',
       avatar: row.author?.avatar_url ?? null,
       certified: row.author?.certified ?? false,
-      identityVerified: row.author?.identity_status === 'verified',
+      identityVerified: row.author?.identity_verified === true,
       ...badgesFrom(row.author),
     },
     kind: row.kind,
@@ -900,27 +906,42 @@ export function useMember(memberId: string | null): Member | null {
         bio: m?.bio ?? null,
         followers: isMe ? 38 : 1200 + memberId.length * 137 + followedByMe,
         following: isMe ? followingIds.length : 180 + memberId.length * 11,
+        blocked: false,
+        deleted: false,
+        city: null,
       });
       return;
     }
     let cancelled = false;
-    const db = supabase;
-    Promise.all([
-      db.from('profiles').select('id, username, avatar_url, certified, identity_status, bio, pro_until, account_type, business_verified, business_name').eq('id', memberId).maybeSingle(),
-      db.from('follows').select('follower_id', { count: 'exact', head: true }).eq('followee_id', memberId),
-      db.from('follows').select('followee_id', { count: 'exact', head: true }).eq('follower_id', memberId),
-    ]).then(([p, followers, following]) => {
-      if (cancelled || !p.data) return;
+    // One call returns the card the server lets me see: counts, city only when shown,
+    // and just the name across a block or for a closed account (029).
+    supabase.rpc('profile_card', { p_id: memberId }).then(({ data }) => {
+      const card = data as (BadgeCols & {
+        username: string;
+        avatar_url?: string | null;
+        bio?: string | null;
+        certified?: boolean;
+        identity_verified?: boolean | null;
+        followers?: number;
+        following?: number;
+        blocked?: boolean;
+        deleted?: boolean;
+        city?: string | null;
+      }) | null;
+      if (cancelled || !card) return;
       setMember({
         id: memberId,
-        username: p.data.username,
-        avatar: p.data.avatar_url,
-        certified: p.data.certified,
-        identityVerified: p.data.identity_status === 'verified',
-        ...badgesFrom(p.data),
-        bio: p.data.bio,
-        followers: followers.count ?? 0,
-        following: following.count ?? 0,
+        username: card.username,
+        avatar: card.avatar_url ?? null,
+        certified: !!card.certified,
+        identityVerified: card.identity_verified === true,
+        ...badgesFrom(card),
+        bio: card.bio ?? null,
+        followers: Number(card.followers ?? 0),
+        following: Number(card.following ?? 0),
+        blocked: !!card.blocked,
+        deleted: !!card.deleted,
+        city: card.city ?? null,
       });
     });
     return () => {
