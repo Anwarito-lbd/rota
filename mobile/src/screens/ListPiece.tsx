@@ -74,7 +74,7 @@ function Stepper({ onMinus, onPlus, minusLabel, plusLabel, size = 44 }: { onMinu
 }
 
 export function ListPiece() {
-  const { state, go, m, setMedia } = useStore();
+  const { state, go, m, setMedia, back } = useStore();
   const { c } = useTheme();
   const { t, lang } = useT();
   const { session } = useAuth();
@@ -275,7 +275,7 @@ export function ListPiece() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('common.close')}
-            onPress={() => go('closet')}
+            onPress={() => back('closet')}
             hitSlop={8}
             style={{ width: 44, height: 44, borderRadius: 99, backgroundColor: c.surf2, alignItems: 'center', justifyContent: 'center' }}
           >

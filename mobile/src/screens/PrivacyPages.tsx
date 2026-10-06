@@ -111,11 +111,11 @@ function useAction() {
 
 export function MutedAccounts() {
   const { t } = useT();
-  const { go } = useStore();
+  const { back } = useStore();
   const [items, reload, loadError, loading] = useMutes();
   const { error, run } = useAction();
   return (
-    <FlatPage title={t('priv.muted')} onBack={() => go('set.privacy')}>
+    <FlatPage title={t('priv.muted')} onBack={() => back('set.privacy')}>
       <FlatSection first>
         <ListState loading={loading} error={loadError} empty={items.length === 0} onRetry={reload} />
         {items.map((m, i) => (
@@ -131,11 +131,11 @@ export function MutedAccounts() {
 
 export function RestrictedAccounts() {
   const { t } = useT();
-  const { go } = useStore();
+  const { back } = useStore();
   const [items, reload, loadError, loading] = useRestricts();
   const { error, run } = useAction();
   return (
-    <FlatPage title={t('priv.restricted')} onBack={() => go('set.privacy')}>
+    <FlatPage title={t('priv.restricted')} onBack={() => back('set.privacy')}>
       <FlatSection first>
         <ListState loading={loading} error={loadError} empty={items.length === 0} onRetry={reload} />
         {items.map((m, i) => (
@@ -152,7 +152,7 @@ export function RestrictedAccounts() {
 
 export function HiddenWords() {
   const { t } = useT();
-  const { go } = useStore();
+  const { back } = useStore();
   const { c } = useTheme();
   const { session, profile, refreshProfile } = useAuth();
   const [words, reloadWords, wordsError, wordsLoading] = useHiddenWords();
@@ -179,7 +179,7 @@ export function HiddenWords() {
   const add = () => run(() => addHiddenWord(draft).then(() => setDraft('')));
 
   return (
-    <FlatPage title={t('priv.hiddenWords')} onBack={() => go('set.privacy')}>
+    <FlatPage title={t('priv.hiddenWords')} onBack={() => back('set.privacy')}>
       <FlatSection first>
         <FlatToggle label={t('priv.defaultWords')} on={defaults} onPress={toggleDefaults} last />
       </FlatSection>
@@ -237,12 +237,12 @@ export function HiddenWords() {
 
 export function RecentlyDeleted() {
   const { t } = useT();
-  const { go } = useStore();
+  const { back } = useStore();
   const { c } = useTheme();
   const [items, reload, loadError, loading] = useRecentlyDeleted();
   const { error, run } = useAction();
   return (
-    <FlatPage title={t('priv.bin')} onBack={() => go('set.privacy')}>
+    <FlatPage title={t('priv.bin')} onBack={() => back('set.privacy')}>
       <FlatHelp>{t('priv.binHelp')}</FlatHelp>
       <ListState loading={loading} error={loadError} empty={items.length === 0} onRetry={reload} />
       {items.length ? (

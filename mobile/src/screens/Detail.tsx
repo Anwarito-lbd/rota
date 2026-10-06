@@ -73,7 +73,7 @@ function RoundOverlayButton({
 }
 
 export function Detail() {
-  const { state, set, go, m, toggleFlag } = useStore();
+  const { state, set, go, m, toggleFlag, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const insets = useSafeAreaInsets();
@@ -157,7 +157,7 @@ export function Detail() {
             <MediaSlot id={`detail-${listing.id}`} shape="rect" tone="media" placeholder={listing.title} />
           )}
           <View style={{ position: 'absolute', top: insets.top + 6, left: 14, right: 14, flexDirection: 'row', justifyContent: 'space-between' }}>
-            <RoundOverlayButton onPress={() => go('feed')} label={t('common.back')}>
+            <RoundOverlayButton onPress={() => back('feed')} label={t('common.back')}>
               <ChevronLeft color={OVER_INK} />
             </RoundOverlayButton>
             <View style={{ flexDirection: 'row', gap: 8 }}>

@@ -86,7 +86,12 @@ export function TabBar() {
         accessibilityLabel={t('create.title')}
         haptic="medium"
         scaleTo={0.88}
-        onPress={() => set({ screen: 'camera' })}
+        onPress={() => {
+          // Like a tab press, the create flow starts a fresh history; it keeps
+          // only the screen it was opened from, so closing the camera returns there.
+          set({ history: [] });
+          set({ screen: 'camera' });
+        }}
         style={{
           width: 52,
           height: 52,
@@ -106,6 +111,7 @@ export function TabBar() {
     </View>
   );
 
+  // Tabs are roots: `go` clears the back history, Instagram-style.
   const bar = (
     <View style={{ flexDirection: 'row', alignItems: 'center', padding: 6, gap: 2 }}>
       {TABS.flatMap(({ key, label, Icon }, i) => {

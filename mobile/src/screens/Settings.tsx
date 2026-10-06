@@ -19,7 +19,7 @@ import { Txt } from '../ui/kit';
  * moderation decisions page covers DSA art. 17 and 20.
  */
 export function Settings() {
-  const { state, set, go, m } = useStore();
+  const { state, set, go, m, back } = useStore();
   const { c } = useTheme();
   const { t, lang } = useT();
   const { session, profile, isStaff, signOut, refreshProfile } = useAuth();
@@ -47,7 +47,7 @@ export function Settings() {
   };
 
   return (
-    <FlatPage title={t('settings.title')} onBack={() => go('closet')}>
+    <FlatPage title={t('settings.title')} onBack={() => back('closet')}>
       <FlatSection first title={t('set.sectionAccount')}>
         <FlatRow label={t('set.profile')} detail={profile?.username ? `@${profile.username}` : undefined} onPress={() => go('set.profile')} />
         <FlatRow

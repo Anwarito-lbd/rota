@@ -545,13 +545,13 @@ function Safety() {
 }
 
 export function Admin() {
-  const { go } = useStore();
+  const { back } = useStore();
   const { t } = useT();
   const [tab, setTab] = useState<Tab>('moderation');
   const [nonce, setNonce] = useState(0);
   return (
     <Screen>
-      <Header title={t('admin.title')} onBack={() => go('settings')} />
+      <Header title={t('admin.title')} onBack={() => back('settings')} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 16, flexGrow: 0 }}>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {TABS.map((k) => (
@@ -567,7 +567,7 @@ export function Admin() {
         {tab === 'safety' ? <Safety /> : null}
       </View>
       <GhostButton label={t('admin.refresh')} onPress={() => setNonce((n) => n + 1)} style={{ marginTop: 20 }} />
-      <PrimaryButton label={t('common.back')} onPress={() => go('settings')} style={{ marginTop: 10 }} />
+      <PrimaryButton label={t('common.back')} onPress={() => back('settings')} style={{ marginTop: 10 }} />
     </Screen>
   );
 }

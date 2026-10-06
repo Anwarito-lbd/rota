@@ -27,7 +27,7 @@ export function NearMap() {
  * the tab bar.
  */
 export function NearMapView({ embedded = false }: { embedded?: boolean }) {
-  const { set, go } = useStore();
+  const { set, back } = useStore();
   const { c, dark } = useTheme();
   const { t } = useT();
   const insets = useSafeAreaInsets();
@@ -99,7 +99,7 @@ export function NearMapView({ embedded = false }: { embedded?: boolean }) {
         {embedded ? null : (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <PressScale
-            onPress={() => go('feed')}
+            onPress={() => back('feed')}
             accessibilityLabel={t('common.back')}
             style={{ width: 42, height: 42, borderRadius: 99, backgroundColor: 'rgba(20,16,22,0.85)', alignItems: 'center', justifyContent: 'center' }}
           >

@@ -56,10 +56,10 @@ import { PayoutsCard } from '../ui/Payouts';
 // ── Building blocks ────────────────────────────────────────────
 
 function Page({ title, children }: { title: string; children: ReactNode }) {
-  const { go } = useStore();
+  const { back } = useStore();
   return (
     <Screen bottomInset={60}>
-      <Header title={title} onBack={() => go('settings')} size={26} />
+      <Header title={title} onBack={() => back('settings')} size={26} />
       {children}
     </Screen>
   );
@@ -131,8 +131,8 @@ function Help({ children }: { children: ReactNode }) {
 
 /** Every settings page goes back to Réglages unless it says otherwise. */
 function FlatPage(props: Parameters<typeof BasePage>[0]) {
-  const { go } = useStore();
-  return <BasePage onBack={props.left ? undefined : () => go('settings')} {...props} />;
+  const { back } = useStore();
+  return <BasePage onBack={props.left ? undefined : () => back('settings')} {...props} />;
 }
 
 // ── Mon profil ─────────────────────────────────────────────────
@@ -192,7 +192,7 @@ function FlatInput({
 }
 
 export function ProfileSettings() {
-  const { go, state, setMedia } = useStore();
+  const { state, setMedia, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const { session, profile, refreshProfile } = useAuth();
@@ -226,7 +226,7 @@ export function ProfileSettings() {
   };
 
   const save = async () => {
-    if (!session || !profile) return go('settings');
+    if (!session || !profile) return back('settings');
     const handle = username.trim().toLowerCase();
     const formatError = usernameError(handle);
     if (formatError && handle !== profile.username) return setError(formatError);
@@ -245,7 +245,7 @@ export function ProfileSettings() {
       });
       if (picked) setMedia('me-avatar', null);
       refreshProfile();
-      go('settings');
+      back('settings');
     } catch (e) {
       setError(e instanceof Error && e.message === 'username_taken' ? t('set.usernameTaken') : friendlyError(e, t));
     } finally {
@@ -256,7 +256,7 @@ export function ProfileSettings() {
   return (
     <FlatPage
       title={t('set.profile')}
-      left={{ label: t('common.close'), onPress: () => go('settings') }}
+      left={{ label: t('common.close'), onPress: () => back('settings') }}
       right={{ label: busy ? t('common.loading') : t('set.validate'), onPress: save, disabled: busy }}
     >
       <FlatSection first>
@@ -288,7 +288,7 @@ export function ProfileSettings() {
 // ── Paramètres du compte ───────────────────────────────────────
 
 export function AccountSettings() {
-  const { go } = useStore();
+  const { go, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const { session, profile, refreshProfile } = useAuth();
@@ -319,7 +319,7 @@ export function AccountSettings() {
   const providers: string[] = (session?.user.app_metadata?.providers as string[] | undefined) ?? [];
 
   return (
-    <FlatPage title={t('set.account')} onBack={() => go('settings')}>
+    <FlatPage title={t('set.account')} onBack={() => back('settings')}>
       <FlatSection first>
         <FlatRow
           label={session?.user.email ?? '—'}
@@ -430,7 +430,7 @@ export function AccountSettings() {
 // ── Paiements ──────────────────────────────────────────────────
 
 export function PaymentsSettings() {
-  const { go } = useStore();
+  const { back } = useStore();
   const { t } = useT();
   const addCard = useAddCard();
   const [methods, setMethods] = useState<SavedMethod[] | null>(null);
@@ -463,7 +463,7 @@ export function PaymentsSettings() {
   };
 
   return (
-    <FlatPage title={t('set.payments')} onBack={() => go('settings')}>
+    <FlatPage title={t('set.payments')} onBack={() => back('settings')}>
       <FlatSection first title={t('set.paymentDetails')}>
         {!paymentsConfigured ? (
           <FlatHelp>{t('error.paymentsUnavailable')}</FlatHelp>
@@ -521,7 +521,7 @@ function ModeCard({ title, body, on, note }: { title: string; body: string; on: 
 }
 
 export function ShippingSettings() {
-  const { go } = useStore();
+  const { back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const { session } = useAuth();
@@ -555,7 +555,7 @@ export function ShippingSettings() {
   const lines = address ? [address.fullName, address.line1, address.line2, `${address.postalCode} ${address.city}`].filter(Boolean) : [];
 
   return (
-    <FlatPage title={t('set.shipping')} onBack={() => go('settings')}>
+    <FlatPage title={t('set.shipping')} onBack={() => back('settings')}>
       <FlatSection first>
         <Txt size={20} weight="bold" style={{ paddingHorizontal: 18, paddingTop: 12 }}>
           {t('set.myAddress')}
@@ -754,14 +754,14 @@ function TwoStep() {
 }
 
 export function SecuritySettings() {
-  const { go } = useStore();
+  const { back } = useStore();
   const { t } = useT();
   const [open, setOpen] = useState<'password' | 'twoStep' | 'sessions' | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const toggle = (k: 'password' | 'twoStep' | 'sessions') => setOpen((v) => (v === k ? null : k));
   return (
-    <FlatPage title={t('set.security')} onBack={() => go('settings')}>
+    <FlatPage title={t('set.security')} onBack={() => back('settings')}>
       <FlatIntro title={t('set.securityTitle')} body={t('set.securityBody')} />
       <FlatRow label={t('set.password')} sub={t('set.passwordSub')} onPress={() => toggle('password')} />
       {open === 'password' ? <PasswordForm /> : null}
@@ -1112,13 +1112,13 @@ export function PrivacySettings() {
 // ── Compte boutique ────────────────────────────────────────────
 
 export function BusinessSettings() {
-  const { go } = useStore();
+  const { go, back } = useStore();
   const { t } = useT();
   return (
-    <FlatPage title={t('shop.row')} onBack={() => go('set.account')}>
+    <FlatPage title={t('shop.row')} onBack={() => back('set.account')}>
       <FlatIntro title={t('shop.title')} body={t('shop.intro')} />
       <View style={{ padding: 18 }}>
-        <BusinessForm onDone={() => go('set.account')} />
+        <BusinessForm onDone={() => back('set.account')} />
       </View>
     </FlatPage>
   );

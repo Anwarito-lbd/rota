@@ -43,7 +43,7 @@ function FloatingBack({ onPress }: { onPress: () => void }) {
 // ─── Post ─────────────────────────────────────────────────────
 
 export function PostScreen() {
-  const { state, go } = useStore();
+  const { state, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const social = useSocial();
@@ -53,7 +53,7 @@ export function PostScreen() {
   if (!post) {
     return (
       <Screen>
-        <Header title="" onBack={() => go('discover')} />
+        <Header title="" onBack={() => back('discover')} />
         <Txt color={c.ink2} style={{ marginTop: 20 }}>
           {t('post.notFound')}
         </Txt>
@@ -63,7 +63,7 @@ export function PostScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: '#0C0A0D' }} onLayout={(e) => setHeight(e.nativeEvent.layout.height)}>
       {height ? <PostCard post={post} height={height} /> : null}
-      <FloatingBack onPress={() => go('discover')} />
+      <FloatingBack onPress={() => back('discover')} />
     </View>
   );
 }
@@ -71,9 +71,9 @@ export function PostScreen() {
 // ─── Profile ──────────────────────────────────────────────────
 
 export function UserProfile() {
-  const { state, go } = useStore();
+  const { state, back } = useStore();
   const social = useSocial();
-  return <ProfileView memberId={state.profileId ?? social.meId} onBack={() => go('feed')} />;
+  return <ProfileView memberId={state.profileId ?? social.meId} onBack={() => back('feed')} />;
 }
 
 // ─── Boards ───────────────────────────────────────────────────
@@ -120,7 +120,7 @@ function BoardCard({ board, width, delay }: { board: Board; width: number; delay
 }
 
 export function Boards() {
-  const { state, set, go } = useStore();
+  const { state, set, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const { width } = useWindowDimensions();
@@ -132,7 +132,7 @@ export function Boards() {
   if (board) {
     return (
       <Screen>
-        <Header title={board.name} onBack={() => set({ screen: 'boards', board: null })} />
+        <Header title={board.name} onBack={() => back({ screen: 'boards', board: null })} />
         {board.items.length === 0 ? (
           <Txt color={c.ink3} style={{ marginTop: 20 }}>
             {t('boards.boardEmpty')}
@@ -175,7 +175,7 @@ export function Boards() {
 
   return (
     <Screen>
-      <Header title={t('boards.title')} onBack={() => go('discover')} />
+      <Header title={t('boards.title')} onBack={() => back('discover')} />
       {social.boards.length === 0 ? (
         <View style={{ marginTop: 40, alignItems: 'center', paddingHorizontal: 20 }}>
           <View style={{ width: 70, height: 70, borderRadius: 22, backgroundColor: c.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
@@ -246,14 +246,14 @@ function BlockedRow({ id, last }: { id: string; last: boolean }) {
 }
 
 export function Blocked() {
-  const { go } = useStore();
+  const { back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const social = useSocial();
   const ids = social.blockedIds;
   return (
     <Screen>
-      <Header title={t('set.blocked')} onBack={() => go('set.privacy')} />
+      <Header title={t('set.blocked')} onBack={() => back('set.privacy')} />
       <Txt size={14} color={c.ink2} style={{ marginTop: 10 }}>
         {t('blocked.body')}
       </Txt>

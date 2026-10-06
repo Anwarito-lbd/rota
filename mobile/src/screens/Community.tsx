@@ -67,7 +67,7 @@ function PersonRow({ p, right, onPress }: { p: Person; right?: React.ReactNode; 
 // ─── Followers / following ────────────────────────────────────
 
 export function FollowList() {
-  const { state, set, go } = useStore();
+  const { state, set, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const insets = useSafeAreaInsets();
@@ -82,7 +82,7 @@ export function FollowList() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, height: 56 }}>
-        <BackButton onPress={() => (target && target.memberId !== social.meId ? set({ screen: 'user', profileId: target.memberId }) : go('closet'))} />
+        <BackButton onPress={() => back(target && target.memberId !== social.meId ? { screen: 'user', profileId: target.memberId } : 'closet')} />
       </View>
       <Segmented
         items={[
@@ -112,7 +112,7 @@ export function FollowList() {
 // ─── Activity ─────────────────────────────────────────────────
 
 export function ActivityScreen() {
-  const { set, go } = useStore();
+  const { set, back } = useStore();
   const { c } = useTheme();
   const { t, lang } = useT();
   const items = useActivity();
@@ -134,7 +134,7 @@ export function ActivityScreen() {
   };
 
   return (
-    <FlatPage title={t('activity.title')} onBack={() => go('feed')}>
+    <FlatPage title={t('activity.title')} onBack={() => back('feed')}>
       <FlatSection first>
         {items === null ? null : items.length === 0 ? (
           <Txt center color={c.ink3} style={{ marginTop: 30 }}>
@@ -170,7 +170,7 @@ export function ActivityScreen() {
 const STORY_MS = 5000;
 
 export function StoryViewer() {
-  const { state, set, go } = useStore();
+  const { state, set, back } = useStore();
   const { t, lang } = useT();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -192,7 +192,7 @@ export function StoryViewer() {
   const story = own[index];
   const progress = useRef(new Animated.Value(0)).current;
 
-  const close = () => go('messages');
+  const close = () => back('feed');
   const next = () => {
     if (index < own.length - 1) return setIndex(index + 1);
     if (authorIndex < authors.length - 1) {
@@ -332,7 +332,7 @@ export function StoriesRow() {
 // ─── Rota Pro ─────────────────────────────────────────────────
 
 export function ProScreen() {
-  const { state, go, m } = useStore();
+  const { state, m, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const community = useCommunity();
@@ -359,7 +359,7 @@ export function ProScreen() {
   return (
     <Screen bottomInset={60}>
       <View style={{ height: 52, flexDirection: 'row', alignItems: 'center' }}>
-        <BackButton onPress={() => go(state.proFrom ?? 'closet')} />
+        <BackButton onPress={() => back(state.proFrom ?? 'closet')} />
       </View>
       <FadeIn>
         <LinearGradient colors={[c.accent, c.plum]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 28, padding: 22 }}>
@@ -460,7 +460,7 @@ function localOutfit(listings: Listing[], occasion: string, budget: number | nul
 }
 
 export function PlannerScreen() {
-  const { set, go, m } = useStore();
+  const { set, m, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const { listings, byId } = useListings();
@@ -493,7 +493,7 @@ export function PlannerScreen() {
   return (
     <Screen bottomInset={60}>
       <View style={{ height: 52, flexDirection: 'row', alignItems: 'center' }}>
-        <BackButton onPress={() => go('closet')} />
+        <BackButton onPress={() => back('closet')} />
       </View>
       <Txt size={28} weight="bold">
         {t('planner.title')}
@@ -593,7 +593,7 @@ export function PlannerScreen() {
 
 /** A profile highlight, full screen: tap right for the next photo, left to go back. */
 export function HighlightViewer() {
-  const { state, set } = useStore();
+  const { state, back } = useStore();
   const { t } = useT();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -616,9 +616,7 @@ export function HighlightViewer() {
   const photo = current?.media[index];
 
   const close = () =>
-    memberId && memberId !== social.meId
-      ? set({ screen: 'user', profileId: memberId, highlight: null })
-      : set({ screen: 'closet', highlight: null });
+    back(memberId && memberId !== social.meId ? { screen: 'user', profileId: memberId, highlight: null } : { screen: 'closet', highlight: null });
   const next = () => {
     if (!current) return close();
     if (index < current.media.length - 1) return setIndex(index + 1);

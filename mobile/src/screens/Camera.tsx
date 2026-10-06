@@ -23,7 +23,7 @@ type Mode = 'fit' | 'story' | 'list';
 const GLASS = 'rgba(12,10,13,0.45)';
 
 export function Camera() {
-  const { set, go, setMedia } = useStore();
+  const { set, go, setMedia, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const insets = useSafeAreaInsets();
@@ -82,7 +82,7 @@ export function Camera() {
     );
   };
 
-  const close = () => go('feed');
+  const close = () => back('feed');
   const granted = permission?.granted && Platform.OS !== 'web';
 
   return (

@@ -30,7 +30,7 @@ const CATEGORIES: { key: ClaimCategory; label: TranslationKey }[] = [
 const SLOTS = ['claim-photo-0', 'claim-photo-1', 'claim-photo-2'];
 
 export function Claim() {
-  const { state, go, m, setMedia } = useStore();
+  const { state, m, setMedia, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const { session } = useAuth();
@@ -48,7 +48,7 @@ export function Claim() {
   if (!rental || rental.ownerId !== uid) {
     return (
       <Screen>
-        <Header title={t('claim.open')} onBack={() => go('rentals')} />
+        <Header title={t('claim.open')} onBack={() => back('rentals')} />
         <Txt color={c.ink2} style={{ marginTop: 20 }}>
           {t('claim.ownerOnly')}
         </Txt>
@@ -69,7 +69,7 @@ export function Claim() {
   if (sent) {
     return (
       <Screen>
-        <Header title={t('claim.open')} onBack={() => go('rentals')} />
+        <Header title={t('claim.open')} onBack={() => back('rentals')} />
         <Card style={{ marginTop: 20 }}>
           <Txt size={16} weight="bold">
             {t('claim.sentTitle')}
@@ -109,7 +109,7 @@ export function Claim() {
   return (
     <View style={{ flex: 1 }}>
       <Screen bottomInset={140}>
-        <Header title={t('claim.open')} onBack={() => go('rental')} size={28} />
+        <Header title={t('claim.open')} onBack={() => back('rental')} size={28} />
         <Txt size={13} color={c.ink2} style={{ marginTop: 8 }}>
           {rental.listingTitle}
         </Txt>

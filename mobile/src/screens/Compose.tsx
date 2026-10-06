@@ -28,7 +28,7 @@ function toItem(a: ImagePicker.ImagePickerAsset, source: 'camera' | 'library'): 
 }
 
 export function Compose() {
-  const { state, set, go, m } = useStore();
+  const { state, set, go, m, back } = useStore();
   const { c } = useTheme();
   const { t, lang } = useT();
   const { width } = useWindowDimensions();
@@ -167,7 +167,7 @@ export function Compose() {
 
   return (
     <Screen bottomInset={60}>
-      <Header title={t('compose.title')} onBack={() => go('feed')} />
+      <Header title={t('compose.title')} onBack={() => back('feed')} />
 
       <View style={{ marginTop: 14 }}>
         <Segmented

@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { useColorScheme } from 'react-native';
 import { defaultDates } from '../lib/dates';
-import type { AppConfig, AppState, Lang, MediaItem, Screen, Theme, ThemeMode } from './types';
+import { NAV_KEYS, type AppConfig, type AppState, type Lang, type MediaItem, type NavEntry, type Screen, type Theme, type ThemeMode } from './types';
 
 const initialState: AppState = {
   screen: 'onboard',
@@ -116,6 +116,8 @@ const initialState: AppState = {
   socialReport: null,
   tryOnListingId: null,
   afterVerify: null,
+
+  history: [],
 };
 
 const defaultConfig: AppConfig = {
@@ -128,6 +130,60 @@ const defaultConfig: AppConfig = {
 
 type Patch = Partial<AppState> | ((s: AppState) => Partial<AppState>);
 
+// ── Back history ──
+// Every state change goes through `navigate`, so `go` and `set` both record
+// where you came from. The rules, in order:
+//  1. A patch that sets `history` itself is taken as is (back, resets).
+//  2. Entering or leaving onboarding clears the history (sign-in, sign-out).
+//  3. A new screen, or the same screen showing another member, piece or post
+//     (profile → profile), pushes the previous screen and its context.
+//     Anything else (a sheet, a filter, a viewer moving to its next story)
+//     changes nothing.
+// `go` to one of the four tab roots also clears it, like a tab press.
+
+const HISTORY_CAP = 30;
+
+/** Screens that show one thing; opening another one counts as navigating. */
+const IDENTITY: Partial<Record<Screen, 'profileId' | 'activeId' | 'activePostId'>> = {
+  user: 'profileId',
+  profile: 'profileId',
+  detail: 'activeId',
+  post: 'activePostId',
+};
+
+const TAB_ROOTS: Screen[] = ['feed', 'discover', 'messages', 'closet'];
+
+/** Transient overlays every navigation closes. */
+const CLOSED: Partial<AppState> = {
+  filters: false,
+  confirmed: false,
+  thread: null,
+  offer: false,
+  report: false,
+  reportSent: false,
+  deleteStep: 0,
+  commentsFor: null,
+  saveTarget: null,
+  createSheet: false,
+  socialReport: null,
+};
+
+function snapshot(s: AppState): NavEntry {
+  const entry = {} as Record<string, unknown>;
+  for (const key of NAV_KEYS) entry[key] = s[key];
+  return entry as NavEntry;
+}
+
+function navigate(s: AppState, patch: Partial<AppState>): AppState {
+  const next = { ...s, ...patch };
+  if ('history' in patch) return next;
+  if (next.screen === 'onboard' || s.screen === 'onboard') return next.history.length ? { ...next, history: [] } : next;
+  const id = IDENTITY[next.screen];
+  const moved = next.screen !== s.screen || (id !== undefined && next[id] !== s[id]);
+  if (!moved) return next;
+  return { ...next, history: [...s.history, snapshot(s)].slice(-HISTORY_CAP) };
+}
+
 type FlagBag = 'liked' | 'wish' | 'favs' | 'pinSaves' | 'ratingTags' | 'blocked' | 'certifies';
 
 interface Store {
@@ -137,6 +193,11 @@ interface Store {
   setConfig: (patch: Partial<AppConfig>) => void;
   /** Navigate to a screen, closing any transient overlay first. */
   go: (screen: Screen) => void;
+  /**
+   * Return to the previous screen with the context it had (same profile,
+   * piece, post…). With no history, open `fallback` instead.
+   */
+  back: (fallback: Screen | Partial<AppState>) => void;
   theme: Theme;
   dark: boolean;
   /** Format an amount in the configured currency. */
@@ -180,7 +241,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [prefsLoaded, state.lang, state.themeMode]);
 
   const set = useCallback((patch: Patch) => {
-    setState((s) => ({ ...s, ...(typeof patch === 'function' ? patch(s) : patch) }));
+    setState((s) => navigate(s, typeof patch === 'function' ? patch(s) : patch));
   }, []);
 
   const setConfig = useCallback((patch: Partial<AppConfig>) => {
@@ -188,21 +249,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const go = useCallback((screen: Screen) => {
-    setState((s) => ({
-      ...s,
-      screen,
-      filters: false,
-      confirmed: false,
-      thread: null,
-      offer: false,
-      report: false,
-      reportSent: false,
-      deleteStep: 0,
-      commentsFor: null,
-      saveTarget: null,
-      createSheet: false,
-      socialReport: null,
-    }));
+    setState((s) => navigate(s, { ...CLOSED, screen, ...(TAB_ROOTS.includes(screen) ? { history: [] } : {}) }));
+  }, []);
+
+  const back = useCallback((fallback: Screen | Partial<AppState>) => {
+    setState((s) => {
+      const prev = s.history[s.history.length - 1];
+      if (!prev) return { ...s, ...CLOSED, ...(typeof fallback === 'string' ? { screen: fallback } : fallback), history: [] };
+      return { ...s, ...CLOSED, ...prev, history: s.history.slice(0, -1) };
+    });
   }, []);
 
   const toggleFlag = useCallback<Store['toggleFlag']>((bag, key) => {
@@ -238,13 +293,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       set,
       setConfig,
       go,
+      back,
       theme,
       dark: theme === 'dark',
       m,
       toggleFlag,
       setMedia,
     }),
-    [state, config, set, setConfig, go, theme, m, toggleFlag, setMedia],
+    [state, config, set, setConfig, go, back, theme, m, toggleFlag, setMedia],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

@@ -7,7 +7,7 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, type ReactElement } from 'react';
-import { ActivityIndicator, Platform, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { paymentsConfigured, stripePublishableKey, stripeUrlScheme } from './src/data/payments';
 import { AuthProvider, useAuth } from './src/lib/auth';
@@ -136,7 +136,7 @@ const NO_TABS: ScreenKey[] = ['onboard', 'map', 'compose', 'tryon', 'verify', 'c
 const FULL_BLEED: ScreenKey[] = ['feed', 'post'];
 
 function Shell() {
-  const { state, set } = useStore();
+  const { state, set, back } = useStore();
   const { c, dark } = useTheme();
   const { loading, session, needsMfa, profile } = useAuth();
 
@@ -168,6 +168,21 @@ function Shell() {
       return;
     }
   }, [session, set]);
+
+  // Android back button: close an open conversation, else go back one screen.
+  // With nowhere to go back to, let the system handle it (leave the app).
+  const canGoBack = state.history.length > 0;
+  const threadOpen = state.screen === 'messages' && !!state.thread;
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (threadOpen) set({ thread: null });
+      else if (canGoBack) back('feed');
+      else return false;
+      return true;
+    });
+    return () => sub.remove();
+  }, [canGoBack, threadOpen, set, back]);
 
   // Signed out (from Settings, a closed account, an expired session): back to
   // the welcome screen. Only on the change from signed in to signed out.

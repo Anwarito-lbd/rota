@@ -234,7 +234,31 @@ export interface AppState {
   tryOnListingId: string | null;
   /** Where to send the member once their identity is verified. */
   afterVerify: Screen | null;
+
+  /** Screens to go back to, oldest first. See `store.tsx` for the rules. */
+  history: NavEntry[];
 }
+
+/** The keys a screen reads on arrival: what "back" restores. */
+export const NAV_KEYS = [
+  'screen',
+  'profileId',
+  'activeId',
+  'activePostId',
+  'activeRentalId',
+  'storyAuthorId',
+  'followList',
+  'highlight',
+  'board',
+  'thread',
+  'tryOnListingId',
+  'proFrom',
+  'afterVerify',
+  'challenge',
+] as const satisfies readonly (keyof AppState)[];
+
+/** A screen and the context it was showing, kept in the back history. */
+export type NavEntry = Pick<AppState, (typeof NAV_KEYS)[number]>;
 
 /** Canvas-level props that were editor-configurable on the design doc. */
 export interface AppConfig {

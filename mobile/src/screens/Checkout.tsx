@@ -141,7 +141,7 @@ function Disclosure({ label, value, strong }: { label: string; value: string; st
 }
 
 export function Checkout() {
-  const { state, set, go, m } = useStore();
+  const { state, set, go, m, back } = useStore();
   const { c } = useTheme();
   const { t, lang } = useT();
   const insets = useSafeAreaInsets();
@@ -226,7 +226,7 @@ export function Checkout() {
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <Screen bottomInset={150}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => go('booking')} hitSlop={8} style={{ width: 36, height: 40, justifyContent: 'center' }}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => back('booking')} hitSlop={8} style={{ width: 36, height: 40, justifyContent: 'center' }}>
             <ChevronLeft color={c.ink} />
           </Pressable>
           <Txt size={22} weight="bold">
@@ -259,9 +259,9 @@ export function Checkout() {
         <Block style={{ paddingVertical: 4 }}>
           {(
             [
-              [t('checkout.dates'), `${rangeLabel(startDate, endDate, lang)} · ${days} ${t('common.days')}`, () => go('booking')],
+              [t('checkout.dates'), `${rangeLabel(startDate, endDate, lang)} · ${days} ${t('common.days')}`, () => back('booking')],
               [t('common.size'), size ?? '—', null],
-              [t('checkout.handover'), ship ? t('checkout.byPost') : t('checkout.inPerson'), () => go('booking')],
+              [t('checkout.handover'), ship ? t('checkout.byPost') : t('checkout.inPerson'), () => back('booking')],
             ] as [string, string, (() => void) | null][]
           ).map(([label, value, edit], i) => (
             <View

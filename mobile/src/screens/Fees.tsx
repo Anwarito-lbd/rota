@@ -12,7 +12,7 @@ const pct = (rate: number) => `${Math.round(rate * 100)} %`;
  * the database use), so this page can never disagree with what is charged.
  */
 export function Fees() {
-  const { go, m } = useStore();
+  const { m, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const p = usePolicy();
@@ -38,7 +38,7 @@ export function Fees() {
 
   return (
     <Screen bottomInset={60}>
-      <Header title={t('fees.title')} onBack={() => go('closet')} size={26} />
+      <Header title={t('fees.title')} onBack={() => back('closet')} size={26} />
       <Block
         title="fees.renting"
         lines={[
