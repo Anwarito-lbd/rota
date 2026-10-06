@@ -5,6 +5,7 @@ declare
   p uuid := pg_temp.member('xp');   -- an accepted follower of m
   b uuid := pg_temp.member('xb');   -- talks with m, then blocks m
   conv uuid; conv_p uuid; conv_b uuid; lst_o uuid; lst_m uuid; rnt uuid; mid uuid;
+  nid_other uuid; nid_legacy uuid;
   j jsonb; jo jsonb; k text; err text; alias1 text; alias2 text; old_name text;
   missing text[] := '{}'; out jsonb := '{}';
 begin
@@ -39,6 +40,14 @@ begin
   reset role;
   insert into public.member_blocks (blocker_id, blocked_id) values (b, m);
   select username into old_name from public.profiles where id = m;
+  -- 033c: a reused username. o's row carries m's old name but o's id: it must stay as is.
+  -- A legacy row (no actor_id) that names m is still matched by name.
+  insert into public.notifications (user_id, kind, payload, dedupe_key, email_state, push_state)
+    values (p, 'social_follow', jsonb_build_object('actor', old_name, 'actor_id', o), 'test-033c-other', 'skipped', 'sent')
+    returning id into nid_other;
+  insert into public.notifications (user_id, kind, payload, dedupe_key, email_state, push_state)
+    values (p, 'social_follow', jsonb_build_object('actor', old_name), 'test-033c-legacy', 'skipped', 'sent')
+    returning id into nid_legacy;
   out := out || jsonb_build_object('push_has_actor_id',
     coalesce((select payload->>'actor_id' = m::text and payload ? 'preview' and push_state = 'pending'
                 from public.notifications where user_id = p and dedupe_key = 'message:' || mid::text), false));
@@ -129,7 +138,12 @@ begin
     'push_renamed_no_preview', coalesce((select payload->>'actor' = alias1 and not payload ? 'preview'
                                                 and not payload ? 'actor_id' and push_state <> 'pending'
                                            from public.notifications where user_id = p and dedupe_key = 'message:' || mid::text), false),
-    'no_notification_names_old', not exists (select 1 from public.notifications where payload->>'actor' = old_name),
+    'no_notification_names_old', not exists (select 1 from public.notifications
+                                              where payload->>'actor' = old_name and id <> nid_other),
+    'other_actor_id_not_renamed', coalesce((select payload->>'actor' = old_name and payload->>'actor_id' = o::text
+                                              from public.notifications where id = nid_other), false),
+    'legacy_name_renamed', coalesce((select payload->>'actor' = alias1
+                                       from public.notifications where id = nid_legacy), false),
     'listing_wiped', coalesce((select city is null and description is null and video_path is null and authenticity_path is null
                                       and distribution_note is null and photo_paths = '{}'
                                       and title = 'Manteau 033' and brand = 'Marque' and category = 'Manteaux'
