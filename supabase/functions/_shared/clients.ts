@@ -67,11 +67,13 @@ export async function rpc<T = unknown>(fn: string, args: Record<string, unknown>
 }
 
 /**
- * The same rule as public.path_owned_by (033e): a storage path inside the owner's
- * folder, not a URL, with no empty, '.' or '..' segment and no '%' or '\'.
+ * The same allow-list as public.path_owned_by (033f): '<owner>' then one or more
+ * '/<segment>', each segment letters, digits, '-' or '_' with single dots between.
  */
 export function pathOwnedBy(path: unknown, owner: string): path is string {
-  if (typeof path !== 'string' || !owner || !path.startsWith(`${owner}/`)) return false;
-  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(path) || path.includes('%') || path.includes('\\')) return false;
-  return path.split('/').every((s) => s !== '' && s !== '.' && s !== '..');
+  return (
+    typeof path === 'string' &&
+    /^[0-9a-f-]{36}$/.test(owner) &&
+    new RegExp(`^${owner}(/[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*)+$`).test(path)
+  );
 }

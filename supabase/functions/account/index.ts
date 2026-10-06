@@ -145,15 +145,32 @@ Deno.serve(async (req) => {
     return json({ error: 'partial', step: 'auth', removed, warnings }, 500);
   }
 
-  // Apple / Google links are personal data too.
+  // Apple / Google links are personal data too. A link that stays on the banned
+  // account is written to the audit log so staff can remove it by hand.
+  const flagIdentity = async (entityId: string, after: Record<string, unknown>) => {
+    const { error: auditError } = await admin.rpc('audit', {
+      p_actor: user.id,
+      p_role: 'system',
+      p_entity: 'auth.identities',
+      p_entity_id: entityId,
+      p_action: 'account.identity_unlink_failed',
+      p_before: null,
+      p_after: after,
+    });
+    if (auditError) console.error('audit:', auditError.message);
+  };
   const { data: full, error: readError } = await admin.auth.admin.getUserById(user.id);
-  if (readError) warnings.push('identities');
+  if (readError) {
+    warnings.push('identities');
+    await flagIdentity(user.id, { step: 'read', error: readError.message });
+  }
   for (const identity of full?.user?.identities ?? []) {
     if (identity.provider === 'email') continue;
     const { error: dropError } = await admin.rpc('drop_identity', { p_identity: identity.identity_id });
     if (dropError) {
       console.error('drop_identity:', dropError.message);
       warnings.push(`identity:${identity.provider}`);
+      await flagIdentity(identity.identity_id, { provider: identity.provider, error: dropError.message });
     }
   }
 

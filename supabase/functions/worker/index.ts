@@ -168,14 +168,32 @@ async function removeOrKeep(bucket: string, paths: string[]) {
   return false;
 }
 
-/** Retries up to 50 files whose removal failed before; forgets each one once it is gone. */
+/** After this many failed retries a file stays in storage_orphans for staff, untouched. */
+const ORPHAN_MAX_ATTEMPTS = 10;
+
+/**
+ * Retries up to 50 files whose removal failed before, oldest first; forgets each one
+ * once it is gone. A failed retry moves the row to the back and counts the attempt.
+ */
 async function retryOrphans() {
-  const { data, error } = await admin.from('storage_orphans').select('bucket, path').order('failed_at').limit(50);
+  const { data, error } = await admin
+    .from('storage_orphans')
+    .select('bucket, path, attempts')
+    .lt('attempts', ORPHAN_MAX_ATTEMPTS)
+    .order('failed_at')
+    .limit(50);
   if (error) throw new Error(`storage_orphans: ${error.message}`);
   let removed = 0;
-  for (const orphan of (data ?? []) as { bucket: string; path: string }[]) {
+  for (const orphan of (data ?? []) as { bucket: string; path: string; attempts: number }[]) {
     const { error: removeError } = await admin.storage.from(orphan.bucket).remove([orphan.path]);
-    if (removeError) continue;
+    if (removeError) {
+      await admin
+        .from('storage_orphans')
+        .update({ failed_at: new Date().toISOString(), attempts: orphan.attempts + 1 })
+        .eq('bucket', orphan.bucket)
+        .eq('path', orphan.path);
+      continue;
+    }
     const { error: forgetError } = await admin
       .from('storage_orphans')
       .delete()

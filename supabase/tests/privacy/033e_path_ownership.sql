@@ -6,6 +6,9 @@ declare
   m uuid := pg_temp.member('pm');   -- writes listings, posts and stories
   v uuid := pg_temp.member('pv');   -- the member whose folder m aims at
   lst uuid; s_new uuid; s_old uuid; first_id uuid; err text; ok boolean; out jsonb := '{}';
+  ch text; bad text; real_ok boolean;
+  ctl_proof boolean := true; ctl_photo boolean := true; ctl_video boolean := true;
+  ctl_post boolean := true; ctl_story boolean := true;
 begin
   update public.profiles set identity_status = 'verified' where id in (m, v);
 
@@ -119,5 +122,73 @@ begin
        and has_table_privilege('service_role', c.oid, 'insert')
        and has_table_privilege('service_role', c.oid, 'delete')
       from pg_class c where c.oid = to_regclass('public.storage_orphans')), false));
+
+  -- 033f: an allow-list. A tab, line feed or carriage return inside '..' is refused
+  -- everywhere (URL parsers strip them and collapse the '..'), and so is anything
+  -- outside letters, digits, '-', '_' and single dots between them.
+  perform set_config('rota.moderating', 'on', true);
+  foreach ch in array array[E'\t', E'\n', E'\r'] loop
+    bad := m::text || '/.' || ch || './' || v::text || '/x.jpg';
+    err := 'none';
+    begin
+      insert into public.listings (owner_id, title, category, size, price_per_day, authenticity_path)
+        values (m, 'Robe 033f', 'Robes', 'S', 20, bad);
+    exception when others then err := sqlerrm;
+    end;
+    ctl_proof := ctl_proof and err like '%Media must be uploaded%';
+    err := 'none';
+    begin
+      insert into public.listings (owner_id, title, category, size, price_per_day, photo_paths)
+        values (m, 'Robe 033f', 'Robes', 'S', 20, array[bad]);
+    exception when others then err := sqlerrm;
+    end;
+    ctl_photo := ctl_photo and err like '%Media must be uploaded%';
+    err := 'none';
+    begin
+      insert into public.listings (owner_id, title, category, size, price_per_day, video_path)
+        values (m, 'Robe 033f', 'Robes', 'S', 20, bad);
+    exception when others then err := sqlerrm;
+    end;
+    ctl_video := ctl_video and err like '%Media must be uploaded%';
+    err := 'none';
+    begin
+      insert into public.posts (author_id, kind, media_paths) values (m, 'fit', array[bad]);
+    exception when others then err := sqlerrm;
+    end;
+    ctl_post := ctl_post and err like '%check constraint%';
+    err := 'none';
+    begin
+      insert into public.stories (author_id, media_path) values (m, bad);
+    exception when others then err := sqlerrm;
+    end;
+    ctl_story := ctl_story and err like '%check constraint%';
+  end loop;
+  out := out || jsonb_build_object('ctl_proof_refused', ctl_proof, 'ctl_photo_refused', ctl_photo,
+    'ctl_video_refused', ctl_video, 'ctl_post_refused', ctl_post, 'ctl_story_refused', ctl_story);
+  out := out || jsonb_build_object('odd_chars_refused',
+    not coalesce(public.path_owned_by(m::text || '/a b.jpg', m), false)
+    and not coalesce(public.path_owned_by(m::text || '/a?.jpg', m), false)
+    and not coalesce(public.path_owned_by(m::text || '/a#.jpg', m), false)
+    and not coalesce(public.path_owned_by(m::text || '/caf' || chr(233) || '.jpg', m), false)
+    and not coalesce(public.path_owned_by(m::text || '/a..jpg', m), false)
+    and not coalesce(public.path_owned_by(m::text || '/.hidden', m), false)
+    and not coalesce(public.path_owned_by(m::text || '/a.jpg' || E'\n', m), false));
+  -- The app's real format: <uid>[/<sub>]/<ms>-<base36>.<ext>, accepted everywhere.
+  err := 'none';
+  begin
+    insert into public.listings (owner_id, title, category, size, price_per_day, photo_paths, video_path, authenticity_path)
+      values (m, 'Robe 033f', 'Robes', 'S', 20, array[m::text || '/1791263391025-k3j9zq.jpg'],
+              m::text || '/1791263391026-a1b2c3.mov', m::text || '/1791263391027-zz09ab.heic');
+    insert into public.posts (author_id, kind, media_paths) values (m, 'fit', array[m::text || '/1791263391028-q8w7e6.webp']);
+    insert into public.stories (author_id, media_path) values (m, m::text || '/1791263391029-p0o9i8.jpg');
+  exception when others then err := sqlerrm;
+  end;
+  real_ok := err = 'none' and public.path_owned_by(m::text || '/' || gen_random_uuid()::text || '/1791263391030-x1y2z3.png', m);
+  out := out || jsonb_build_object('real_upload_format_accepted', real_ok);
+  perform set_config('rota.moderating', 'off', true);
+  -- storage_orphans counts attempts.
+  out := out || jsonb_build_object('orphans_attempts', exists (
+    select 1 from information_schema.columns where table_schema = 'public' and table_name = 'storage_orphans'
+       and column_name = 'attempts' and is_nullable = 'NO' and column_default = '0'));
   raise exception 'RESULT %', out;
 end $$;
