@@ -3,6 +3,16 @@
 Peer-to-peer **outfit rental** (not resale) — Paris-first, French-first.
 Feel: TikTok × Pinterest × Vinted — discover a look, tap the pieces, rent them.
 
+## Product principle
+
+**Rota is where people rent out their clothes. It is not a social network.**
+
+Posts, stories and follows exist only to show pieces and lead to a rental. Every screen, ranking, text and setting should make renting easier.
+
+- Profiles and stories are public.
+- Safety stays: block, report, message requests and mute.
+- Social and privacy settings stay light. The best UX goes to the rental flows: listing a piece, finding one, booking it, and talking about it.
+
 ## Repo layout
 
 ```
