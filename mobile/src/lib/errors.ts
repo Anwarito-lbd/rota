@@ -27,6 +27,15 @@ const KNOWN: [RegExp, TranslationKey][] = [
   [/siret_taken/i, 'shop.notFound'],
   [/offer_out_of_range/i, 'offer.outOfRange'],
   [/offer_invalid|offer_closed/i, 'offer.invalid'],
+  [/messages_closed/, 'error.messagesClosed'],
+  [/comments_closed/, 'error.commentsClosed'],
+  [/followers_only/, 'error.followersOnly'],
+  [/story_not_yours/, 'error.storyNotYours'],
+  [/too_many_words/, 'error.tooManyWords'],
+  [/not_restored/, 'error.notRestored'],
+  // Plain words: only the bare code, so a longer message can't match by accident.
+  [/^blocked$/, 'msg.blocked'],
+  [/^partial$/, 'error.partial'],
 ];
 
 export function friendlyError(e: unknown, t: (k: TranslationKey) => string): string {
