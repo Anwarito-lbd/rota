@@ -5,7 +5,7 @@ declare
   p uuid := pg_temp.member('xp');   -- an accepted follower of m
   b uuid := pg_temp.member('xb');   -- talks with m, then blocks m
   conv uuid; conv_p uuid; conv_b uuid; lst_o uuid; lst_m uuid; rnt uuid; mid uuid;
-  nid_other uuid; nid_legacy uuid;
+  nid_other uuid; nid_legacy uuid; nid_null uuid;
   j jsonb; jo jsonb; k text; err text; alias1 text; alias2 text; old_name text;
   missing text[] := '{}'; out jsonb := '{}';
 begin
@@ -48,6 +48,10 @@ begin
   insert into public.notifications (user_id, kind, payload, dedupe_key, email_state, push_state)
     values (p, 'social_follow', jsonb_build_object('actor', old_name), 'test-033c-legacy', 'skipped', 'sent')
     returning id into nid_legacy;
+  -- 033e: actor_id present but JSON null falls back to the name match.
+  insert into public.notifications (user_id, kind, payload, dedupe_key, email_state, push_state)
+    values (p, 'social_follow', jsonb_build_object('actor', old_name, 'actor_id', null::uuid), 'test-033e-null', 'skipped', 'sent')
+    returning id into nid_null;
   out := out || jsonb_build_object('push_has_actor_id',
     coalesce((select payload->>'actor_id' = m::text and payload ? 'preview' and push_state = 'pending'
                 from public.notifications where user_id = p and dedupe_key = 'message:' || mid::text), false));
@@ -144,6 +148,8 @@ begin
                                               from public.notifications where id = nid_other), false),
     'legacy_name_renamed', coalesce((select payload->>'actor' = alias1
                                        from public.notifications where id = nid_legacy), false),
+    'null_actor_id_renamed', coalesce((select payload->>'actor' = alias1
+                                         from public.notifications where id = nid_null), false),
     'listing_wiped', coalesce((select city is null and description is null and video_path is null and authenticity_path is null
                                       and distribution_note is null and photo_paths = '{}'
                                       and title = 'Manteau 033' and brand = 'Marque' and category = 'Manteaux'

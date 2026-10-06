@@ -65,3 +65,13 @@ export async function rpc<T = unknown>(fn: string, args: Record<string, unknown>
   if (error) throw new Error(`${fn}: ${error.message}`);
   return data as T;
 }
+
+/**
+ * The same rule as public.path_owned_by (033e): a storage path inside the owner's
+ * folder, not a URL, with no empty, '.' or '..' segment and no '%' or '\'.
+ */
+export function pathOwnedBy(path: unknown, owner: string): path is string {
+  if (typeof path !== 'string' || !owner || !path.startsWith(`${owner}/`)) return false;
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(path) || path.includes('%') || path.includes('\\')) return false;
+  return path.split('/').every((s) => s !== '' && s !== '.' && s !== '..');
+}

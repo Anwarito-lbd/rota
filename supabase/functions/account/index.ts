@@ -12,26 +12,48 @@
 //   every session is signed out. Rentals, payments and claims stay,
 //   pseudonymised, because accounting and consumer law require them to be kept.
 
-import { admin, json, userFrom } from '../_shared/clients.ts';
+import { admin, json, pathOwnedBy, userFrom } from '../_shared/clients.ts';
 
 const CONFIRM = new Set(['SUPPRIMER', 'DELETE', 'ELIMINAR']);
 
-/** Removes every file under a folder, at any depth, 1 000 entries per page. */
-async function wipeFolder(bucket: string, folder: string): Promise<number> {
-  let removed = 0;
+const PAGE = 1000;
+
+/**
+ * Removes every file under a folder, at any depth. Every page is listed before
+ * anything is removed, so removals never shift the pages still to read.
+ * `ok` is false when a listing or a removal failed.
+ */
+async function wipeFolder(bucket: string, folder: string): Promise<{ removed: number; ok: boolean }> {
   const files: string[] = [];
-  for (let offset = 0; ; offset += 1000) {
-    const { data, error } = await admin.storage.from(bucket).list(folder, { limit: 1000, offset });
-    if (error || !data?.length) break;
-    for (const entry of data) {
-      const path = `${folder}/${entry.name}`;
-      if (entry.id) files.push(path);
-      else removed += await wipeFolder(bucket, path);
+  const folders: string[] = [];
+  let ok = true;
+  for (let offset = 0; ; offset += PAGE) {
+    const { data, error } = await admin.storage.from(bucket).list(folder, { limit: PAGE, offset });
+    if (error) {
+      console.error(`list ${bucket}/${folder}:`, error.message);
+      ok = false;
+      break;
     }
-    if (data.length < 1000) break;
+    for (const entry of data ?? []) (entry.id ? files : folders).push(`${folder}/${entry.name}`);
+    if (!data || data.length < PAGE) break;
   }
-  for (let i = 0; i < files.length; i += 100) await admin.storage.from(bucket).remove(files.slice(i, i + 100));
-  return removed + files.length;
+  let removed = 0;
+  for (const sub of folders) {
+    const inner = await wipeFolder(bucket, sub);
+    removed += inner.removed;
+    ok &&= inner.ok;
+  }
+  for (let i = 0; i < files.length; i += 100) {
+    const chunk = files.slice(i, i + 100);
+    const { error } = await admin.storage.from(bucket).remove(chunk);
+    if (error) {
+      console.error(`remove ${bucket}:`, error.message);
+      ok = false;
+    } else {
+      removed += chunk.length;
+    }
+  }
+  return { removed, ok };
 }
 
 /** A stored path's public link; links that are already URLs pass through. */
@@ -56,7 +78,9 @@ async function exportData(userId: string) {
   }));
   const listings = await Promise.all(
     ((data.listings ?? []) as Row[]).map(async (l) => {
-      const proof = typeof l.authenticity_path === 'string' && l.authenticity_path ? l.authenticity_path : null;
+      // Only a proof stored in the member's own folder is ever signed (033e).
+      const stored = l.authenticity_path;
+      const proof = pathOwnedBy(stored, userId) ? stored : null;
       return {
         ...l,
         photo_urls: list(l.photo_paths).map((x) => pub('listing-media', x)),
@@ -100,29 +124,44 @@ Deno.serve(async (req) => {
 
   // Their own photos. Condition photos of past rentals stay: the other
   // party may still need them as evidence.
+  // Anything that could not be finished is reported, never hidden.
+  const warnings: string[] = [];
   const removed: Record<string, number> = {};
   for (const bucket of ['avatars', 'listing-media', 'post-media', 'private-docs', 'moderation-frames']) {
-    removed[bucket] = await wipeFolder(bucket, user.id).catch(() => 0);
+    const result = await wipeFolder(bucket, user.id).catch(() => ({ removed: 0, ok: false }));
+    removed[bucket] = result.removed;
+    if (!result.ok) warnings.push(`storage:${bucket}`);
   }
 
   // The e-mail is personal data: replace it, and make sure nobody can sign in again.
-  await admin.auth.admin.updateUserById(user.id, {
+  const { error: authError } = await admin.auth.admin.updateUserById(user.id, {
     email: `closed-${user.id}@closed.therotaapp.com`,
     email_confirm: true,
     user_metadata: {},
     ban_duration: '876000h',
   });
+  if (authError) {
+    console.error('close auth:', authError.message);
+    return json({ error: 'partial', step: 'auth', removed, warnings }, 500);
+  }
 
   // Apple / Google links are personal data too.
-  const { data: full } = await admin.auth.admin.getUserById(user.id);
+  const { data: full, error: readError } = await admin.auth.admin.getUserById(user.id);
+  if (readError) warnings.push('identities');
   for (const identity of full?.user?.identities ?? []) {
-    if (identity.provider !== 'email') {
-      await admin.rpc('drop_identity', { p_identity: identity.identity_id }).then(() => undefined, () => undefined);
+    if (identity.provider === 'email') continue;
+    const { error: dropError } = await admin.rpc('drop_identity', { p_identity: identity.identity_id });
+    if (dropError) {
+      console.error('drop_identity:', dropError.message);
+      warnings.push(`identity:${identity.provider}`);
     }
   }
 
   const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? '';
-  await admin.auth.admin.signOut(token, 'global').catch(() => undefined);
+  const { error: signOutError } = await admin.auth.admin
+    .signOut(token, 'global')
+    .catch((e) => ({ error: e instanceof Error ? e : new Error(String(e)) }));
+  if (signOutError) warnings.push('sign_out');
 
-  return json({ closed: true, removed });
+  return json({ closed: true, removed, warnings });
 });
