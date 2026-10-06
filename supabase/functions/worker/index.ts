@@ -2,12 +2,13 @@
 //   1. moves the money the database asked for (payment_jobs)
 //   2. emails reminders and receipts (notifications)
 //   3. sends the same as push notifications to members who turned push on
+//   4. erases posts and stories that have sat 30 days in the bin
 // It never decides an amount: the database does, the worker executes and
 // reports back. Every Stripe call carries the job's idempotency key, so a
 // retry can never charge twice.
 
 import Stripe from 'npm:stripe@22';
-import { isCron, json, rpc, stripe } from '../_shared/clients.ts';
+import { admin, isCron, json, rpc, stripe } from '../_shared/clients.ts';
 import { type Lang, render, renderPush } from './emails.ts';
 import { execute, Final, type Job } from './money.ts';
 
@@ -147,10 +148,27 @@ async function sendPushes() {
   return { sent };
 }
 
+/** Erases posts and stories 30 days after they were deleted (rows first, then files). */
+async function purgeBin() {
+  const due = await rpc<{ kind: 'post' | 'story'; id: string; paths: string[] | null }[] | null>('purge_due', { p_limit: 50 });
+  let purged = 0;
+  for (const item of due ?? []) {
+    // purge_done re-checks the item is still due (032c) and deletes the row;
+    // only then do the files go, so protected content never loses its media.
+    const done = (await rpc('purge_done', { p_kind: item.kind, p_id: item.id })) === true;
+    if (!done) continue;
+    const paths = (item.paths ?? []).filter((p) => p && !/^[a-z]+:/i.test(p));
+    if (paths.length) await admin.storage.from('post-media').remove(paths).catch(() => undefined);
+    purged += 1;
+  }
+  return { purged };
+}
+
 Deno.serve(async (req) => {
   if (!(await isCron(req))) return json({ error: 'unauthorized' }, 401);
   const payments = await runPaymentJobs().catch((e) => ({ error: String(e) }));
   const emails = await sendEmails().catch((e) => ({ error: String(e) }));
   const pushes = await sendPushes().catch((e) => ({ error: String(e) }));
-  return json({ payments, emails, pushes });
+  const bin = await purgeBin().catch((e) => ({ error: String(e) }));
+  return json({ payments, emails, pushes, bin });
 });

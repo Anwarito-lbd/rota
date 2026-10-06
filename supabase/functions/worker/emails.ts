@@ -157,6 +157,16 @@ const PUSH: Record<string, Record<Lang, (c: EmailContext) => [title: string, bod
     en: (c) => ['Rota', `@${c.payload.actor} started following you.`],
     es: (c) => ['Rota', `@${c.payload.actor} empezó a seguirte.`],
   },
+  social_follow_request: {
+    fr: (c) => ['Rota', `@${c.payload.actor} veut vous suivre.`],
+    en: (c) => ['Rota', `@${c.payload.actor} wants to follow you.`],
+    es: (c) => ['Rota', `@${c.payload.actor} quiere seguirte.`],
+  },
+  social_follow_accepted: {
+    fr: (c) => ['Rota', `@${c.payload.actor} a accepté votre demande.`],
+    en: (c) => ['Rota', `@${c.payload.actor} accepted your request.`],
+    es: (c) => ['Rota', `@${c.payload.actor} aceptó tu solicitud.`],
+  },
   social_review: {
     fr: (c) => [`@${c.payload.actor} a laissé un avis`, `${'★'.repeat(Number(c.payload.rating) || 0)} ${c.payload.preview ?? ''}`.trim()],
     en: (c) => [`@${c.payload.actor} left a review`, `${'★'.repeat(Number(c.payload.rating) || 0)} ${c.payload.preview ?? ''}`.trim()],
