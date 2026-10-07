@@ -23,6 +23,7 @@ import { CertifiedMark, Display, Field, PrimaryButton, Sheet, Txt } from './kit'
 import { AppealSheet } from './Moderation';
 import { ProCrown, ShopBadge, useMemberBadges } from './Badges';
 import { Avatar, FadeIn, IdBadge, PressScale, Skeleton, compact, tap } from './motion';
+import { MemberMenu } from './MemberMenu';
 import { MessageButton } from './MessageButton';
 
 const GAP = 2;
@@ -45,8 +46,13 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
   const [tab, setTab] = useState<'fits' | 'pieces'>('fits');
   const [appealFor, setAppealFor] = useState<Listing | null>(null);
   const [newHighlight, setNewHighlight] = useState(false);
+  const [menu, setMenu] = useState(false);
 
-  const blocked = !me && !!memberId && social.isBlocked(memberId);
+  // I blocked them: say so and offer to unblock. They blocked me, or the account
+  // is closed: the card only carries the name (029), so show it as unavailable.
+  const iBlocked = !me && !!memberId && social.isBlocked(memberId);
+  const unavailable = !me && !iBlocked && !!member && (member.blocked || member.deleted);
+  const blocked = iBlocked || unavailable;
   const following = !!memberId && social.isFollowing(memberId);
   const posts = memberId ? social.postsOf(memberId) : [];
   const pieces = me ? myListings : publicListings.filter((l) => l.ownerId === memberId);
@@ -152,7 +158,7 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
         ) : memberId ? (
           <PressScale
             accessibilityLabel={t('post.more')}
-            onPress={() => set({ socialReport: { kind: 'member', id: memberId, memberId } })}
+            onPress={() => setMenu(true)}
             style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
           >
             <DotsIcon color={c.ink} />
@@ -240,7 +246,7 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
               {button(t('closet.editProfile'), () => go('set.profile'))}
               {button(t('profile.share'), shareProfile)}
             </View>
-          ) : blocked ? (
+          ) : unavailable ? null : iBlocked ? (
             <View style={{ marginTop: 14, gap: 8 }}>
               <Txt size={14} color={c.ink2}>
                 {t('profile.blocked')}
@@ -311,6 +317,12 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
             </Pressable>
           ) : null}
         </ScrollView>
+      ) : null}
+
+      {unavailable ? (
+        <Txt size={15} color={c.ink2} center style={{ marginTop: 40, paddingHorizontal: 24 }}>
+          {t('profile.unavailable')}
+        </Txt>
       ) : null}
 
       {/* Grid tabs */}
@@ -410,6 +422,14 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
         </>
       ) : null}
 
+      {!me && memberId ? (
+        <MemberMenu
+          member={{ id: memberId, username, avatar: avatar ?? null }}
+          visible={menu}
+          onClose={() => setMenu(false)}
+          onReport={() => set({ socialReport: { kind: 'member', id: memberId, memberId } })}
+        />
+      ) : null}
       {me ? <AppealSheet listing={appealFor} onClose={() => setAppealFor(null)} /> : null}
       {me ? <NewHighlightSheet visible={newHighlight} onClose={() => setNewHighlight(false)} create={create} /> : null}
     </ScrollView>

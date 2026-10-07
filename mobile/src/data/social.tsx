@@ -974,8 +974,10 @@ export function useComments(postId: string | null) {
 // ─── members ──────────────────────────────────────────────────
 
 export function useMember(memberId: string | null): Member | null {
-  const { demo, posts, followingIds, meId } = useSocial();
+  const { demo, posts, followingIds, meId, blockedIds } = useSocial();
   const [member, setMember] = useState<Member | null>(null);
+  // A block or unblock changes what the card may show.
+  const blockCount = blockedIds.length;
 
   useEffect(() => {
     if (!memberId) {
@@ -1036,7 +1038,7 @@ export function useMember(memberId: string | null): Member | null {
     return () => {
       cancelled = true;
     };
-  }, [demo, memberId, followingIds, posts.length, meId]);
+  }, [demo, memberId, followingIds, posts.length, meId, blockCount]);
 
   return member;
 }

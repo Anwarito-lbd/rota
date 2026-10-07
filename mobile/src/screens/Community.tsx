@@ -17,6 +17,7 @@ import { useStore } from '../state/store';
 import { OVER_INK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { FlatPage, FlatSection } from '../ui/Flat';
+import { MemberMenu } from '../ui/MemberMenu';
 import { CalendarIcon, CloseIcon, CrownIcon, DotsIcon, SparkleIcon, TagIcon } from '../ui/icons';
 import { Amount, BackButton, Chip, GhostButton, PrimaryButton, Screen, Txt } from '../ui/kit';
 import { Avatar, FadeIn, IdBadge, PressScale, Segmented, tap, timeAgo, useReducedMotion } from '../ui/motion';
@@ -185,41 +186,53 @@ export function StoryViewer() {
     const theirs = community.stories.find((s) => s.author.id === state.storyAuthorId);
     return theirs ? [theirs.author] : tray;
   }, [community.storyAuthors, community.stories, state.storyAuthorId]);
-  const [authorIndex, setAuthorIndex] = useState(Math.max(0, authors.findIndex((a) => a.id === state.storyAuthorId)));
-  const author = authors[authorIndex];
+  // Follow the author by id, not by position: a mute or a block from the menu
+  // below changes the list, and the viewer must never slide onto someone else.
+  const [authorId, setAuthorId] = useState(state.storyAuthorId);
+  const authorIndex = authorId ? authors.findIndex((a) => a.id === authorId) : authors.length ? 0 : -1;
+  const author = authorIndex >= 0 ? authors[authorIndex] : undefined;
   const own = useMemo(() => community.stories.filter((s) => s.author.id === author?.id).reverse(), [community.stories, author]);
   const [index, setIndex] = useState(0);
-  const story = own[index];
+  // Clamped: the author's list can shrink while it shows.
+  const pos = Math.min(index, own.length - 1);
+  const story = own[pos];
   const progress = useRef(new Animated.Value(0)).current;
+  const [menu, setMenu] = useState(false);
 
   const close = () => back('feed');
+  const showAuthor = (i: number) => {
+    setAuthorId(authors[i].id);
+    setIndex(0);
+  };
   const next = () => {
-    if (index < own.length - 1) return setIndex(index + 1);
-    if (authorIndex < authors.length - 1) {
-      setAuthorIndex(authorIndex + 1);
-      setIndex(0);
-      return;
-    }
+    if (pos < own.length - 1) return setIndex(pos + 1);
+    if (authorIndex >= 0 && authorIndex < authors.length - 1) return showAuthor(authorIndex + 1);
     close();
   };
   const prev = () => {
-    if (index > 0) return setIndex(index - 1);
-    if (authorIndex > 0) {
-      setAuthorIndex(authorIndex - 1);
-      setIndex(0);
-    }
+    if (pos > 0) return setIndex(pos - 1);
+    if (authorIndex > 0) showAuthor(authorIndex - 1);
   };
 
+  // The author on screen left the list (muted or blocked from the menu): close.
+  const shown = useRef(false);
+  if (story) shown.current = true;
+  const gone = shown.current && !story;
   useEffect(() => {
-    if (!story) return;
+    if (gone) close();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gone]);
+
+  useEffect(() => {
+    if (!story || menu) return;
     community.markSeen(story.id);
     progress.setValue(0);
     const anim = Animated.timing(progress, { toValue: 1, duration: reduced ? STORY_MS * 1.5 : STORY_MS, easing: Easing.linear, useNativeDriver: false });
     anim.start(({ finished }) => finished && next());
     return () => anim.stop();
-    // Restart the timer for each story.
+    // Restart the timer for each story; it waits while the menu is open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [story?.id]);
+  }, [story?.id, menu]);
 
   if (!story || !author) {
     return (
@@ -244,9 +257,9 @@ export function StoryViewer() {
         <View style={{ flexDirection: 'row', gap: 4 }}>
           {own.map((s, i) => (
             <View key={s.id} style={{ flex: 1, height: 3, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.35)', overflow: 'hidden' }}>
-              {i < index ? (
+              {i < pos ? (
                 <View style={{ flex: 1, backgroundColor: OVER_INK }} />
-              ) : i === index ? (
+              ) : i === pos ? (
                 <Animated.View style={{ height: 3, backgroundColor: OVER_INK, width: progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
               ) : null}
             </View>
@@ -263,11 +276,7 @@ export function StoryViewer() {
             </Txt>
           </Pressable>
           {author.id !== social.meId ? (
-            <Pressable
-              hitSlop={10}
-              onPress={() => set({ socialReport: { kind: 'member', id: author.id, memberId: author.id } })}
-              style={{ paddingHorizontal: 8 }}
-            >
+            <Pressable hitSlop={10} accessibilityRole="button" accessibilityLabel={t('post.more')} onPress={() => setMenu(true)} style={{ paddingHorizontal: 8 }}>
               <DotsIcon />
             </Pressable>
           ) : null}
@@ -284,6 +293,13 @@ export function StoryViewer() {
           </Txt>
         </View>
       ) : null}
+
+      <MemberMenu
+        member={author.id !== social.meId ? { id: author.id, username: author.username, avatar: author.avatar } : null}
+        visible={menu}
+        onClose={() => setMenu(false)}
+        onReport={() => set({ socialReport: { kind: 'member', id: author.id, memberId: author.id } })}
+      />
     </View>
   );
 }

@@ -27,6 +27,8 @@ import {
   RepostIcon,
 } from './icons';
 import { NameBadges } from './Badges';
+import { MemberMenuBody } from './MemberMenu';
+import type { MiniMember } from '../data/privacy';
 import { Sheet, Txt } from './kit';
 import { useTheme } from '../theme/useTheme';
 import { TAB_BAR_SPACE } from './TabBar';
@@ -204,6 +206,7 @@ function PostMenu({
   onShare,
   onTryOn,
   onReport,
+  author,
   repost,
 }: {
   visible: boolean;
@@ -212,15 +215,22 @@ function PostMenu({
   repost?: { on: boolean; toggle: () => void };
   onTryOn?: () => void;
   onReport?: () => void;
+  /** Someone else's post: « Plus d'options » opens mute, restrict and block in place. */
+  author?: MiniMember;
 }) {
   const { c } = useTheme();
   const { t } = useT();
+  const [more, setMore] = useState(false);
+  const close = () => {
+    setMore(false);
+    onClose();
+  };
   const item = (icon: React.ReactNode, label: string, sub: string | null, onPress: () => void, tone?: string) => (
     <PressScale
       key={label}
       scaleTo={0.98}
       onPress={() => {
-        onClose();
+        close();
         onPress();
       }}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: c.line }}
@@ -239,11 +249,32 @@ function PostMenu({
     </PressScale>
   );
   return (
-    <Sheet visible={visible} onClose={onClose}>
-      {onTryOn ? item(<SparkleIcon size={20} color={c.accent} />, t('post.tryOn'), t('post.tryOnSub'), onTryOn) : null}
-      {repost ? item(<RepostIcon size={20} color={repost.on ? c.accent : c.ink} />, repost.on ? t('repost.undo') : t('repost.do'), repost.on ? null : t('repost.sub'), repost.toggle) : null}
-      {item(<ShareIcon size={20} color={c.ink} />, t('post.share'), null, onShare)}
-      {onReport ? item(<DotsIcon color={c.plum} />, t('post.report'), null, onReport, c.plum) : null}
+    <Sheet visible={visible} onClose={close}>
+      {more && author && onReport ? (
+        <MemberMenuBody member={author} onDone={close} onReport={onReport} />
+      ) : (
+        <>
+          {onTryOn ? item(<SparkleIcon size={20} color={c.accent} />, t('post.tryOn'), t('post.tryOnSub'), onTryOn) : null}
+          {repost ? item(<RepostIcon size={20} color={repost.on ? c.accent : c.ink} />, repost.on ? t('repost.undo') : t('repost.do'), repost.on ? null : t('repost.sub'), repost.toggle) : null}
+          {item(<ShareIcon size={20} color={c.ink} />, t('post.share'), null, onShare)}
+          {author ? (
+            <PressScale
+              scaleTo={0.98}
+              accessibilityRole="button"
+              onPress={() => setMore(true)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: c.line }}
+            >
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: c.surf2, alignItems: 'center', justifyContent: 'center' }}>
+                <DotsIcon color={c.ink} />
+              </View>
+              <Txt size={16} weight="semi" style={{ flex: 1 }}>
+                {t('menu.more')}
+              </Txt>
+            </PressScale>
+          ) : null}
+          {onReport ? item(<DotsIcon color={c.plum} />, t('post.report'), null, onReport, c.plum) : null}
+        </>
+      )}
     </Sheet>
   );
 }
@@ -432,6 +463,7 @@ export function PostCard({ post, height, distanceKm }: { post: Post; height: num
         }
         onTryOn={tagged.length ? () => set({ screen: 'tryon', tryOnListingId: tagged[0].listingId }) : undefined}
         onReport={!mine ? () => set({ socialReport: { kind: 'post', id: post.id, memberId: post.authorId } }) : undefined}
+        author={!mine ? { id: post.authorId, username: post.author.username, avatar: post.author.avatar } : undefined}
         repost={!mine && post.distribution === 'public' ? { on: community.isReposted(post.id), toggle: () => community.toggleRepost(post.id) } : undefined}
       />
 

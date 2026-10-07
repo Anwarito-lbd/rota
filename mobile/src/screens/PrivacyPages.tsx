@@ -74,7 +74,7 @@ function ListState({ loading, error, empty, onRetry }: { loading: boolean; error
 }
 
 /** A one-line error after an action that didn't go through. */
-function ActionError({ message }: { message: string | null }) {
+export function ActionError({ message }: { message: string | null }) {
   const { c } = useTheme();
   if (!message) return null;
   return (
@@ -116,7 +116,7 @@ function MemberLine({ m, action, onPress, last }: { m: MiniMember; action: strin
  * (also read out). With an id, a second tap on the same item while the
  * first is still running is ignored.
  */
-function useAction() {
+export function useAction() {
   const { t } = useT();
   const [error, setError] = useState<string | null>(null);
   const pending = useRef(new Set<string>());
