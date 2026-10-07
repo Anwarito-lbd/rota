@@ -4,6 +4,11 @@
 > l’application fait réellement (code sur `main`, migrations 009 à 011) et propose des
 > clauses **à valider ou réécrire**. Il complète `06-needs-avocat-review.md`, qui couvre
 > la location, les frais et la caution.
+>
+> **Mise à jour octobre 2026** (migrations 029 à 034) : comptes tous publics, demandes de
+> message, sourdine, limiter, mots masqués, corbeille de 30 jours, 18 ans et plus,
+> localisation arrondie à ~1 km, métadonnées photo supprimées, export et fermeture
+> complets. Voir §1 bis.
 
 ## 1. Ce qui a changé dans le produit
 
@@ -12,12 +17,29 @@
 | Publications (« fits », « dumps ») | Photos de tenues, légende, défi hebdomadaire, pièces taguées renvoyant vers des annonces | Photos (dont visages), pseudonyme, quartier approximatif (optionnel) |
 | Commentaires, likes, abonnements, tableaux | Interactions publiques entre membres ; tableaux privés par défaut | Pseudonyme, contenu des commentaires |
 | Messagerie | Conversations 1-à-1, lieux de rencontre choisis dans une liste de lieux publics, avertissement si numéro / e-mail / appli de paiement saisis | Contenu des messages (lu par Rota uniquement sur signalement) |
-| « Près de moi » | Carte des publications ; position arrondie à ~550 m côté téléphone **et** côté serveur, jamais d’adresse | Localisation approximative, uniquement si le membre l’active |
+| « Près de moi » | Carte des publications ; position arrondie à ~1 km (grille de 0,01°) côté téléphone **et** côté serveur, jamais d’adresse | Localisation approximative, uniquement si le membre l’active |
 | Essayage virtuel (IA) | Image caméra ou photo envoyée à **Decart** (États-Unis) avec la photo de la pièce ; image/vidéo modifiée renvoyée ; écran de consentement avant tout envoi ; étiquette « Image générée par IA » | Image du visage et du corps ; non conservée par Rota |
 | Vérification d’identité | **Stripe Identity** : pièce d’identité + selfie ; Rota ne reçoit que le statut | Données biométriques traitées par Stripe |
 | Connexion Apple / Google | Compte créé à partir de l’e-mail fourni par Apple/Google ; pseudonyme choisi ensuite | E-mail (éventuellement relais Apple), nom |
 | Modération | Signalement de publications, commentaires, messages, profils ; 3 signalements retirent le contenu en attente d’examen ; examen humain (objectif < 24 h) ; blocage réciproque ; journal d’audit des décisions | Signalements, notes, décisions |
-| Suppression de compte | Dans l’app, immédiate ; reçus de paiement conservés pseudonymisés | — |
+| Suppression de compte | Dans l’app, immédiate (refusée tant qu’une location, un versement ou une réclamation est en cours) ; voir §1 bis pour ce qui est supprimé et ce qui est conservé sous pseudonyme | — |
+
+## 1 bis. Contrôles de confidentialité (octobre 2026)
+
+| Contrôle | Ce que fait l’app |
+|---|---|
+| Comptes publics | **Tous les profils et toutes les stories sont publics** (pas de compte privé). Profil, posts, stories, highlights et annonces visibles par tous les membres. E-mail, adresse et téléphone jamais affichés |
+| Qui peut m’écrire | « Tout le monde » ou « Personnes que je suis ». Avec « Tout le monde », le premier message d’une personne non suivie arrive dans **« Demandes »**, sans notification ni accusé de lecture. Avec « Personnes que je suis », les autres ne peuvent pas commencer de conversation. Un message lié à une annonce, une offre ou une location arrive toujours |
+| Refus d’une demande | Les messages suivants du demandeur ne sont pas remis, et il n’en est pas informé |
+| Sourdine / Limiter | Sourdine : masque les posts et / ou stories d’un compte. Limiter : ses avis sur mes posts ne sont visibles que par lui, ses messages vont dans Demandes. Personne n’est notifié |
+| Mots masqués, j’aime | Les nouveaux avis contenant les mots choisis sont masqués ; option pour masquer le nombre de j’aime sur ses posts |
+| Corbeille | Post ou story supprimé : restaurable 30 jours, puis effacé (lignes et fichiers). Exception : conservé tant qu’un signalement ou un recours est ouvert, et jusqu’à 6 mois après la décision de modération ou de recours |
+| Localisation | Arrondie à ~1 km sur le téléphone puis sur le serveur. Le nom du quartier vient du géocodeur du système (Apple / Google), qui reçoit la position exacte |
+| Métadonnées photo | Photos réencodées sur le téléphone avant l’envoi : EXIF (GPS, date, numéro de série) supprimés. Marque, modèle et logiciel de l’appareil envoyés à part pour la modération des annonces. Les preuves d’authenticité gardent leurs métadonnées (lisibles par le membre et l’équipe Rota seulement) |
+| **Risque résiduel** | Les **vidéos** gardent leurs métadonnées (dont une éventuelle position GPS) jusqu’à la version de développement de l’app |
+| Aperçu des messages | Réglage qui retire le texte des messages des notifications push |
+| Export | Fichier JSON : compte, profil, adresse, préférences, contenus, interactions, abonnements, blocages, sourdines, conversations et messages envoyés, offres, locations, réclamations, versements, achats in-app, consentements, signalements, recours, décisions, notifications. Autres membres par pseudonyme ; ni identifiant Stripe ni jeton push. Le fichier est effacé du téléphone après le partage |
+| Fermeture | **Supprimé** : profil, photo, bio, ville, adresse, préférences, jeton push, posts, stories, commentaires, j’aime, abonnements, blocages, sourdines, mots masqués, favoris, notifications, fichiers du membre ; annonces retirées et vidées ; e-mail remplacé, connexion Apple / Google supprimée. **Conservé sous pseudonyme** : locations, paiements et versements, réclamations et photos de remise / retour, messages échangés, décisions de modération, historique des achats in-app (identifiant aléatoire) |
 
 ## 2. Questions à trancher (par ordre de priorité)
 
@@ -30,7 +52,7 @@
 | A3 | **Mécanisme de notification** (art. 16) : signalement de contenus illicites, y compris par des non-membres | Dans l’app : oui. À ajouter : formulaire web public pour les non-membres |
 | A4 | **Exposé des motifs** (art. 17) à chaque retrait / limitation / suspension | À construire : notification au membre avec motif, base (CGU ou loi), voie de recours. Aujourd’hui : statut visible sur la publication, pas de message motivé |
 | A5 | **Réclamation interne** (art. 20) et règlement extrajudiciaire (art. 21) | Recours in-app existe pour les annonces (migration 003) ; à étendre aux publications et suspensions |
-| A6 | **Protection des mineurs** (art. 28) | Service réservé aux 16 ans et plus ; pas de profilage publicitaire ; aucune publicité |
+| A6 | **Protection des mineurs** (art. 28) | Service réservé aux 18 ans et plus ; pas de profilage publicitaire ; aucune publicité |
 | A7 | Statut de **commerçant** dans l’App Store (DSA) et vérification des prêteurs professionnels (art. 30) | À décider : les prêteurs sont-ils tous des particuliers ? Sinon, collecte des informations art. 30 |
 
 ### B. RGPD
@@ -42,8 +64,11 @@
 | B3 | **Essayage IA** : image du visage transmise à Decart (US) | Consentement explicite in-app (fait) ; DPA avec Decart ; transfert : DPF ou CCT ; confirmer la non-conservation par Decart ; ce n’est **pas** une identification biométrique (à confirmer) |
 | B4 | **Stripe Identity** : données biométriques (art. 9) | Consentement explicite recueilli par Stripe ; qualification Stripe (sous-traitant / responsable conjoint) à confirmer ; Rota ne stocke que le statut |
 | B5 | Messagerie | Pas d’analyse automatique du contenu ; lecture par Rota uniquement du message signalé ; durée de conservation à fixer (proposition : durée du compte + 1 an pour les litiges) |
-| B6 | Localisation | Arrondie à ~550 m, jamais stockée précisément, uniquement si activée ; pas de géolocalisation en arrière-plan |
-| B7 | Âge | 16 ans et plus (majorité numérique France : 15 ans ; 16 ans retenu pour la location) — mécanisme de vérification d’âge à discuter |
+| B6 | Localisation | Arrondie à ~1 km, jamais stockée précisément, uniquement si activée ; pas de géolocalisation en arrière-plan. Le géocodeur du système (Apple / Google) reçoit la position exacte pour nommer le quartier : à mentionner ? |
+| B7 | Âge | 18 ans et plus : case « J’ai 18 ans ou plus » à l’inscription (e-mail, Apple, Google), horodatée — mécanisme de vérification d’âge à discuter |
+| B10 | Métadonnées des vidéos | Risque résiduel : les vidéos gardent leurs métadonnées (dont GPS) jusqu’à la version de développement. Information suffisante dans la politique, ou blocage des vidéos d’ici là ? |
+| B11 | Conservation | Contenus supprimés : 30 jours, puis 6 mois après une décision de modération ou de recours ; données conservées sous pseudonyme après fermeture (locations, paiements, réclamations, messages, achats in-app) : durées et base légale à fixer |
+| B12 | Demandes refusées | Les messages d’un demandeur refusé sont conservés mais jamais remis, sans l’en informer : conservation et information à valider |
 | B8 | Sous-traitants | Voir §3 ; mettre à jour la politique de confidentialité et le registre des traitements |
 | B9 | AIPD (analyse d’impact) | Probablement requise : biométrie (Stripe), IA sur images, données de localisation, à grande échelle à terme |
 
@@ -72,10 +97,12 @@
 | Supabase | Base de données, authentification, stockage, temps réel | UE (région à confirmer) / US | Compte, contenus, messages, médias |
 | Stripe (Payments, Connect, Identity, Radar) | Paiement, versements, vérification d’identité, fraude | UE / US | Paiement, identité, biométrie (Identity) |
 | Decart | Essayage virtuel IA | US | Image caméra/photo, photo de la pièce |
-| Anthropic (API Claude) | Analyse de modération des annonces | US | Photos et textes d’annonces |
+| Anthropic (API Claude) | Analyse de modération des annonces ; planificateur de tenues Rota Pro | US | Modération : photos, images de vidéos et textes d’annonces. Planificateur : lignes d’annonces publiques, occasion et budget, aucune donnée de compte |
+| Mux | Images extraites des vidéos d’annonces pour la modération, **uniquement si activé** | US | Vidéos d’annonces (à confirmer) |
+| RevenueCat | Achats in-app (Rota Pro, essayages) et statut d’abonnement | US (CCT) | Identifiant de compte Rota, produit, événements d’achat |
 | Resend | E-mails de compte et rappels | US / UE | E-mail, contenu des e-mails |
-| Apple / Google | Connexion (Sign in with Apple / Google) | US | Identifiant, e-mail |
-| Expo (EAS) | Construction et mises à jour de l’app | US | Aucune donnée membre (à confirmer) |
+| Apple / Google | Connexion, achats in-app, acheminement des notifications, géocodage | US | Identifiant, e-mail, achats, position exacte au moment du géocodage |
+| Expo | Envoi des notifications push (et construction / mises à jour de l’app) | US | Jeton push, texte des notifications (pseudonyme, extrait de message ou d’avis) ; le membre retire le texte des messages avec « Aperçu des messages » |
 
 ## 4. Clauses proposées (brouillons à reprendre par l’avocat)
 
@@ -100,9 +127,16 @@ ne publie ces images. Base légale : votre consentement, que vous pouvez retirer
 moment en n’utilisant plus la fonction. »
 
 **Confidentialité — Localisation.** « Si vous l’activez, Rota utilise une position
-approximative, arrondie à environ 500 mètres, pour afficher les looks et pièces proches
+approximative, arrondie à environ 1 kilomètre, pour afficher les looks et pièces proches
 et, si vous le choisissez, votre quartier sur vos publications. Votre position exacte
 n’est jamais enregistrée. »
+
+**Confidentialité — Photos.** « Avant l’envoi, l’app supprime les métadonnées de vos photos
+(position GPS, date de prise de vue, numéro de série de l’appareil). Pour vérifier les
+annonces, elle transmet seulement la marque, le modèle et le logiciel de l’appareil. Les
+vidéos gardent pour l’instant leurs métadonnées. Les preuves d’authenticité sont envoyées
+telles quelles et ne sont vues que par vous et l’équipe Rota. » (Formulation du risque
+vidéo à valider par l’avocat.)
 
 **Confidentialité — Vérification d’identité.** « La vérification d’identité est réalisée
 par Stripe Identity à partir d’une pièce d’identité et d’un selfie. Rota ne reçoit que le
