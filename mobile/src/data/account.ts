@@ -324,15 +324,23 @@ export async function disableTotp(factorId: string) {
 
 // ── Privacy ────────────────────────────────────────────────────
 
-/** Writes the member's data to a JSON file and opens the share sheet. */
+/** Writes the member's data to a JSON file, opens the share sheet, then deletes the file. */
 export async function exportMyData() {
-  const { data, error } = await db().rpc('export_my_data');
-  if (error) throw new Error(error.message);
+  const { data, error } = await db().functions.invoke('account', { body: { action: 'export' } });
+  if (error) {
+    const body = await (error as { context?: Response }).context?.json?.().catch(() => null);
+    throw new Error(body?.error ?? error.message);
+  }
+  if (!data) throw new Error('failed');
   const file = new File(Paths.cache, `rota-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`);
   if (file.exists) file.delete();
   file.create();
   file.write(JSON.stringify(data, null, 2));
-  await Sharing.shareAsync(file.uri, { mimeType: 'application/json', UTI: 'public.json' });
+  try {
+    await Sharing.shareAsync(file.uri, { mimeType: 'application/json', UTI: 'public.json' });
+  } finally {
+    if (file.exists) file.delete();
+  }
 }
 
 /** Closes the account for good. The server refuses while a rental is in progress. */

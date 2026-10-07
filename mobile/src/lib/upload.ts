@@ -1,3 +1,4 @@
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import type { MediaItem } from '../state/types';
 import { supabase } from './supabase';
 
@@ -33,12 +34,24 @@ export async function uploadMedia(
 ): Promise<string> {
   if (!supabase) throw new Error('Le serveur n’est pas configuré.');
 
-  const { extension, contentType } = describe(item.uri, item.kind);
+  let { extension, contentType } = describe(item.uri, item.kind);
+  let uri = item.uri;
+  // Photos are re-encoded first: the new JPEG carries no EXIF, so no GPS,
+  // camera serial or capture time leaves the phone. Authenticity proofs keep
+  // their original bytes for staff. Videos can't be cleaned in Expo Go; see
+  // docs/legal (residual risk until the dev build).
+  if (item.kind === 'image' && bucket !== 'private-docs') {
+    const rendered = await ImageManipulator.manipulate(item.uri).renderAsync();
+    const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.9 });
+    uri = saved.uri;
+    extension = 'jpg';
+    contentType = 'image/jpeg';
+  }
   const prefix = subfolder ? `${userId}/${subfolder}` : userId;
   const path = `${prefix}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
 
   // React Native has no File API: fetch the local file and send the bytes.
-  const response = await fetch(item.uri);
+  const response = await fetch(uri);
   const bytes = await response.arrayBuffer();
 
   const { error } = await supabase.storage.from(bucket).upload(path, bytes, {
