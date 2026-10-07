@@ -431,7 +431,7 @@ export function PostCard({ post, height, distanceKm }: { post: Post; height: num
 
         <RailButton
           label={t('post.like')}
-          count={compact(post.likeCount, lang)}
+          count={post.likesHidden && !mine ? undefined : compact(post.likeCount, lang)}
           active={liked}
           onPress={() => {
             tap(liked ? 'light' : 'medium');

@@ -70,6 +70,8 @@ export interface Post {
   area: Area | null;
   tags: PostTag[];
   likeCount: number;
+  /** The author hides the count (the post's choice, else their profile setting). They still see it. */
+  likesHidden: boolean;
   commentCount: number;
   createdAt: string;
   distribution: 'pending' | 'public' | 'limited' | 'blocked';
@@ -147,7 +149,13 @@ export interface PublishInput {
   tags: PostTag[];
   /** Raw position from the phone; rounded here and again by the server. */
   area: Area | null;
+  /** Null follows the profile setting. */
+  hideLikeCount?: boolean | null;
+  /** Who can review this post; null follows the profile setting. */
+  commentPolicy?: CommentPolicy | null;
 }
+
+export type CommentPolicy = 'everyone' | 'followers' | 'nobody';
 
 interface SocialValue {
   /** True when running on demo data (no Supabase project configured). */
@@ -235,15 +243,16 @@ interface PostRow {
   area_lng: number | null;
   area_label: string | null;
   like_count: number;
+  hide_like_count: boolean | null;
   comment_count: number;
   created_at: string;
   distribution: Post['distribution'];
-  author: ({ username: string; avatar_url: string | null; certified: boolean; identity_verified: boolean | null } & BadgeCols) | null;
+  author: ({ username: string; avatar_url: string | null; certified: boolean; identity_verified: boolean | null; hide_like_counts: boolean | null } & BadgeCols) | null;
   tags: { listing_id: string; media_index: number; x: number; y: number }[] | null;
 }
 
 const POST_SELECT =
-  '*, author:profiles!posts_author_id_fkey(username, avatar_url, certified, identity_verified, pro_until, account_type, business_verified, business_name), tags:post_tags(listing_id, media_index, x, y)';
+  '*, author:profiles!posts_author_id_fkey(username, avatar_url, certified, identity_verified, hide_like_counts, pro_until, account_type, business_verified, business_name), tags:post_tags(listing_id, media_index, x, y)';
 
 function toPost(row: PostRow): Post {
   return {
@@ -266,6 +275,7 @@ function toPost(row: PostRow): Post {
         : null,
     tags: (row.tags ?? []).map((t) => ({ listingId: t.listing_id, mediaIndex: t.media_index, x: t.x, y: t.y })),
     likeCount: row.like_count,
+    likesHidden: row.hide_like_count ?? row.author?.hide_like_counts ?? false,
     commentCount: row.comment_count,
     createdAt: row.created_at,
     distribution: row.distribution,
@@ -297,6 +307,7 @@ const DEMO_POST_LIST: Post[] = DEMO_POSTS.map((p) => ({
   area: p.area,
   tags: p.tags,
   likeCount: p.likes,
+  likesHidden: false,
   commentCount: DEMO_COMMENTS[p.id]?.length ?? 0,
   createdAt: new Date(Date.now() - p.hoursAgo * 36e5).toISOString(),
   distribution: 'public',
@@ -631,6 +642,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
           area,
           tags: input.tags,
           likeCount: 0,
+          likesHidden: input.hideLikeCount ?? false,
           commentCount: 0,
           createdAt: new Date().toISOString(),
           // Mirrors posts_initial_distribution(): verified members go live.
@@ -654,6 +666,8 @@ export function SocialProvider({ children }: { children: ReactNode }) {
           area_lat: area?.lat ?? null,
           area_lng: area?.lng ?? null,
           area_label: area?.label ?? null,
+          hide_like_count: input.hideLikeCount ?? null,
+          comment_policy: input.commentPolicy ?? null,
         })
         .select('id, distribution')
         .single();

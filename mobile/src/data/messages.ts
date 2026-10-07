@@ -4,7 +4,7 @@
  * New messages arrive in real time through Supabase Realtime (RLS applies).
  * Without a backend, the same API runs on a small in-memory demo inbox.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { DEMO_LISTINGS, DEMO_ME, DEMO_MEMBERS } from './demo';
 
@@ -58,6 +58,8 @@ export interface Thread {
   lastAt: string;
   unread: number;
   blocked: boolean;
+  /** A message request (031): someone I don't follow wrote first. No read receipt until I accept. */
+  request: boolean;
 }
 
 /** Busy public places per area, for "Proposer un lieu". Never a home. */
@@ -82,9 +84,11 @@ const emit = () => listeners.forEach((l) => l());
 
 const iso = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 6e4).toISOString();
 
-const demoThreads: { id: string; otherId: string; listingId: string | null; readAt: string }[] = [
+const demoThreads: { id: string; otherId: string; listingId: string | null; readAt: string; request?: boolean }[] = [
   { id: 'c1', otherId: 'u_camille', listingId: 'f1', readAt: iso(200) },
   { id: 'c2', otherId: 'u_juliette', listingId: 'f3', readAt: iso(0) },
+  // A member I don't follow: lands in Demandes.
+  { id: 'c3', otherId: 'u_lea', listingId: null, readAt: iso(600), request: true },
 ];
 
 const demoMessages: Record<string, Message[]> = {
@@ -102,6 +106,9 @@ const demoMessages: Record<string, Message[]> = {
   ],
   c2: [
     { id: 'c2m1', senderId: 'u_juliette', kind: 'text', body: 'Merci pour le retour, la robe était impeccable', meta: null, createdAt: iso(1500) },
+  ],
+  c3: [
+    { id: 'c3m1', senderId: 'u_lea', kind: 'text', body: 'Bonjour ! Vous prêtez aussi des sacs pour un mariage en juin ?', meta: null, createdAt: iso(45) },
   ],
 };
 
@@ -126,6 +133,7 @@ function demoInbox(): Thread[] {
         lastAt: last?.createdAt ?? new Date().toISOString(),
         unread: msgs.filter((m) => m.senderId !== DEMO_ME.id && m.createdAt > th.readAt).length,
         blocked: false,
+        request: !!th.request,
       };
     })
     .sort((a, b) => b.lastAt.localeCompare(a.lastAt));
@@ -184,6 +192,7 @@ export function useInbox() {
             last_message_at: string;
             unread: number;
             blocked: boolean;
+            request: boolean | null;
           }[]).map((r) => ({
             id: r.conversation_id,
             otherId: r.other_id,
@@ -195,10 +204,13 @@ export function useInbox() {
             lastAt: r.last_message_at,
             unread: r.unread,
             blocked: r.blocked,
+            request: r.request === true,
           })),
         );
       });
     load();
+    // Accepting or declining a request elsewhere refreshes this inbox too.
+    listeners.add(load);
     // Any new message the member can see refreshes the inbox.
     const channel = db
       .channel(`inbox:${Math.random().toString(36).slice(2)}`)
@@ -206,11 +218,37 @@ export function useInbox() {
       .subscribe();
     return () => {
       cancelled = true;
+      listeners.delete(load);
       db.removeChannel(channel);
     };
   }, [tick]);
 
-  return { threads, refresh, unread: (threads ?? []).reduce((n, t) => n + t.unread, 0) };
+  // Requests arrive without a badge, like a notification-free folder.
+  return { threads, refresh, unread: (threads ?? []).reduce((n, t) => n + (t.request ? 0 : t.unread), 0) };
+}
+
+/** Moves a request into the inbox; from then on the other member sees when I read. */
+export async function acceptRequest(conversationId: string): Promise<void> {
+  if (!supabase) {
+    const th = demoThreads.find((x) => x.id === conversationId);
+    if (th) th.request = false;
+    return emit();
+  }
+  const { error } = await supabase.rpc('accept_message_request', { p_conversation: conversationId });
+  if (error) throw new Error(error.message);
+  emit();
+}
+
+/** Hides the request; the other member is not told. */
+export async function declineRequest(conversationId: string): Promise<void> {
+  if (!supabase) {
+    const i = demoThreads.findIndex((x) => x.id === conversationId);
+    if (i >= 0) demoThreads.splice(i, 1);
+    return emit();
+  }
+  const { error } = await supabase.rpc('decline_message_request', { p_conversation: conversationId });
+  if (error) throw new Error(error.message);
+  emit();
 }
 
 interface MessageRow {
@@ -265,6 +303,9 @@ export async function sendMessage(
       createdAt: new Date().toISOString(),
     };
     (demoMessages[conversationId] ??= []).push(m);
+    // Like the server: answering a request accepts it.
+    const th = demoThreads.find((x) => x.id === conversationId);
+    if (th) th.request = false;
     emit();
     if (kind === 'offer') demoLenderAnswers(conversationId, m);
     return m;
@@ -297,18 +338,32 @@ function demoLenderAnswers(conversationId: string, offer: Message) {
   }, 2500);
 }
 
-export function useThread(conversationId: string | null) {
+/**
+ * Messages of one conversation, live. `markRead` stays false while the thread
+ * is unknown or still a request, so the sender gets no read receipt.
+ */
+export function useThread(conversationId: string | null, markRead: boolean) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const canMark = useRef(markRead);
+  canMark.current = markRead;
+
+  useEffect(() => {
+    if (!conversationId || !markRead) return;
+    if (!supabase) {
+      const th = demoThreads.find((x) => x.id === conversationId);
+      if (th) th.readAt = new Date().toISOString();
+      emit();
+      return;
+    }
+    supabase.rpc('mark_conversation_read', { p_conversation: conversationId });
+  }, [conversationId, markRead]);
 
   useEffect(() => {
     if (!conversationId) return;
     if (!supabase) {
       const update = () => setMessages([...(demoMessages[conversationId] ?? [])]);
       update();
-      const th = demoThreads.find((x) => x.id === conversationId);
-      if (th) th.readAt = new Date().toISOString();
-      emit();
       listeners.add(update);
       return () => {
         listeners.delete(update);
@@ -327,7 +382,6 @@ export function useThread(conversationId: string | null) {
         setMessages(((data ?? []) as MessageRow[]).map(toMessage));
         setLoading(false);
       });
-    db.rpc('mark_conversation_read', { p_conversation: conversationId });
     const channel = db
       .channel(`conversation:${conversationId}:${Math.random().toString(36).slice(2)}`)
       .on(
@@ -336,7 +390,7 @@ export function useThread(conversationId: string | null) {
         (payload) => {
           const m = toMessage(payload.new as MessageRow);
           setMessages((cur) => (cur.some((x) => x.id === m.id) ? cur : [...cur, m]));
-          db.rpc('mark_conversation_read', { p_conversation: conversationId });
+          if (canMark.current) db.rpc('mark_conversation_read', { p_conversation: conversationId });
         },
       )
       .subscribe();

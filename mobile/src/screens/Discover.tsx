@@ -75,10 +75,14 @@ function PostTile({ tile, width, delay }: { tile: Extract<Tile, { type: 'post' }
             {p.author.username}
           </Txt>
           {p.author.identityVerified ? <IdBadge compact label={t('verify.badge')} /> : null}
-          <HeartIcon size={13} color={c.ink3} />
-          <Txt size={11} color={c.ink3}>
-            {compact(p.likeCount, lang)}
-          </Txt>
+          {p.likesHidden && p.authorId !== social.meId ? null : (
+            <>
+              <HeartIcon size={13} color={c.ink3} />
+              <Txt size={11} color={c.ink3}>
+                {compact(p.likeCount, lang)}
+              </Txt>
+            </>
+          )}
         </View>
       </PressScale>
       <View style={{ position: 'absolute', top: 6, right: 6 }}>

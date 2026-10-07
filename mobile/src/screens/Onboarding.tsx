@@ -383,13 +383,17 @@ function SignupSteps() {
   const { state, set } = useStore();
   const { c } = useTheme();
   const { signUp } = useAuth();
+  const { t } = useT();
   const [busy, setBusy] = useState(false);
+  // 18+ declaration (029): ticked once on the first step; sign-up sends it.
+  const [adult, setAdult] = useState(false);
   const step = state.signupStep;
   const copy = SIGNUP_STEPS[step];
 
   const next = async () => {
     if (busy) return;
     if (step === 0) {
+      if (!adult) return set({ authErr: t('ob.adultNeeded') });
       const nameErr = usernameError(state.username);
       if (nameErr) return set({ authErr: nameErr });
       return set({ signupStep: 1, authErr: null });
@@ -417,7 +421,7 @@ function SignupSteps() {
       : set({ signupStep: (step - 1) as 0 | 1, authErr: null });
 
   const ready =
-    step === 0 ? state.username.length >= 3 : step === 1 ? state.email.includes('@') : passwordValid(state.pw);
+    step === 0 ? state.username.length >= 3 && adult : step === 1 ? state.email.includes('@') : passwordValid(state.pw);
 
   return (
     <View style={{ flex: 1 }}>
@@ -487,6 +491,26 @@ function SignupSteps() {
             </View>
           )}
         </View>
+
+        {step === 0 ? (
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityLabel={t('ob.adult')}
+            accessibilityState={{ checked: adult }}
+            onPress={() => setAdult(!adult)}
+            style={{ marginTop: 16, flexDirection: 'row', gap: 12, alignItems: 'center', minHeight: 44 }}
+          >
+            <Check on={adult} />
+            <Txt size={15} style={{ flex: 1 }}>
+              {t('ob.adult')}
+            </Txt>
+          </Pressable>
+        ) : null}
+        {step === 0 && !adult && state.username.length >= 3 ? (
+          <Txt size={13} color={c.ink3} style={{ marginTop: 4 }}>
+            {t('ob.adultNeeded')}
+          </Txt>
+        ) : null}
 
         {state.authErr ? <ErrorBanner>{state.authErr}</ErrorBanner> : null}
 

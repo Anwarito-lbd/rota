@@ -3,10 +3,11 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, Pressable, ScrollView, TextInput, View, useWindowDimensions } from 'react-native';
 import { useListings } from '../data/listings';
-import { useSocial, type PostKind, type PostTag } from '../data/social';
+import { useSocial, type CommentPolicy, type PostKind, type PostTag } from '../data/social';
 import { useT } from '../i18n';
+import { useAuth } from '../lib/auth';
 import { useStore } from '../state/store';
 import type { MediaItem } from '../state/types';
 import { BRAND_LAVENDER, FONT, OVER_INK, ff } from '../theme/tokens';
@@ -34,6 +35,7 @@ export function Compose() {
   const { width } = useWindowDimensions();
   const { listings } = useListings();
   const social = useSocial();
+  const { profile } = useAuth();
 
   // Photos handed over by the camera screen, taken once.
   const [kind, setKind] = useState<PostKind>((state.captured?.length ?? 0) > 1 ? 'dump' : 'fit');
@@ -54,6 +56,12 @@ export function Compose() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ live: boolean; id: string } | null>(null);
+  // Per-post choices; null keeps following the profile settings.
+  const [hideLikes, setHideLikes] = useState<boolean | null>(null);
+  const [reviewPolicy, setReviewPolicy] = useState<CommentPolicy | null>(null);
+  const likesHidden = hideLikes ?? profile?.hideLikeCounts ?? false;
+  const policy = reviewPolicy ?? profile?.commentPolicy ?? 'everyone';
+  const nextPolicy = ({ everyone: 'followers', followers: 'nobody', nobody: 'everyone' } as const)[policy];
 
   const max = kind === 'fit' ? 1 : 10;
   const previewW = Math.min(width, 720) - 36;
@@ -114,7 +122,16 @@ export function Compose() {
     setBusy(true);
     setError(null);
     try {
-      const res = await social.publish({ kind, media, caption, challengeId, tags, area: shareArea ? area : null });
+      const res = await social.publish({
+        kind,
+        media,
+        caption,
+        challengeId,
+        tags,
+        area: shareArea ? area : null,
+        hideLikeCount: hideLikes,
+        commentPolicy: reviewPolicy,
+      });
       tap('success');
       setDone(res);
     } catch (e) {
@@ -404,6 +421,30 @@ export function Compose() {
           </View>
           <Toggle on={shareArea} onPress={toggleArea} label={t('compose.location')} />
         </View>
+      </View>
+
+      <View style={{ marginTop: 10, paddingHorizontal: 14, borderRadius: 16, backgroundColor: c.surf, borderWidth: 1, borderColor: c.line }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52 }}>
+          <Txt weight="semi" style={{ flex: 1 }}>
+            {t('compose.hideLikes')}
+          </Txt>
+          <Toggle on={likesHidden} onPress={() => setHideLikes(!likesHidden)} label={t('compose.hideLikes')} />
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('priv.policyA11y').replace('{label}', t('compose.reviewPolicy')).replace('{value}', t(`priv.${policy}`))}
+          accessibilityHint={t('priv.tapToChange')}
+          onPress={() => {
+            setReviewPolicy(nextPolicy);
+            AccessibilityInfo.announceForAccessibility(t(`priv.${nextPolicy}`));
+          }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, borderTopWidth: 1, borderTopColor: c.line }}
+        >
+          <Txt weight="semi" style={{ flex: 1 }}>
+            {t('compose.reviewPolicy')}
+          </Txt>
+          <Txt color={c.ink2}>{t(`priv.${policy}`)}</Txt>
+        </Pressable>
       </View>
 
       <View style={{ marginTop: 14 }}>

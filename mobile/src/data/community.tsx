@@ -432,12 +432,58 @@ function demoHighlightsFor(memberId: string): Highlight[] {
   return demoHighlights.get(memberId) as Highlight[];
 }
 
-/** Storage path of a post-media public URL; null for anything else. */
-function postMediaPath(url: string): string | null {
-  const marker = '/storage/v1/object/public/post-media/';
-  const i = url.indexOf(marker);
-  if (i >= 0) return decodeURIComponent(url.slice(i + marker.length).split('?')[0]);
-  return /^[a-z]+:/i.test(url) ? null : url;
+/** One of my stories, live or past, that a highlight can hold. */
+export interface MyStory {
+  id: string;
+  media: string;
+  createdAt: string;
+}
+
+/** Demo: a few past stories of mine, so a highlight can be made without posting. */
+const demoPastStories: MyStory[] = DEMO_POSTS.slice(0, 4).map((p, i) => ({
+  id: `story-past-${i}`,
+  media: p.photos[0],
+  createdAt: ago(60 * 24 * (3 + i * 4)),
+}));
+
+/**
+ * My stories that can go in a highlight: live and past, newest first (public,
+ * not deleted; RLS keeps my own past ones readable). Loads while `enabled`.
+ */
+export function useMyStories(enabled: boolean) {
+  const social = useSocial();
+  const community = useCommunity();
+  const demo = social.demo || !supabase;
+  const [live, setLive] = useState<MyStory[] | null>(null);
+  const meId = social.meId;
+
+  useEffect(() => {
+    if (!enabled || demo || !meId) return;
+    let cancelled = false;
+    const db = supabase!;
+    setLive(null);
+    db.from('stories')
+      .select('id, media_path, created_at')
+      .eq('author_id', meId)
+      .eq('distribution', 'public')
+      .order('created_at', { ascending: false })
+      .limit(60)
+      .then(({ data }) => {
+        if (cancelled) return;
+        setLive(
+          ((data ?? []) as { id: string; media_path: string; created_at: string }[])
+            .filter((s) => !/^[a-z]+:/i.test(s.media_path))
+            .map((s) => ({ id: s.id, media: db.storage.from('post-media').getPublicUrl(s.media_path).data.publicUrl, createdAt: s.created_at })),
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, demo, meId]);
+
+  if (!demo) return live;
+  const mine = community.stories.filter((s) => s.author.id === meId).map((s) => ({ id: s.id, media: s.media, createdAt: s.createdAt }));
+  return [...mine, ...demoPastStories];
 }
 
 /** A member's highlights (migration 022), and for me, create and delete. */
@@ -481,18 +527,18 @@ export function useHighlights(memberId: string | null) {
     };
   }, [demo, memberId, tick]);
 
+  /** Up to 20 of my stories, in the order picked. The server derives the media (032). */
   const create = useCallback(
-    async (title: string, media: string[]) => {
+    async (title: string, stories: MyStory[]) => {
       const name = title.trim().slice(0, 24);
-      if (!memberId || memberId !== social.meId || !name || !media.length) return;
+      const picked = stories.slice(0, 20);
+      if (!memberId || memberId !== social.meId || !name || !picked.length) return;
       if (demo) {
-        demoHighlightsFor(memberId).push({ id: `hl-${Date.now().toString(36)}`, ownerId: memberId, title: name, media: media.slice(0, 20), createdAt: new Date().toISOString() });
+        demoHighlightsFor(memberId).push({ id: `hl-${Date.now().toString(36)}`, ownerId: memberId, title: name, media: picked.map((s) => s.media), createdAt: new Date().toISOString() });
         highlightListeners.forEach((l) => l());
         return;
       }
-      const paths = media.map(postMediaPath).filter((p): p is string => !!p).slice(0, 20);
-      if (!paths.length) throw new Error('no_media');
-      const { error } = await supabase!.from('story_highlights').insert({ title: name, media_paths: paths });
+      const { error } = await supabase!.from('story_highlights').insert({ title: name, story_ids: picked.map((s) => s.id) });
       if (error) throw new Error(error.message);
       setTick((n) => n + 1);
     },

@@ -8,7 +8,7 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCommunity, useHighlights, type Highlight } from '../data/community';
+import { useCommunity, useHighlights, useMyStories, type Highlight, type MyStory } from '../data/community';
 import { DEMO_ME } from '../data/demo';
 import { useListings, useMyListings, type Listing } from '../data/listings';
 import { useMember, useSocial } from '../data/social';
@@ -22,7 +22,8 @@ import { ChevronLeft, DotsIcon, GridIcon, ImagesIcon, MenuIcon, PinIcon, PlusIco
 import { CertifiedMark, Display, Field, PrimaryButton, Sheet, Txt } from './kit';
 import { AppealSheet } from './Moderation';
 import { ProCrown, ShopBadge, useMemberBadges } from './Badges';
-import { Avatar, FadeIn, IdBadge, PressScale, Skeleton, compact, tap } from './motion';
+import { Avatar, FadeIn, IdBadge, PressScale, Skeleton, compact, tap, timeAgo } from './motion';
+import { friendlyError } from '../lib/errors';
 import { MemberMenu } from './MemberMenu';
 import { MessageButton } from './MessageButton';
 
@@ -446,7 +447,7 @@ function Badge({ label, color, ink, top }: { label: string; color: string; ink: 
   );
 }
 
-/** Pick photos from your own posts and name the highlight. */
+/** Pick some of your stories, live or past, and name the highlight. */
 function NewHighlightSheet({
   visible,
   onClose,
@@ -454,21 +455,20 @@ function NewHighlightSheet({
 }: {
   visible: boolean;
   onClose: () => void;
-  create: (title: string, media: string[]) => Promise<void>;
+  create: (title: string, stories: MyStory[]) => Promise<void>;
 }) {
   const { c } = useTheme();
-  const { t } = useT();
-  const social = useSocial();
+  const { t, lang } = useT();
   const { width } = useWindowDimensions();
   const [title, setTitle] = useState('');
-  const [picked, setPicked] = useState<string[]>([]);
+  const [picked, setPicked] = useState<MyStory[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const photos = [...new Set(social.posts.filter((p) => p.authorId === social.meId).flatMap((p) => p.media))];
+  const stories = useMyStories(visible);
   const size = (Math.min(width, 720) - 40 - 12) / 4;
 
-  const toggle = (uri: string) =>
-    setPicked((cur) => (cur.includes(uri) ? cur.filter((x) => x !== uri) : cur.length >= 20 ? cur : [...cur, uri]));
+  const toggle = (story: MyStory) =>
+    setPicked((cur) => (cur.some((x) => x.id === story.id) ? cur.filter((x) => x.id !== story.id) : cur.length >= 20 ? cur : [...cur, story]));
 
   const save = async () => {
     if (!title.trim() || !picked.length || busy) return;
@@ -479,8 +479,8 @@ function NewHighlightSheet({
       setTitle('');
       setPicked([]);
       onClose();
-    } catch {
-      setError(t('highlights.failed'));
+    } catch (e) {
+      setError(e instanceof Error && /story_not_yours/.test(e.message) ? friendlyError(e, t) : t('highlights.failed'));
     } finally {
       setBusy(false);
     }
@@ -495,13 +495,21 @@ function NewHighlightSheet({
       <View style={{ marginTop: 14 }}>
         <Field label={t('highlights.name')} value={title} onChangeText={(v) => setTitle(v.slice(0, 24))} placeholder={t('highlights.namePlaceholder')} autoCapitalize="sentences" />
       </View>
-      {photos.length ? (
+      {stories === null ? (
+        <ActivityIndicator color={c.accent} accessibilityLabel={t('common.loading')} style={{ marginTop: 18 }} />
+      ) : stories.length ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 14 }}>
-          {photos.map((uri) => {
-            const n = picked.indexOf(uri);
+          {stories.map((story) => {
+            const n = picked.findIndex((x) => x.id === story.id);
             return (
-              <Pressable key={uri} onPress={() => toggle(uri)} accessibilityRole="checkbox" accessibilityState={{ checked: n >= 0 }}>
-                <Image source={{ uri }} style={{ width: size, height: size * 1.25, borderRadius: 8, opacity: n >= 0 ? 1 : 0.75 }} contentFit="cover" />
+              <Pressable
+                key={story.id}
+                onPress={() => toggle(story)}
+                accessibilityRole="checkbox"
+                accessibilityLabel={timeAgo(story.createdAt, lang)}
+                accessibilityState={{ checked: n >= 0 }}
+              >
+                <Image source={{ uri: story.media }} style={{ width: size, height: size * 1.25, borderRadius: 8, opacity: n >= 0 ? 1 : 0.75 }} contentFit="cover" />
                 <View
                   style={{
                     position: 'absolute',
