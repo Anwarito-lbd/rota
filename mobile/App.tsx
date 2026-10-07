@@ -171,16 +171,18 @@ function Shell() {
 
   // Android back button: go back one screen (an open conversation is a
   // history entry too). With no history, a deeper screen goes to its tab's
-  // root; only a tab root or onboarding hands the press to the system (leaves
-  // the app). Not while a sign-in step covers the app.
+  // root and another tab's root goes to the feed; only the feed or onboarding
+  // hands the press to the system (leaves the app). Ignored while a sign-in
+  // step covers the app.
   const screen = state.screen;
   const canGoBack = state.history.length > 0;
   const covered = loading || (!!session && needsMfa) || (!!session && !!profile && !profile.usernameConfirmed);
   useEffect(() => {
     if (Platform.OS === 'web') return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (covered || screen === 'onboard' || (!canGoBack && TAB_ROOTS.includes(screen))) return false;
-      back(rootFor(screen));
+      if (covered) return true;
+      if (screen === 'onboard' || (!canGoBack && screen === 'feed')) return false;
+      back(!canGoBack && TAB_ROOTS.includes(screen) ? 'feed' : rootFor(screen));
       return true;
     });
     return () => sub.remove();

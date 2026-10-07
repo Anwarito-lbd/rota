@@ -1,6 +1,6 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { CheckIcon, ChevronLeft } from '../ui/icons';
-import { Pressable, View } from 'react-native';
+import { BackHandler, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useListing } from '../data/listings';
 import { useSocial } from '../data/social';
@@ -156,6 +156,12 @@ export function Checkout() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unpaidRental, setUnpaidRental] = useState<string | null>(null);
+  // While a payment runs, Android back does nothing (registered last, so it answers first).
+  useEffect(() => {
+    if (!busy) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, [busy]);
 
   if (state.confirmed) return <Confirmation />;
 
@@ -182,11 +188,16 @@ export function Checkout() {
     `${t('protect.lateRules')} : ${policy.gracePeriodHours} h, ${m(quote.lateFeePerDay)}/j, max ${m(quote.lateFeeCap)}.`,
   ].join(' ');
 
+  // No way back to the booking step while a payment runs.
+  const leave = () => {
+    if (!busy) back('booking');
+  };
+
   const pay = async () => {
     if (!state.payConsent) return setError(t('consent.required'));
     // The demo has no payments: show what a paid booking looks like.
     // Paid: drop the booking step from history, so back cannot reach a second payment.
-    if (!backendConfigured) return finish({ confirmed: true, activeRentalId: null, payConsent: false, agreedOffer: null }, ['booking']);
+    if (!backendConfigured) return finish({ screen: 'checkout', confirmed: true, activeRentalId: null, payConsent: false, agreedOffer: null }, ['booking']);
     if (!session) return setError(t('checkout.signIn'));
     if (!paymentsConfigured) return setError(t('error.paymentsUnavailable'));
     setBusy(true);
@@ -211,7 +222,7 @@ export function Checkout() {
         ).id;
       const outcome = await payRental(rentalId, session.user.email);
       if (outcome === 'paid') {
-        finish({ confirmed: true, activeRentalId: rentalId, payConsent: false, agreedOffer: null }, ['booking']);
+        finish({ screen: 'checkout', confirmed: true, activeRentalId: rentalId, payConsent: false, agreedOffer: null }, ['booking']);
       } else {
         // The dates stay held for the payment window; the rental page can finish it.
         setUnpaidRental(rentalId);
@@ -228,7 +239,7 @@ export function Checkout() {
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <Screen bottomInset={150}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => back('booking')} hitSlop={8} style={{ width: 36, height: 40, justifyContent: 'center' }}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={leave} hitSlop={8} style={{ width: 36, height: 40, justifyContent: 'center' }}>
             <ChevronLeft color={c.ink} />
           </Pressable>
           <Txt size={22} weight="bold">
@@ -261,9 +272,9 @@ export function Checkout() {
         <Block style={{ paddingVertical: 4 }}>
           {(
             [
-              [t('checkout.dates'), `${rangeLabel(startDate, endDate, lang)} · ${days} ${t('common.days')}`, () => back('booking')],
+              [t('checkout.dates'), `${rangeLabel(startDate, endDate, lang)} · ${days} ${t('common.days')}`, leave],
               [t('common.size'), size ?? '—', null],
-              [t('checkout.handover'), ship ? t('checkout.byPost') : t('checkout.inPerson'), () => back('booking')],
+              [t('checkout.handover'), ship ? t('checkout.byPost') : t('checkout.inPerson'), leave],
             ] as [string, string, (() => void) | null][]
           ).map(([label, value, edit], i) => (
             <View
