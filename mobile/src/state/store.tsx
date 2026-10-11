@@ -172,6 +172,41 @@ const CLOSED: Partial<AppState> = {
   socialReport: null,
 };
 
+/**
+ * What belongs to the signed-in account and must not outlive it: drafts and
+ * picked photos, in-flight offers and threads, and the demo's local flags.
+ * Language, appearance and onboarding progress belong to the device.
+ */
+const USER_SCOPED = [
+  'listDraft',
+  'media',
+  'captured',
+  'notice',
+  'agreedOffer',
+  'thread',
+  'activeRentalId',
+  'liked',
+  'wish',
+  'favs',
+  'pinSaves',
+  'blocked',
+  'certifies',
+  'ratingTags',
+  'business',
+  'pw',
+  'saveTarget',
+  'commentsFor',
+  'socialReport',
+  'tryOnListingId',
+  'afterVerify',
+  'history',
+] as const satisfies readonly (keyof AppState)[];
+
+/** Frees a photo or video the web picker holds in memory (a `blob:` URL). */
+export function releaseMedia(item: MediaItem | null | undefined) {
+  if (item?.uri.startsWith('blob:') && typeof URL !== 'undefined' && URL.revokeObjectURL) URL.revokeObjectURL(item.uri);
+}
+
 function snapshot(s: AppState): NavEntry {
   const entry = {} as Record<string, unknown>;
   for (const key of NAV_KEYS) entry[key] = s[key];
@@ -214,6 +249,8 @@ interface Store {
   m: (n: number) => string;
   toggleFlag: (bag: FlagBag, key: string) => void;
   setMedia: (id: string, item: MediaItem | null) => void;
+  /** Drops everything USER_SCOPED: called when the signed-in account changes. */
+  forgetUser: () => void;
 }
 
 const StoreContext = createContext<Store | null>(null);
@@ -299,6 +336,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const forgetUser = useCallback(() => {
+    setState((s) => {
+      Object.values(s.media).forEach(releaseMedia);
+      const fresh = {} as Record<string, unknown>;
+      for (const key of USER_SCOPED) fresh[key] = initialState[key];
+      return { ...s, ...(fresh as Partial<AppState>) };
+    });
+  }, []);
+
   const theme: Theme =
     state.themeMode === 'system' ? (system === 'light' ? 'light' : 'dark') : state.themeMode;
   const currency = config.currency;
@@ -326,8 +372,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       m,
       toggleFlag,
       setMedia,
+      forgetUser,
     }),
-    [state, config, set, setConfig, go, back, finish, theme, m, toggleFlag, setMedia],
+    [state, config, set, setConfig, go, back, finish, theme, m, toggleFlag, setMedia, forgetUser],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

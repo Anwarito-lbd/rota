@@ -181,6 +181,9 @@ const OCCASION_KEYS: Record<string, TranslationKey> = {
   Festival: 'occasion.festival',
   Entretien: 'occasion.interview',
   Dîner: 'occasion.dinner',
+  // Older and sample listings.
+  Soirée: 'occasion.evening',
+  Bureau: 'occasion.office',
 };
 
 export function occasionLabel(occasion: string, t: (key: TranslationKey) => string) {

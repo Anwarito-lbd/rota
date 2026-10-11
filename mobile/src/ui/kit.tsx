@@ -686,28 +686,28 @@ export function CertifiedMark({ size = 18 }: { size?: number }) {
 }
 
 /**
- * A short confirmation at the top of the screen ("Story publiée"). Read out by
- * screen readers, gone by itself after a moment; never blocks a touch.
+ * A short message at the top of the screen: a confirmation ("Story publiée")
+ * or an error. Announced once to screen readers, gone by itself after a
+ * moment; never blocks a touch. It sits under open sheets (they are modals).
  */
-export function Toast({ message, onHide }: { message: string | null; onHide: () => void }) {
+export function Toast({ notice, onHide }: { notice: { text: string; error?: boolean } | null; onHide: () => void }) {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
   useEffect(() => {
-    if (!message) return;
-    AccessibilityInfo.announceForAccessibility?.(message);
-    const timer = setTimeout(onHide, 2600);
+    if (!notice) return;
+    AccessibilityInfo.announceForAccessibility?.(notice.text);
+    const timer = setTimeout(onHide, notice.error ? 4500 : 2600);
     return () => clearTimeout(timer);
-  }, [message, onHide]);
-  if (!message) return null;
+  }, [notice, onHide]);
+  if (!notice) return null;
+  const bg = notice.error ? c.plum : c.ink;
+  const fg = notice.error ? c.onplum : c.bg;
   return (
-    <View pointerEvents="none" style={{ position: 'absolute', top: insets.top + 10, left: 16, right: 16, alignItems: 'center' }}>
-      <View
-        accessibilityLiveRegion="polite"
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 999, backgroundColor: c.ink }}
-      >
-        <CheckIcon size={16} color={c.bg} />
-        <Txt size={14} weight="semi" color={c.bg}>
-          {message}
+    <View pointerEvents="none" style={{ position: 'absolute', top: insets.top + 10, left: 16, right: 16, alignItems: 'center', zIndex: 1000, elevation: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 999, backgroundColor: bg }}>
+        {notice.error ? null : <CheckIcon size={16} color={fg} />}
+        <Txt size={14} weight="semi" color={fg} style={{ flexShrink: 1 }}>
+          {notice.text}
         </Txt>
       </View>
     </View>

@@ -106,6 +106,8 @@ export interface MediaItem {
 
 /** What the listing form holds besides its photos (see `listDraft`). */
 export interface ListDraft {
+  /** Who typed it: a draft is only restored for the same account. Null in demo mode. */
+  ownerId: string | null;
   title: string;
   description: string;
   brand: string;
@@ -233,8 +235,8 @@ export interface AppState {
   commentsFor: string | null;
   /** Thing being saved to a board. */
   saveTarget: { kind: 'post' | 'listing'; id: string } | null;
-  /** A short confirmation shown over the app for a moment (e.g. a story posted). */
-  notice: string | null;
+  /** A short message shown over the app for a moment: a confirmation, or an error. */
+  notice: { text: string; error?: boolean } | null;
   /**
    * The listing form as it was left (e.g. to verify an identity), restored on
    * return. Photos live in `media`. Cleared on close and on publish.

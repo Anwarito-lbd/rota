@@ -253,6 +253,17 @@ export function isLuxury(brand: string, extra: string[] = []) {
 // ── Price advice ───────────────────────────────────────────────
 
 /**
+ * The purchase price as the member typed it, in whole euros. A trailing
+ * decimal part (",50", ".5") is dropped; any other space, "." or "," is a
+ * thousands separator: "1 200,50" and "1.200" are both 1200, "45,90" is 45.
+ */
+export function parsePurchasePrice(text: string): number {
+  const compact = text.replace(/\s/g, '');
+  const whole = compact.replace(/[.,]\d{1,2}$/, '');
+  return Number(whole.replace(/\D/g, '')) || 0;
+}
+
+/**
  * A daily price from what the piece cost new. Peer-to-peer rental
  * platforms advise 3 to 5 % of the retail price per day (By Rotation's
  * smart pricing); occasion wear sits at the top of that band, everyday

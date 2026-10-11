@@ -137,10 +137,20 @@ const NO_TABS: ScreenKey[] = ['onboard', 'map', 'compose', 'list', 'tryon', 'ver
 const FULL_BLEED: ScreenKey[] = ['feed', 'post'];
 
 function Shell() {
-  const { state, set, back } = useStore();
+  const { state, set, back, forgetUser } = useStore();
   const { c, dark } = useTheme();
   const { loading, session, needsMfa, profile } = useAuth();
   const hideNotice = useCallback(() => set({ notice: null }), [set]);
+
+  // Another account, or none: forget the last one's drafts, photos and threads.
+  // The first value read at launch is the phone's own session, nothing to forget.
+  const userId = session?.user.id ?? null;
+  const lastUser = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (loading) return;
+    if (lastUser.current !== undefined && lastUser.current !== userId) forgetUser();
+    lastUser.current = userId;
+  }, [loading, userId, forgetUser]);
 
   // A stored session means the phone is already signed in: skip onboarding.
   useEffect(() => {
@@ -256,7 +266,7 @@ function Shell() {
       <CommentsSheet />
       <SaveSheet />
       <SocialReportSheet />
-      <Toast message={state.notice} onHide={hideNotice} />
+      <Toast notice={state.notice} onHide={hideNotice} />
     </View>
   );
 }

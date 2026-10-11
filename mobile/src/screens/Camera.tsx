@@ -7,7 +7,7 @@
  */
 import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCommunity } from '../data/community';
@@ -37,6 +37,15 @@ export function Camera() {
   const [error, setError] = useState<string | null>(null);
   const cam = useRef<CameraView>(null);
   const community = useCommunity();
+  // The upload can outlast the screen (✕ or Android's back while it runs):
+  // then only the toast speaks, and nothing navigates a second time.
+  const open = useRef(true);
+  useEffect(
+    () => () => {
+      open.current = false;
+    },
+    [],
+  );
 
   const hand = async (items: MediaItem[]) => {
     if (!items.length) return;
@@ -49,10 +58,11 @@ export function Camera() {
     setError(null);
     try {
       await community.postStory(items[0].uri);
-      back('feed');
-      set({ notice: t('camera.storyPosted') });
+      if (open.current) back('feed');
+      set({ notice: { text: t('camera.storyPosted') } });
     } catch (e) {
-      setError(friendlyError(e, t));
+      if (open.current) setError(friendlyError(e, t));
+      else set({ notice: { text: friendlyError(e, t), error: true } });
     } finally {
       setBusy(false);
     }
@@ -77,7 +87,11 @@ export function Camera() {
       quality: 0.85,
       allowsMultipleSelection: mode === 'fit',
       selectionLimit: mode === 'fit' ? 10 : 1,
-    }).catch(() => null);
+    }).catch(() => {
+      // The browser picker rejects files that are not photos.
+      setError(t('error.fileType'));
+      return null;
+    });
     if (!result || result.canceled) return;
     await hand(
       result.assets.map((a) => ({

@@ -14,7 +14,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useT } from '../i18n';
-import { useStore } from '../state/store';
+import { releaseMedia, useStore } from '../state/store';
 import { FONT, OVER_INK, ff } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Txt } from './kit';
@@ -40,6 +40,9 @@ interface Props {
 }
 
 const TINTS = ['#3A2F2B', '#33292F', '#2E3230', '#3B332A'];
+
+/** Videos are 60 s at most (the pickers' videoMaxDuration); half a second of slack for rounding. */
+const MAX_VIDEO_MS = 60_500;
 
 function tintFor(id: string) {
   let h = 0;
@@ -88,7 +91,7 @@ export function MediaSlot({
   video = false,
   style,
 }: Props) {
-  const { state, setMedia } = useStore();
+  const { state, set, setMedia } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const uploaded = state.media[id] ?? (fallbackId ? state.media[fallbackId] : undefined);
@@ -105,17 +108,33 @@ export function MediaSlot({
 
   const mediaTypes: ImagePicker.MediaType[] = video ? ['images', 'videos'] : ['images'];
 
+  const fail = (text: string) => set({ notice: { text, error: true } });
+
   const keep = (result: ImagePicker.ImagePickerResult, source: 'camera' | 'library') => {
     const asset = result.canceled ? undefined : result.assets[0];
     if (!asset) return;
+    const kind = asset.type === 'video' ? 'video' : 'image';
+    // The browser picker gives seconds; the phones give milliseconds.
+    const durationMs = asset.duration == null ? undefined : Platform.OS === 'web' ? asset.duration * 1000 : asset.duration;
+    const refusal =
+      (kind === 'video' && !video) || (asset.mimeType && !/^(image|video)\//.test(asset.mimeType))
+        ? t('error.fileType')
+        : kind === 'video' && durationMs && durationMs > MAX_VIDEO_MS
+          ? t('media.tooLong')
+          : null;
+    if (refusal) {
+      releaseMedia({ uri: asset.uri, kind, name: id });
+      return fail(refusal);
+    }
+    releaseMedia(state.media[id]);
     setMedia(id, {
       uri: asset.uri,
-      kind: asset.type === 'video' ? 'video' : 'image',
+      kind,
       name: asset.fileName ?? id,
       source,
       width: asset.width || undefined,
       height: asset.height || undefined,
-      durationMs: asset.duration ?? undefined,
+      durationMs,
       fileSize: asset.fileSize ?? undefined,
       exif: readExif(asset.exif),
     });
@@ -143,10 +162,14 @@ export function MediaSlot({
     keep(await ImagePicker.launchImageLibraryAsync({ mediaTypes, quality: 0.85, videoMaxDuration: 60, exif: true }), 'library');
   };
 
+  // The browser picker rejects anything that is not a photo or a video.
+  const library = () => fromLibrary().catch(() => fail(t('error.fileType')));
+  const camera = () => fromCamera().catch(() => fail(t('error.generic')));
+
   const pick = () => {
     // The browser has no action sheet (Alert is a no-op there): open the file picker.
     if (Platform.OS === 'web') {
-      fromLibrary();
+      library();
       return;
     }
     const shoot = video ? t('media.shootOrFilm') : t('media.shoot');
@@ -154,15 +177,15 @@ export function MediaSlot({
       ActionSheetIOS.showActionSheetWithOptions(
         { options: [shoot, t('media.library'), t('common.cancel')], cancelButtonIndex: 2 },
         (i) => {
-          if (i === 0) fromCamera();
-          if (i === 1) fromLibrary();
+          if (i === 0) camera();
+          if (i === 1) library();
         },
       );
       return;
     }
     Alert.alert(placeholder ?? t('media.add'), undefined, [
-      { text: shoot, onPress: fromCamera },
-      { text: t('media.library'), onPress: fromLibrary },
+      { text: shoot, onPress: camera },
+      { text: t('media.library'), onPress: library },
       { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
@@ -229,7 +252,10 @@ export function MediaSlot({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={placeholder ? `${t('media.remove')} · ${placeholder}` : t('media.remove')}
-          onPress={() => setMedia(id, null)}
+          onPress={() => {
+            releaseMedia(state.media[id]);
+            setMedia(id, null);
+          }}
           hitSlop={8}
           style={{
             position: 'absolute',

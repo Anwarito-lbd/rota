@@ -19,7 +19,7 @@ import { useStore } from '../state/store';
 import { OVER_INK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { ChevronLeft, DotsIcon, GridIcon, ImagesIcon, MenuIcon, PinIcon, PlusIcon, ShareIcon, ShieldCheckIcon, TagIcon } from './icons';
-import { CertifiedMark, Display, Field, GhostButton, PrimaryButton, Sheet, Txt } from './kit';
+import { CertifiedMark, Display, Field, PrimaryButton, Sheet, Txt } from './kit';
 import { AppealSheet } from './Moderation';
 import { ProCrown, ShopBadge, useMemberBadges } from './Badges';
 import { Avatar, FadeIn, IdBadge, PressScale, Skeleton, compact, tap, timeAgo } from './motion';
@@ -105,8 +105,6 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
       memberId ? () => set({ screen: 'follows', followList: { memberId, kind: 'following' } }) : null,
     ],
   ];
-
-  const listPiece = () => set({ screen: 'list' });
 
   const button = (label: string, onPress: () => void, primary = false) => (
     <PressScale
@@ -252,7 +250,7 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
                 {button(t('profile.share'), shareProfile)}
               </View>
               {/* Renting comes first: listing a piece starts here, not from the "+". */}
-              <PrimaryButton label={t('create.list')} onPress={listPiece} style={{ minHeight: 48 }} />
+              <PrimaryButton label={t('create.list')} onPress={() => set({ screen: 'list' })} style={{ minHeight: 48 }} />
             </View>
           ) : unavailable ? null : iBlocked ? (
             <View style={{ marginTop: 14, gap: 8 }}>
@@ -364,9 +362,6 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
 
           {tab === 'pieces' && me && myLoading ? <ActivityIndicator color={c.accent} style={{ marginTop: 20 }} /> : null}
 
-          {tab === 'pieces' && me && pieces.length > 0 ? (
-            <GhostButton label={`+ ${t('create.list')}`} accessibilityLabel={t('create.list')} tone="accent" onPress={listPiece} style={{ marginHorizontal: 16, marginTop: 12 }} />
-          ) : null}
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP, marginTop: GAP }}>
             {tab === 'fits'
@@ -422,12 +417,9 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
               <Txt center color={c.ink3}>
                 {me ? (tab === 'fits' ? t('profile.empty') : t('closet.noPieces')) : t('profile.emptyOther')}
               </Txt>
-              {me ? (
-                <PrimaryButton
-                  label={tab === 'fits' ? t('create.post') : t('create.list')}
-                  onPress={tab === 'fits' ? () => set({ screen: 'camera' }) : listPiece}
-                  style={{ alignSelf: 'center', paddingHorizontal: 24 }}
-                />
+              {/* Pieces: the « Mettre une pièce en location » button above is the one call to action. */}
+              {me && tab === 'fits' ? (
+                <PrimaryButton label={t('create.post')} onPress={() => set({ screen: 'camera' })} style={{ alignSelf: 'center', paddingHorizontal: 24 }} />
               ) : null}
             </View>
           ) : null}

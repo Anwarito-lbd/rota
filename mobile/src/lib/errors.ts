@@ -19,6 +19,8 @@ const KNOWN: [RegExp, TranslationKey][] = [
   [/Posting suspended/i, 'error.postingSuspended'],
   [/Authenticity proof required/i, 'list.needProof'],
   [/Too many listings today/i, 'error.tooManyListings'],
+  [/Media must be uploaded by the listing owner/i, 'error.mediaOwner'],
+  [/listings_rules_limits/, 'list.rulesMax'],
   [/payments_not_configured|server_not_configured/i, 'error.paymentsUnavailable'],
   [/expired/i, 'error.bookingExpired'],
   [/Not allowed/i, 'error.notAllowed'],
