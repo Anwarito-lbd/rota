@@ -4,6 +4,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { startConversation } from '../data/messages';
 import { useSocial } from '../data/social';
 import { useT } from '../i18n';
+import { friendlyError } from '../lib/errors';
 import { useStore } from '../state/store';
 import { useTheme } from '../theme/useTheme';
 import { TabMessagesIcon } from './icons';
@@ -40,7 +41,9 @@ export function MessageButton({
       const id = await startConversation(memberId, listingId);
       set({ screen: 'messages', thread: id, profileId: null });
     } catch (e) {
-      setError(e instanceof Error && e.message === 'blocked' ? t('msg.blocked') : t('msg.startFailed'));
+      // Blocked, or their messages are closed to people they don't follow (messages_closed).
+      const reason = friendlyError(e, t);
+      setError(reason === t('error.generic') ? t('msg.startFailed') : reason);
     } finally {
       setBusy(false);
     }

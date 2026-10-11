@@ -497,7 +497,10 @@ function SignupSteps() {
             accessibilityRole="checkbox"
             accessibilityLabel={t('ob.adult')}
             accessibilityState={{ checked: adult }}
-            onPress={() => setAdult(!adult)}
+            onPress={() => {
+              setAdult(!adult);
+              if (state.authErr) set({ authErr: null });
+            }}
             style={{ marginTop: 16, flexDirection: 'row', gap: 12, alignItems: 'center', minHeight: 44 }}
           >
             <Check on={adult} />
@@ -506,13 +509,16 @@ function SignupSteps() {
             </Txt>
           </Pressable>
         ) : null}
-        {step === 0 && !adult && state.username.length >= 3 ? (
-          <Txt size={13} color={c.ink3} style={{ marginTop: 4 }}>
-            {t('ob.adultNeeded')}
-          </Txt>
+        {/* The error slot; on the first step it also says why Continuer is off until the box is ticked. */}
+        {state.authErr ? (
+          <ErrorBanner>{state.authErr}</ErrorBanner>
+        ) : step === 0 && !adult ? (
+          <View accessibilityLiveRegion="polite" style={{ marginTop: 4 }}>
+            <Txt size={13} color={c.ink3}>
+              {t('ob.adultNeeded')}
+            </Txt>
+          </View>
         ) : null}
-
-        {state.authErr ? <ErrorBanner>{state.authErr}</ErrorBanner> : null}
 
         {step === 0 ? (
           <Pressable

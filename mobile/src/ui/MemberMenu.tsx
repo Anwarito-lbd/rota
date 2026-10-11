@@ -3,7 +3,8 @@
  * posts or stories, restrict, block, report. Light on purpose: one line per
  * choice, and nothing here is told to the other member.
  */
-import { Pressable, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { AccessibilityInfo, Pressable, View, findNodeHandle } from 'react-native';
 import { setMute, setRestrict, useMutes, useRestricts, type MiniMember } from '../data/privacy';
 import { useSocial } from '../data/social';
 import { useT } from '../i18n';
@@ -25,13 +26,24 @@ function ToggleRow({ label, a11y, body, on, busy, onPress }: { label: string; a1
           </Txt>
         ) : null}
       </View>
-      <Toggle on={on} label={a11y} onPress={() => !busy && onPress()} />
+      <Toggle on={on} label={a11y} onPress={onPress} disabled={busy} />
     </View>
   );
 }
 
 /** The choices themselves, for a sheet of their own or inside another one. */
-export function MemberMenuBody({ member, onDone, onReport }: { member: MiniMember; onDone: () => void; onReport: () => void }) {
+export function MemberMenuBody({
+  member,
+  onDone,
+  onReport,
+  focusHeader,
+}: {
+  member: MiniMember;
+  onDone: () => void;
+  onReport: () => void;
+  /** Shown in place of other content: move the screen reader to the member's name. */
+  focusHeader?: boolean;
+}) {
   const { t } = useT();
   const { c } = useTheme();
   const social = useSocial();
@@ -42,6 +54,16 @@ export function MemberMenuBody({ member, onDone, onReport }: { member: MiniMembe
   const restricted = restricts.some((r) => r.id === member.id);
   // Both mute switches write one row: one change at a time, from fresh values.
   const muteBusy = mutesLoading || isPending('mute');
+  const header = useRef<View>(null);
+  useEffect(() => {
+    if (!focusHeader) return;
+    // After the swap has rendered, so the node exists.
+    const timer = setTimeout(() => {
+      const node = header.current ? findNodeHandle(header.current) : null;
+      if (node) AccessibilityInfo.setAccessibilityFocus(node);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [focusHeader]);
   const line = <View style={{ height: 1, backgroundColor: c.line, marginVertical: 6 }} />;
   const action = (label: string, onPress: () => void) => (
     <Pressable accessibilityRole="button" onPress={onPress} style={{ minHeight: 48, justifyContent: 'center' }}>
@@ -53,9 +75,11 @@ export function MemberMenuBody({ member, onDone, onReport }: { member: MiniMembe
 
   return (
     <View>
-      <Txt size={17} weight="bold" numberOfLines={1}>
-        {member.username}
-      </Txt>
+      <View ref={header} accessible accessibilityRole="header" accessibilityLabel={member.username}>
+        <Txt size={17} weight="bold" numberOfLines={1}>
+          {member.username}
+        </Txt>
+      </View>
       <Txt size={13} weight="bold" color={c.ink3} style={{ marginTop: 14 }}>
         {t('menu.mute')}
       </Txt>

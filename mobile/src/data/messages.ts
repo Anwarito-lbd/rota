@@ -356,7 +356,8 @@ export function useThread(conversationId: string | null, markRead: boolean) {
       emit();
       return;
     }
-    supabase.rpc('mark_conversation_read', { p_conversation: conversationId });
+    // A postgrest call only goes out once it is awaited or then'd.
+    void supabase.rpc('mark_conversation_read', { p_conversation: conversationId }).then(() => undefined);
   }, [conversationId, markRead]);
 
   useEffect(() => {
@@ -390,7 +391,7 @@ export function useThread(conversationId: string | null, markRead: boolean) {
         (payload) => {
           const m = toMessage(payload.new as MessageRow);
           setMessages((cur) => (cur.some((x) => x.id === m.id) ? cur : [...cur, m]));
-          if (canMark.current) db.rpc('mark_conversation_read', { p_conversation: conversationId });
+          if (canMark.current) void db.rpc('mark_conversation_read', { p_conversation: conversationId }).then(() => undefined);
         },
       )
       .subscribe();

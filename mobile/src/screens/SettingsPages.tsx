@@ -104,7 +104,7 @@ function ToggleRow({
           </Txt>
         ) : null}
       </View>
-      <Toggle on={on} onPress={() => !disabled && onPress()} label={label} />
+      <Toggle on={on} onPress={onPress} label={label} disabled={disabled} />
     </View>
   );
 }

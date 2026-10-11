@@ -176,17 +176,22 @@ function Shell() {
   // step covers the app.
   const screen = state.screen;
   const canGoBack = state.history.length > 0;
-  const covered = loading || (!!session && needsMfa) || (!!session && !!profile && !profile.usernameConfirmed);
+  const threadOpen = !!state.thread;
+  // Username or 18+ still owed (011, 029): the prompt covers the app.
+  const owesSetup = !!profile && (!profile.usernameConfirmed || !profile.adultConfirmed);
+  const covered = loading || (!!session && needsMfa) || (!!session && owesSetup);
   useEffect(() => {
     if (Platform.OS === 'web') return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (covered) return true;
       if (screen === 'onboard' || (!canGoBack && screen === 'feed')) return false;
-      back(!canGoBack && TAB_ROOTS.includes(screen) ? 'feed' : rootFor(screen));
+      // An open thread (from a push on a cold start) closes first.
+      const tabRoot = TAB_ROOTS.includes(screen) && !(screen === 'messages' && threadOpen);
+      back(!canGoBack && tabRoot ? 'feed' : rootFor(screen));
       return true;
     });
     return () => sub.remove();
-  }, [screen, canGoBack, covered, back]);
+  }, [screen, canGoBack, threadOpen, covered, back]);
 
   // Signed out (from Settings, a closed account, an expired session): back to
   // the welcome screen. Only on the change from signed in to signed out.
@@ -218,8 +223,9 @@ function Shell() {
     );
   }
 
-  // Signed in with Apple / Google: pick a username first (migration 011).
-  if (session && profile && !profile.usernameConfirmed) {
+  // Signed in with Apple / Google: pick a username first (migration 011); any
+  // account without the 18+ declaration (029) confirms it here too.
+  if (session && owesSetup) {
     return (
       <View style={{ flex: 1, backgroundColor: c.bg }}>
         <StatusBar style={dark ? 'light' : 'dark'} />

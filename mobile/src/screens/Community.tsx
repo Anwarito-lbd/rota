@@ -179,13 +179,15 @@ export function StoryViewer() {
   const social = useSocial();
   const reduced = useReducedMotion();
 
-  // Opened from a profile whose stories I muted: show that member alone.
+  // Opened from a profile whose stories I muted: show that member alone. A mute
+  // made from this viewer's menu doesn't count: that author leaves the list.
+  const [openedMuted] = useState(() => !!state.storyAuthorId && social.mutedStoryIds.includes(state.storyAuthorId));
   const authors = useMemo(() => {
     const tray = community.storyAuthors;
-    if (!state.storyAuthorId || tray.some((a) => a.id === state.storyAuthorId)) return tray;
+    if (!openedMuted || !state.storyAuthorId || tray.some((a) => a.id === state.storyAuthorId)) return tray;
     const theirs = community.stories.find((s) => s.author.id === state.storyAuthorId);
     return theirs ? [theirs.author] : tray;
-  }, [community.storyAuthors, community.stories, state.storyAuthorId]);
+  }, [community.storyAuthors, community.stories, state.storyAuthorId, openedMuted]);
   // Follow the author by id, not by position: a mute or a block from the menu
   // below changes the list, and the viewer must never slide onto someone else.
   const [authorId, setAuthorId] = useState(state.storyAuthorId);
@@ -213,24 +215,59 @@ export function StoryViewer() {
     if (pos > 0) return setIndex(pos - 1);
     if (authorIndex > 0) showAuthor(authorIndex - 1);
   };
-
-  // The author on screen left the list (muted or blocked from the menu): close.
-  const shown = useRef(false);
-  if (story) shown.current = true;
-  const gone = shown.current && !story;
+  // The timer always calls the latest `next`, never one from an older render.
+  const nextRef = useRef(next);
   useEffect(() => {
-    if (gone) close();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gone]);
+    nextRef.current = next;
+  });
 
+  // The author on screen left the list (stories muted or blocked from the menu):
+  // go on with the next author still in the tray, or close when there is none.
+  const shown = useRef(false);
+  const lastAuthors = useRef(authors);
+  useEffect(() => {
+    if (author && story) {
+      shown.current = true;
+      lastAuthors.current = authors;
+      return;
+    }
+    if (!shown.current) return;
+    // The menu was about the author who left: don't reopen it on the next one.
+    setMenu(false);
+    const before = lastAuthors.current;
+    const at = before.findIndex((a) => a.id === authorId);
+    const following = before.slice(at + 1).find((a) => authors.some((b) => b.id === a.id));
+    if (following) {
+      setAuthorId(following.id);
+      setIndex(0);
+    } else {
+      close();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [author, story, authors]);
+
+  // Each story is marked seen once and starts from zero.
+  const elapsed = useRef(0);
+  useEffect(() => {
+    if (!story) return;
+    community.markSeen(story.id);
+    elapsed.current = 0;
+    progress.setValue(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story?.id]);
+
+  // The timer waits while the menu is open, then resumes where it stopped.
   useEffect(() => {
     if (!story || menu) return;
-    community.markSeen(story.id);
-    progress.setValue(0);
-    const anim = Animated.timing(progress, { toValue: 1, duration: reduced ? STORY_MS * 1.5 : STORY_MS, easing: Easing.linear, useNativeDriver: false });
-    anim.start(({ finished }) => finished && next());
-    return () => anim.stop();
-    // Restart the timer for each story; it waits while the menu is open.
+    const total = reduced ? STORY_MS * 1.5 : STORY_MS;
+    const anim = Animated.timing(progress, { toValue: 1, duration: total * (1 - elapsed.current), easing: Easing.linear, useNativeDriver: false });
+    anim.start(({ finished }) => finished && nextRef.current());
+    return () => {
+      anim.stop();
+      progress.stopAnimation((value) => {
+        elapsed.current = value;
+      });
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story?.id, menu]);
 

@@ -160,6 +160,7 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
           <PressScale
             accessibilityLabel={t('post.more')}
             onPress={() => setMenu(true)}
+            hitSlop={4}
             style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
           >
             <DotsIcon color={c.ink} />
@@ -464,7 +465,7 @@ function NewHighlightSheet({
   const [picked, setPicked] = useState<MyStory[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const stories = useMyStories(visible);
+  const { stories, failed } = useMyStories(visible);
   const size = (Math.min(width, 720) - 40 - 12) / 4;
 
   const toggle = (story: MyStory) =>
@@ -495,7 +496,12 @@ function NewHighlightSheet({
       <View style={{ marginTop: 14 }}>
         <Field label={t('highlights.name')} value={title} onChangeText={(v) => setTitle(v.slice(0, 24))} placeholder={t('highlights.namePlaceholder')} autoCapitalize="sentences" />
       </View>
-      {stories === null ? (
+      {failed ? (
+        // The stories didn't load: say so rather than « publish a story first ».
+        <Txt color={c.plum} style={{ marginTop: 14 }}>
+          {t('error.generic')}
+        </Txt>
+      ) : stories === null ? (
         <ActivityIndicator color={c.accent} accessibilityLabel={t('common.loading')} style={{ marginTop: 18 }} />
       ) : stories.length ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 14 }}>

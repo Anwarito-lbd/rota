@@ -448,13 +448,15 @@ const demoPastStories: MyStory[] = DEMO_POSTS.slice(0, 4).map((p, i) => ({
 
 /**
  * My stories that can go in a highlight: live and past, newest first (public,
- * not deleted; RLS keeps my own past ones readable). Loads while `enabled`.
+ * not deleted; RLS keeps my own past ones readable). Loads while `enabled`;
+ * `stories` is null while loading, `failed` is true when the load failed.
  */
 export function useMyStories(enabled: boolean) {
   const social = useSocial();
   const community = useCommunity();
   const demo = social.demo || !supabase;
   const [live, setLive] = useState<MyStory[] | null>(null);
+  const [failed, setFailed] = useState(false);
   const meId = social.meId;
 
   useEffect(() => {
@@ -462,14 +464,16 @@ export function useMyStories(enabled: boolean) {
     let cancelled = false;
     const db = supabase!;
     setLive(null);
+    setFailed(false);
     db.from('stories')
       .select('id, media_path, created_at')
       .eq('author_id', meId)
       .eq('distribution', 'public')
       .order('created_at', { ascending: false })
       .limit(60)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (cancelled) return;
+        if (error) return setFailed(true);
         setLive(
           ((data ?? []) as { id: string; media_path: string; created_at: string }[])
             .filter((s) => !/^[a-z]+:/i.test(s.media_path))
@@ -481,9 +485,9 @@ export function useMyStories(enabled: boolean) {
     };
   }, [enabled, demo, meId]);
 
-  if (!demo) return live;
+  if (!demo) return { stories: live, failed };
   const mine = community.stories.filter((s) => s.author.id === meId).map((s) => ({ id: s.id, media: s.media, createdAt: s.createdAt }));
-  return [...mine, ...demoPastStories];
+  return { stories: [...mine, ...demoPastStories], failed: false };
 }
 
 /** A member's highlights (migration 022), and for me, create and delete. */

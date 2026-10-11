@@ -251,7 +251,7 @@ function PostMenu({
   return (
     <Sheet visible={visible} onClose={close}>
       {more && author && onReport ? (
-        <MemberMenuBody member={author} onDone={close} onReport={onReport} />
+        <MemberMenuBody member={author} onDone={close} onReport={onReport} focusHeader />
       ) : (
         <>
           {onTryOn ? item(<SparkleIcon size={20} color={c.accent} />, t('post.tryOn'), t('post.tryOnSub'), onTryOn) : null}

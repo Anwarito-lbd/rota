@@ -294,14 +294,16 @@ export function Chip({
   );
 }
 
-export function Toggle({ on, onPress, label }: { on: boolean; onPress: () => void; label: string }) {
+/** A 50×30 switch; the hit slop brings the touch target to 46×38. While `disabled`, taps are ignored and it says so. */
+export function Toggle({ on, onPress, label, disabled }: { on: boolean; onPress: () => void; label: string; disabled?: boolean }) {
   const { c } = useTheme();
   return (
     <Pressable
       accessibilityRole="switch"
-      accessibilityState={{ checked: on }}
+      accessibilityState={{ checked: on, disabled: !!disabled }}
       accessibilityLabel={label}
-      onPress={onPress}
+      hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+      onPress={() => !disabled && onPress()}
       style={{
         width: 50,
         height: 30,
