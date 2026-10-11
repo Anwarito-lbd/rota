@@ -4,7 +4,7 @@
  * choice, and nothing here is told to the other member.
  */
 import { useEffect, useRef } from 'react';
-import { AccessibilityInfo, Pressable, View, findNodeHandle } from 'react-native';
+import { AccessibilityInfo, Platform, Pressable, View, findNodeHandle } from 'react-native';
 import { setMute, setRestrict, useMutes, useRestricts, type MiniMember } from '../data/privacy';
 import { useSocial } from '../data/social';
 import { useT } from '../i18n';
@@ -56,7 +56,8 @@ export function MemberMenuBody({
   const muteBusy = mutesLoading || isPending('mute');
   const header = useRef<View>(null);
   useEffect(() => {
-    if (!focusHeader) return;
+    // Screen-reader focus is native only; findNodeHandle throws on web.
+    if (!focusHeader || Platform.OS === 'web') return;
     // After the swap has rendered, so the node exists.
     const timer = setTimeout(() => {
       const node = header.current ? findNodeHandle(header.current) : null;
