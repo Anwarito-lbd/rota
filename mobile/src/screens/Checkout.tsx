@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { CheckIcon, ChevronLeft } from '../ui/icons';
 import { BackHandler, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { occasionLabel } from '../data/catalog';
 import { useListing } from '../data/listings';
 import { useSocial } from '../data/social';
 import { paymentsConfigured, usePayRental } from '../data/payments';
@@ -255,7 +256,7 @@ export function Checkout() {
           <View style={{ flex: 1, gap: 2 }}>
             {listing.occasion ? (
               <Txt size={12} color={c.ink3}>
-                {listing.occasion}
+                {occasionLabel(listing.occasion, t)}
               </Txt>
             ) : null}
             <Txt weight="bold" numberOfLines={2}>

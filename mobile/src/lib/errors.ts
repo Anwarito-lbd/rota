@@ -33,6 +33,9 @@ const KNOWN: [RegExp, TranslationKey][] = [
   [/story_not_yours/, 'error.storyNotYours'],
   [/too_many_words/, 'error.tooManyWords'],
   [/not_restored/, 'error.notRestored'],
+  // Storage limits (listing-media 100 MB, private-docs 10 MB, allowed file types).
+  [/exceeded the maximum allowed size|payload too large/i, 'error.fileTooLarge'],
+  [/mime type .* is not supported|invalid_mime_type/i, 'error.fileType'],
   // Plain words: only the bare code, so a longer message can't match by accident.
   [/^blocked$/, 'msg.blocked'],
   [/^partial$/, 'error.partial'],

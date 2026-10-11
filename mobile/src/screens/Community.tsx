@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { OCCASIONS } from '../data/catalog';
+import { OCCASIONS, occasionLabel } from '../data/catalog';
 import { PRO_PRICE_EUR, PurchaseUnavailable, TRYON_PRICE_EUR, useActivity, useCommunity, useFollowList, type Activity, type Person, useHighlights } from '../data/community';
 import { useListings, type Listing } from '../data/listings';
 import { useMember, useSocial } from '../data/social';
@@ -568,7 +568,7 @@ export function PlannerScreen() {
       </Txt>
       <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {OCCASIONS.map((o) => (
-          <Chip key={o} label={o} on={occasion === o} onPress={() => setOccasion(o)} />
+          <Chip key={o} label={occasionLabel(o, t)} on={occasion === o} onPress={() => setOccasion(o)} />
         ))}
       </View>
 

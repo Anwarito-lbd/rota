@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { occasionLabel } from '../data/catalog';
 import { useListings, type Listing } from '../data/listings';
 import { useCommunity } from '../data/community';
 import { useSocial, type Post } from '../data/social';
@@ -145,7 +146,7 @@ function ListingCard({ item, height }: { item: Listing; height: number }) {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
           <GlassChip style={{ backgroundColor: 'rgba(226,169,241,0.92)', borderColor: 'transparent' }}>
             <Txt size={11} weight="bold" upper color="#2A1033">
-              {t('feed.rent')} · {item.occasion ?? item.category}
+              {t('feed.rent')} · {item.occasion ? occasionLabel(item.occasion, t) : item.category}
             </Txt>
           </GlassChip>
           {item.authenticity === 'verified' ? (

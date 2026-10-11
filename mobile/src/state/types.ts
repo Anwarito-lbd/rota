@@ -104,6 +104,23 @@ export interface MediaItem {
   exif?: { make?: string; model?: string; software?: string };
 }
 
+/** What the listing form holds besides its photos (see `listDraft`). */
+export interface ListDraft {
+  title: string;
+  description: string;
+  brand: string;
+  retail: string;
+  categoryId: string | null;
+  parcel: 's' | 'm' | 'l' | null;
+  fit: number;
+  occasion: string;
+  sizes: string[];
+  price: number;
+  lenderCleans: boolean;
+  cleaningFee: number;
+  rules: string[];
+}
+
 export interface AppState {
   screen: Screen;
   obStep: ObStep;
@@ -218,6 +235,11 @@ export interface AppState {
   saveTarget: { kind: 'post' | 'listing'; id: string } | null;
   /** A short confirmation shown over the app for a moment (e.g. a story posted). */
   notice: string | null;
+  /**
+   * The listing form as it was left (e.g. to verify an identity), restored on
+   * return. Photos live in `media`. Cleared on close and on publish.
+   */
+  listDraft: ListDraft | null;
   /** Photos taken on the camera screen, waiting for the post composer. */
   captured: MediaItem[] | null;
   /** Follower / following list being shown. */

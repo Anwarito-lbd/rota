@@ -132,7 +132,7 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
 };
 
 /** Full-screen flows that hide the tab bar. */
-const NO_TABS: ScreenKey[] = ['onboard', 'map', 'compose', 'tryon', 'verify', 'camera', 'story', 'highlight', 'detail', 'booking', 'checkout'];
+const NO_TABS: ScreenKey[] = ['onboard', 'map', 'compose', 'list', 'tryon', 'verify', 'camera', 'story', 'highlight', 'detail', 'booking', 'checkout'];
 /** Screens whose photos run under the floating tab bar. */
 const FULL_BLEED: ScreenKey[] = ['feed', 'post'];
 

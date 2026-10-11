@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Image } from 'expo-image';
 import { Platform, Pressable, ScrollView, Share, TextInput, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { occasionLabel } from '../data/catalog';
 import { useListing } from '../data/listings';
 import { makeOffer, sendMessage, startConversation } from '../data/messages';
 import { useSocial } from '../data/social';
@@ -199,7 +200,7 @@ export function Detail() {
         <View style={{ marginTop: -24, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: c.bg, paddingHorizontal: 18, paddingTop: 22 }}>
           {listing.occasion ? (
             <Txt size={11} weight="bold" upper color={c.accent}>
-              {listing.occasion}
+              {occasionLabel(listing.occasion, t)}
             </Txt>
           ) : null}
           <Display size={30} style={{ marginTop: 6 }}>

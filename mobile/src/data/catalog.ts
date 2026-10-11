@@ -3,6 +3,7 @@
  * real API can replace this module wholesale without touching the screens.
  */
 
+import type { TranslationKey } from '../i18n';
 import { FEES as MONEY } from '../lib/fees';
 
 /** Unsplash still, sized for the device. */
@@ -171,6 +172,21 @@ export const OCCASIONS = [
   'Entretien',
   'Dîner',
 ];
+
+/** Listings store the French occasion; screens show it in the reader's language. */
+const OCCASION_KEYS: Record<string, TranslationKey> = {
+  Gala: 'occasion.gala',
+  Mariage: 'occasion.wedding',
+  'Tous les jours': 'occasion.everyday',
+  Festival: 'occasion.festival',
+  Entretien: 'occasion.interview',
+  Dîner: 'occasion.dinner',
+};
+
+export function occasionLabel(occasion: string, t: (key: TranslationKey) => string) {
+  const key = OCCASION_KEYS[occasion];
+  return key ? t(key) : occasion;
+}
 
 export const CATEGORIES = [
   'Robes',

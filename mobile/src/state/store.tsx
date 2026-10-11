@@ -109,6 +109,7 @@ const initialState: AppState = {
   commentsFor: null,
   saveTarget: null,
   notice: null,
+  listDraft: null,
   captured: null,
   followList: null,
   storyAuthorId: null,

@@ -13,6 +13,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { useT } from '../i18n';
 import { useStore } from '../state/store';
 import { FONT, OVER_INK, ff } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
@@ -89,6 +90,7 @@ export function MediaSlot({
 }: Props) {
   const { state, setMedia } = useStore();
   const { c } = useTheme();
+  const { t } = useT();
   const uploaded = state.media[id] ?? (fallbackId ? state.media[fallbackId] : undefined);
   const item =
     uploaded ??
@@ -119,33 +121,38 @@ export function MediaSlot({
     });
   };
 
-  const refused = (what: string) =>
-    Alert.alert(`Accès ${what} refusé`, `Autorisez l’accès ${what} dans les réglages du téléphone pour continuer.`, [
-      { text: 'Plus tard', style: 'cancel' },
-      { text: 'Ouvrir les réglages', onPress: () => Linking.openSettings() },
+  const refused = (title: string) =>
+    Alert.alert(title, t('media.deniedBody'), [
+      { text: t('media.later'), style: 'cancel' },
+      { text: t('media.openSettings'), onPress: () => Linking.openSettings() },
     ]);
 
   const fromCamera = async () => {
     const camera = await ImagePicker.requestCameraPermissionsAsync();
-    if (!camera.granted) return refused("à l'appareil photo");
+    if (!camera.granted) return refused(t('media.deniedCamera'));
     if (video) {
       const mic = await Camera.requestMicrophonePermissionsAsync();
-      if (!mic.granted) return refused('au micro');
+      if (!mic.granted) return refused(t('media.deniedMic'));
     }
     keep(await ImagePicker.launchCameraAsync({ mediaTypes, quality: 0.85, videoMaxDuration: 60, exif: true }), 'camera');
   };
 
   const fromLibrary = async () => {
     const library = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!library.granted) return refused('aux photos');
+    if (!library.granted) return refused(t('media.deniedPhotos'));
     keep(await ImagePicker.launchImageLibraryAsync({ mediaTypes, quality: 0.85, videoMaxDuration: 60, exif: true }), 'library');
   };
 
   const pick = () => {
-    const shoot = video ? 'Filmer ou photographier' : 'Prendre une photo';
+    // The browser has no action sheet (Alert is a no-op there): open the file picker.
+    if (Platform.OS === 'web') {
+      fromLibrary();
+      return;
+    }
+    const shoot = video ? t('media.shootOrFilm') : t('media.shoot');
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
-        { options: [shoot, 'Choisir dans la galerie', 'Annuler'], cancelButtonIndex: 2 },
+        { options: [shoot, t('media.library'), t('common.cancel')], cancelButtonIndex: 2 },
         (i) => {
           if (i === 0) fromCamera();
           if (i === 1) fromLibrary();
@@ -153,72 +160,77 @@ export function MediaSlot({
       );
       return;
     }
-    Alert.alert(placeholder ?? 'Ajouter un média', undefined, [
+    Alert.alert(placeholder ?? t('media.add'), undefined, [
       { text: shoot, onPress: fromCamera },
-      { text: 'Choisir dans la galerie', onPress: fromLibrary },
-      { text: 'Annuler', style: 'cancel' },
+      { text: t('media.library'), onPress: fromLibrary },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
+  // The remove button sits beside the slot, not inside it: a button inside a
+  // button is invalid on the web and confuses screen readers.
   return (
-    <Pressable
-      accessibilityRole={editable ? 'button' : 'image'}
-      accessibilityLabel={placeholder}
-      onPress={editable ? pick : undefined}
-      style={[
-        {
-          width: '100%',
-          height: '100%',
-          borderRadius,
-          overflow: 'hidden',
-          backgroundColor: empty,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        style,
-      ]}
-    >
-      {item ? (
-        item.kind === 'video' ? (
-          <VideoTile uri={item.uri} radius={borderRadius} />
+    <View style={{ width: '100%', height: '100%' }}>
+      <Pressable
+        accessibilityRole={editable ? 'button' : 'image'}
+        accessibilityLabel={placeholder}
+        onPress={editable ? pick : undefined}
+        style={[
+          {
+            width: '100%',
+            height: '100%',
+            borderRadius,
+            overflow: 'hidden',
+            backgroundColor: empty,
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+          style,
+        ]}
+      >
+        {item ? (
+          item.kind === 'video' ? (
+            <VideoTile uri={item.uri} radius={borderRadius} />
+          ) : (
+            <Image source={{ uri: item.uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+          )
         ) : (
-          <Image source={{ uri: item.uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
-        )
-      ) : (
-        <>
-          <View
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              borderWidth: 1.5,
-              borderStyle: 'dashed',
-              borderColor: chrome,
-              borderRadius,
-            }}
-          />
-          {placeholder ? (
-            <View style={{ paddingHorizontal: 10 }}>
-              <Txt size={11} center color={caption}>
-                {placeholder}
-              </Txt>
-              {editable ? (
-                <Txt size={11} center weight="bold" color={c.accent} style={{ marginTop: 4 }}>
-                  Ajouter
+          <>
+            <View
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderWidth: 1.5,
+                borderStyle: 'dashed',
+                borderColor: chrome,
+                borderRadius,
+              }}
+            />
+            {placeholder ? (
+              <View style={{ paddingHorizontal: 10 }}>
+                <Txt size={11} center color={caption}>
+                  {placeholder}
                 </Txt>
-              ) : null}
-            </View>
-          ) : null}
-        </>
-      )}
+                {editable ? (
+                  <Txt size={11} center weight="bold" color={c.accent} style={{ marginTop: 4 }}>
+                    {t('common.add')}
+                  </Txt>
+                ) : null}
+              </View>
+            ) : null}
+          </>
+        )}
+      </Pressable>
 
       {editable && uploaded ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Retirer le média"
+          accessibilityLabel={placeholder ? `${t('media.remove')} · ${placeholder}` : t('media.remove')}
           onPress={() => setMedia(id, null)}
+          hitSlop={8}
           style={{
             position: 'absolute',
             top: 6,
@@ -234,6 +246,6 @@ export function MediaSlot({
           <Text style={{ color: OVER_INK, fontSize: 15, ...ff('bold') }}>×</Text>
         </Pressable>
       ) : null}
-    </Pressable>
+    </View>
   );
 }

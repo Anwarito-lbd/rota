@@ -52,6 +52,7 @@ export function PickerRow({ label, value, onPress }: { label: string; value?: st
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={value ? `${label} : ${value}` : label}
       onPress={onPress}
       style={{
         flexDirection: 'row',
@@ -483,7 +484,7 @@ export function ParcelPicker({
           <Pressable
             key={size}
             accessibilityRole="radio"
-            accessibilityState={{ selected: current === size }}
+            accessibilityState={{ checked: current === size }}
             onPress={() => onPick(size)}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 18, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: c.line }}
           >
