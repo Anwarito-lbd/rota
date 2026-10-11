@@ -258,6 +258,12 @@ begin
     'bare_listing_stays_declined',
       (select case when member_a = a then a_state else b_state end from public.conversations where id = conv) = 'declined',
     'bare_listing_message_shadowed', (select shadowed from public.messages where id = mid));
+  -- 031e: a pending offer reopens into Demandes (no push). The whole test is one
+  -- transaction, so the decline is moved an hour back to put the offer after it.
+  update public.conversations
+     set a_declined_at = case when member_a = a then now() - interval '1 hour' else a_declined_at end,
+         b_declined_at = case when member_b = a then now() - interval '1 hour' else b_declined_at end
+   where id = conv;
   insert into public.offers (listing_id, renter_id, owner_id, per_day, days) values (lst2, e, a, 15, 2);
   perform pg_temp.claims(e); set local role authenticated;
   cid := public.start_conversation(a, lst2);
@@ -265,13 +271,38 @@ begin
   reset role;
   out := out || jsonb_build_object(
     'offer_reopens_same_conversation', cid = conv,
-    'offer_reopens_accepted',
-      (select case when member_a = a then a_state else b_state end from public.conversations where id = conv) = 'accepted',
-    'offer_message_not_shadowed', not (select shadowed from public.messages where id = mid));
+    'pending_offer_reopens_pending',
+      (select case when member_a = a then a_state else b_state end from public.conversations where id = conv) = 'pending',
+    'pending_offer_not_shadowed', not (select shadowed from public.messages where id = mid),
+    'pending_offer_no_push', not exists (select 1 from public.notifications where user_id = a and dedupe_key = 'message:' || mid::text));
   perform pg_temp.claims(a); set local role authenticated;
   out := out || jsonb_build_object(
-    'offer_message_visible', (select count(*) from public.messages where id = mid) = 1,
-    'offer_inbox_row', exists (select 1 from public.my_conversations() where conversation_id = conv));
+    'pending_offer_message_visible', (select count(*) from public.messages where id = mid) = 1,
+    'pending_offer_in_requests', coalesce((select request from public.my_conversations() where conversation_id = conv), false));
+  -- The owner declines again from Demandes: the same pending offer no longer reopens it.
+  perform public.decline_message_request(conv);
+  reset role;
+  perform pg_temp.claims(e); set local role authenticated;
+  insert into public.messages (conversation_id, body) values (conv, 'Vous avez vu mon offre ?') returning id into mid;
+  reset role;
+  out := out || jsonb_build_object(
+    'redecline_stays_declined',
+      (select case when member_a = a then a_state else b_state end from public.conversations where id = conv) = 'declined',
+    'redecline_message_shadowed', (select shadowed from public.messages where id = mid));
+  -- The owner accepts the offer: the conversation is back in the inbox, with a push.
+  update public.offers set status = 'accepted', decided_at = now() where listing_id = lst2 and renter_id = e;
+  perform pg_temp.claims(e); set local role authenticated;
+  insert into public.messages (conversation_id, body) values (conv, 'Merci !') returning id into mid;
+  reset role;
+  out := out || jsonb_build_object(
+    'accepted_offer_reopens_accepted',
+      (select case when member_a = a then a_state else b_state end from public.conversations where id = conv) = 'accepted',
+    'accepted_offer_not_shadowed', not (select shadowed from public.messages where id = mid),
+    'accepted_offer_pushes', exists (select 1 from public.notifications where user_id = a and dedupe_key = 'message:' || mid::text));
+  perform pg_temp.claims(a); set local role authenticated;
+  out := out || jsonb_build_object(
+    'accepted_offer_message_visible', (select count(*) from public.messages where id = mid) = 1,
+    'accepted_offer_inbox_row', coalesce((select not request from public.my_conversations() where conversation_id = conv), false));
   reset role;
 
   -- f: declined, then a live rental; a plain insert (no start_conversation) gets through.
@@ -321,6 +352,10 @@ begin
   perform pg_temp.claims(a); set local role authenticated;
   perform public.decline_message_request(conv);
   reset role;
+  update public.conversations
+     set a_declined_at = case when member_a = a then now() - interval '1 hour' else a_declined_at end,
+         b_declined_at = case when member_b = a then now() - interval '1 hour' else b_declined_at end
+   where id = conv;
   insert into public.offers (listing_id, renter_id, owner_id, per_day, days) values (lst2, h, a, 15, 2);
   perform pg_temp.claims(h); set local role authenticated;
   insert into public.messages (conversation_id, body) values (conv, 'Offre envoyée') returning id into mid;
