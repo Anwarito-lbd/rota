@@ -163,8 +163,7 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
         heading: 'Ce qui est public',
         body: [
           'Tous les comptes sont publics : votre profil, vos posts, vos stories, vos highlights et vos annonces sont visibles par tous les membres, sauf ceux que vous avez bloqués ou qui vous ont bloqué.',
-          'Vos annonces sont aussi visibles par les personnes qui n’ont pas de compte.',
-          'Les fichiers photo de votre profil, de vos posts, de vos stories et de vos annonces sont accessibles à toute personne qui a leur lien.',
+          'Les photos de vos annonces, de votre profil, de vos posts et de vos stories sont accessibles à toute personne qui a leur lien.',
           'Votre e-mail, votre adresse et votre téléphone n’apparaissent jamais sur votre profil.',
         ],
       },
@@ -172,7 +171,7 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
         heading: 'Vos réglages de confidentialité',
         body: [
           'Qui peut vous écrire : tout le monde, ou seulement les personnes que vous suivez. Les messages des personnes que vous ne suivez pas arrivent dans « Demandes », sans notification. Ceux qui concernent une de vos annonces, une offre ou une location arrivent quand même.',
-          'Si vous refusez une demande, les messages suivants de cette personne ne vous sont pas remis, et elle n’en est pas informée. Exception : dès que vous avez avec elle une offre ou une location en cours, la conversation se rouvre et ses messages vous parviennent.',
+          'Si vous refusez une demande, les messages suivants de cette personne ne vous sont pas remis, et elle n’en est pas informée. Exception : si elle vous fait une nouvelle offre, la conversation revient dans Demandes, sans notification ; si vous avez accepté une offre ou si une location est en cours entre vous, elle revient dans vos messages. Pour fermer définitivement la conversation, bloquez la personne.',
           'Sourdine : les posts ou les stories d’un compte ne s’affichent plus pour vous. Limiter : ses nouveaux avis sur vos posts ne sont visibles que par lui, et ses nouvelles conversations arrivent dans Demandes, même pour une offre ou une location. Ces personnes ne sont pas prévenues.',
           'Mots masqués : les nouveaux avis sur vos posts qui contiennent ces mots sont masqués. Vous pouvez aussi masquer le nombre de j’aime de vos posts.',
           '« Aperçu des messages » : choisissez si le texte des messages s’affiche dans les notifications.',
@@ -227,7 +226,7 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
         body: [
           'Impossible tant qu’une location, un versement ou une réclamation est en cours.',
           'Supprimé : votre profil (nom d’utilisateur remplacé par un pseudonyme), photo, bio, ville, adresse, préférences et jeton push, posts, stories, highlights, commentaires, j’aime, republications, tableaux, abonnements, blocages, sourdines, mots masqués, favoris, notifications, offres non utilisées, vos photos de profil, d’annonces, de posts et de stories, et vos preuves d’authenticité. Vos annonces sont retirées et perdent photos et description. Votre e-mail est remplacé et la connexion Apple / Google est supprimée.',
-          'Conservé sous pseudonyme, pour des raisons légales : locations, paiements et versements, compte de paiement (références Stripe), consentements de paiement, réclamations et leurs photos, états des lieux, vérifications de remise, messages échangés, signalements que vous avez faits, décisions de risque, restrictions de compte, incidents de sécurité, dossiers et décisions de modération, recours, photos d’annonces mises en quarantaine, et historique de vos achats in-app (sous un identifiant aléatoire).',
+          'Conservé sous pseudonyme, pour des raisons légales : locations, paiements et versements, offres utilisées, compte de paiement (références Stripe), consentements de paiement, réclamations et leurs photos, états des lieux, vérifications de remise, messages échangés, signalements que vous avez faits, décisions de risque, restrictions de compte, incidents de sécurité, dossiers et décisions de modération, recours, journal d’audit, photos d’annonces mises en quarantaine, et historique de vos achats in-app (sous un identifiant aléatoire).',
         ],
         callout: { tone: 'draft', text: 'Liste et durées de conservation de ces données à valider par l’avocat.' },
       },

@@ -76,15 +76,17 @@
 ### 2.9 Contrôles de confidentialité offerts aux membres
 - **Tous les profils et toutes les stories sont publics** (il n’existe pas de compte privé). « Public » veut dire :
   - profil, posts, stories, highlights et annonces sont visibles par tous les membres, **sauf les membres bloqués** (dans un sens ou dans l’autre) ;
-  - les annonces sont aussi visibles par les **non-membres** ;
-  - les fichiers photo (avatars, annonces, posts, stories) sont dans des espaces de stockage publics : **toute personne qui a le lien** peut les ouvrir.
+  - les photos des annonces, du profil, des posts et des stories sont dans des espaces de stockage publics : elles sont accessibles à **toute personne qui a leur lien**. Les non-membres ne voient aucune annonce dans l’app ou l’API (aucune ligne pour le rôle anon).
 - **Qui peut m’écrire** : « Tout le monde » ou « Personnes que je suis ».
   - « Tout le monde » : le premier message d’une personne que le membre ne suit pas arrive dans **« Demandes »**, sans notification ni accusé de lecture.
   - « Personnes que je suis » : les autres ne peuvent pas commencer de conversation.
   - Dans les deux cas, un message lié à une annonce du membre, une offre ou une location arrive quand même (dans Demandes ou directement).
   - Si le membre **refuse** une demande, les messages suivants de cette personne ne lui sont pas remis, sans que l’expéditeur en soit informé.
-  - Exception : dès que les deux membres ont une **offre** (en attente ou acceptée) ou une **location** (ni clôturée ni annulée) entre eux, la conversation refusée se rouvre et les messages sont remis. Citer une annonce sans offre ni location ne suffit pas.
-- **Sourdine** : masque les posts et / ou les stories d’un compte pour le membre. **Limiter** : les **nouveaux** avis du compte limité sur les posts du membre ne sont visibles que par lui, et ses **nouvelles** conversations arrivent dans Demandes, y compris pour une offre ou une location (une conversation refusée rouverte par une offre ou une location revient elle aussi dans Demandes). Aucun des deux n’est notifié.
+  - Exceptions (offre ou location entre les deux membres) :
+    - une **offre acceptée** ou une **location** (ni clôturée ni annulée) ramène la conversation dans les messages, avec notification ;
+    - une **offre en attente** plus récente que le refus la ramène dans **Demandes**, sans notification ; le membre peut la refuser à nouveau, et elle ne revient alors qu’avec une offre ou une location plus récente.
+    - Citer une annonce sans offre ni location ne suffit pas. Pour fermer définitivement la conversation, le membre bloque la personne.
+- **Sourdine** : masque les posts et / ou les stories d’un compte pour le membre. **Limiter** : les **nouveaux** avis du compte limité sur les posts du membre ne sont visibles que par lui, et ses **nouvelles** conversations arrivent dans Demandes, y compris pour une offre ou une location (une conversation refusée ne revient, pour un compte limité, que dans Demandes, et seulement avec une offre ou une location plus récente que le refus). Aucun des deux n’est notifié.
 - **Mots masqués** : les nouveaux avis contenant ces mots (et, en option, des insultes courantes) sont masqués. **Masquer le nombre de j’aime** sur ses posts.
 - **Aperçu des messages** : retire le texte des messages des notifications push.
 - **Corbeille « Récemment supprimé »** : un post ou une story supprimé est restaurable pendant **30 jours**, puis effacé définitivement (lignes et fichiers). Exceptions (§6) : conservé tant qu’un signalement ou un recours est ouvert, tant qu’un post attend l’examen, et jusqu’à **6 mois** après la décision de modération ou de recours.
