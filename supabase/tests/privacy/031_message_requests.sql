@@ -8,6 +8,11 @@ declare
   s uuid := pg_temp.member('ms');   -- stranger quoting the third party's listing
   o uuid := pg_temp.member('mo');   -- stranger quoting their own listing
   d uuid := pg_temp.member('md');   -- stranger quoting a's removed listing
+  e uuid := pg_temp.member('me');   -- declined, then makes an offer (031d)
+  f uuid := pg_temp.member('mf');   -- declined, then books a rental (031d)
+  g uuid := pg_temp.member('mg');   -- declined, only a finished offer (031d)
+  h uuid := pg_temp.member('mh');   -- declined and restricted, then makes an offer (031d)
+  lst2 uuid;
   lst uuid; lst_t uuid; lst_o uuid; conv uuid; conv2 uuid; cid uuid; mid uuid;
   n int; ok boolean; err text; out jsonb := '{}';
 begin
@@ -232,6 +237,102 @@ begin
   out := out || jsonb_build_object('previews_off_null_preview',
     coalesce((select payload ? 'preview' and payload->>'preview' is null from public.notifications
                where user_id = a and dedupe_key = 'message:' || mid::text), false));
+
+  -- 031d: after a decline, a real offer or rental reopens the conversation; a bare listing does not.
+  insert into public.listings (owner_id, title, category, size, price_per_day)
+    values (a, 'Manteau', 'Manteaux', 'M', 18) returning id into lst2;
+  update public.listings set distribution = 'public', status = 'active' where id = lst2;
+
+  -- e: declined, names a's live listing (bare), then makes an offer on it.
+  perform pg_temp.claims(e); set local role authenticated;
+  conv := public.start_conversation(a, null);
+  reset role;
+  perform pg_temp.claims(a); set local role authenticated;
+  perform public.decline_message_request(conv);
+  reset role;
+  perform pg_temp.claims(e); set local role authenticated;
+  perform public.start_conversation(a, lst2);
+  insert into public.messages (conversation_id, body) values (conv, 'Toujours dispo ?') returning id into mid;
+  reset role;
+  out := out || jsonb_build_object(
+    'bare_listing_stays_declined',
+      (select case when member_a = a then a_state else b_state end from public.conversations where id = conv) = 'declined',
+    'bare_listing_message_shadowed', (select shadowed from public.messages where id = mid));
+  insert into public.offers (listing_id, renter_id, owner_id, per_day, days) values (lst2, e, a, 15, 2);
+  perform pg_temp.claims(e); set local role authenticated;
+  cid := public.start_conversation(a, lst2);
+  insert into public.messages (conversation_id, body) values (conv, 'J’ai fait une offre') returning id into mid;
+  reset role;
+  out := out || jsonb_build_object(
+    'offer_reopens_same_conversation', cid = conv,
+    'offer_reopens_accepted',
+      (select case when member_a = a then a_state else b_state end from public.conversations where id = conv) = 'accepted',
+    'offer_message_not_shadowed', not (select shadowed from public.messages where id = mid));
+  perform pg_temp.claims(a); set local role authenticated;
+  out := out || jsonb_build_object(
+    'offer_message_visible', (select count(*) from public.messages where id = mid) = 1,
+    'offer_inbox_row', exists (select 1 from public.my_conversations() where conversation_id = conv));
+  reset role;
+
+  -- f: declined, then a live rental; a plain insert (no start_conversation) gets through.
+  perform pg_temp.claims(f); set local role authenticated;
+  conv := public.start_conversation(a, null);
+  reset role;
+  perform pg_temp.claims(a); set local role authenticated;
+  perform public.decline_message_request(conv);
+  reset role;
+  insert into public.rentals (listing_id, renter_id, owner_id, start_date, end_date, days, delivery,
+                              price_per_day, rent_amount, renter_service_fee, owner_service_fee, total_charged,
+                              owner_payout_amount, approved_value, max_liability, policy_version, consent_version, consent_text)
+    values (lst2, f, a, current_date + 3, current_date + 4, 2, 'meet', 18, 36, 4, 4, 40, 32, 100, 100, 'v1', 'v1', 'ok');
+  perform pg_temp.claims(f); set local role authenticated;
+  insert into public.messages (conversation_id, body) values (conv, 'À quelle heure ?') returning id into mid;
+  reset role;
+  out := out || jsonb_build_object(
+    'rental_message_not_shadowed', not (select shadowed from public.messages where id = mid),
+    'rental_reopens_accepted',
+      (select case when member_a = a then a_state else b_state end from public.conversations where id = conv) = 'accepted');
+  perform pg_temp.claims(a); set local role authenticated;
+  out := out || jsonb_build_object('rental_message_visible', (select count(*) from public.messages where id = mid) = 1);
+  reset role;
+
+  -- g: declined; a finished (expired) offer is no context.
+  perform pg_temp.claims(g); set local role authenticated;
+  conv := public.start_conversation(a, null);
+  reset role;
+  perform pg_temp.claims(a); set local role authenticated;
+  perform public.decline_message_request(conv);
+  reset role;
+  insert into public.offers (listing_id, renter_id, owner_id, per_day, days, status) values (lst2, g, a, 15, 2, 'expired');
+  perform pg_temp.claims(g); set local role authenticated;
+  perform public.start_conversation(a, lst2);
+  insert into public.messages (conversation_id, body) values (conv, 'Et maintenant ?') returning id into mid;
+  reset role;
+  out := out || jsonb_build_object(
+    'final_offer_stays_declined',
+      (select case when member_a = a then a_state else b_state end from public.conversations where id = conv) = 'declined',
+    'final_offer_message_shadowed', (select shadowed from public.messages where id = mid));
+
+  -- h: declined and restricted; an offer reopens into Demandes, not straight to the inbox.
+  insert into public.member_restricts (restrictor_id, restricted_id) values (a, h);
+  perform pg_temp.claims(h); set local role authenticated;
+  conv := public.start_conversation(a, null);
+  reset role;
+  perform pg_temp.claims(a); set local role authenticated;
+  perform public.decline_message_request(conv);
+  reset role;
+  insert into public.offers (listing_id, renter_id, owner_id, per_day, days) values (lst2, h, a, 15, 2);
+  perform pg_temp.claims(h); set local role authenticated;
+  insert into public.messages (conversation_id, body) values (conv, 'Offre envoyée') returning id into mid;
+  reset role;
+  out := out || jsonb_build_object(
+    'restricted_offer_pending',
+      (select case when member_a = a then a_state else b_state end from public.conversations where id = conv) = 'pending',
+    'restricted_offer_not_shadowed', not (select shadowed from public.messages where id = mid));
+  perform pg_temp.claims(a); set local role authenticated;
+  out := out || jsonb_build_object('restricted_offer_in_requests',
+    coalesce((select request from public.my_conversations() where conversation_id = conv), false));
+  reset role;
 
   raise exception 'RESULT %', out;
 end $$;
