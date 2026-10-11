@@ -6,7 +6,7 @@ import {
 import { StripeProvider } from '@stripe/stripe-react-native';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, type ReactElement } from 'react';
+import { useCallback, useEffect, useRef, type ReactElement } from 'react';
 import { ActivityIndicator, BackHandler, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { clearExportFiles } from './src/data/account';
@@ -57,11 +57,11 @@ import { ModerationDecisions } from './src/screens/Decisions';
 import { StoreProvider, TAB_ROOTS, useStore } from './src/state/store';
 import type { Screen as ScreenKey } from './src/state/types';
 import { useTheme } from './src/theme/useTheme';
-import { GhostButton, Display, Screen, Txt } from './src/ui/kit';
+import { GhostButton, Display, Screen, Toast, Txt } from './src/ui/kit';
 import { MfaChallenge } from './src/ui/Mfa';
 import { UsernamePrompt } from './src/ui/UsernamePrompt';
 import { ReportSheet } from './src/ui/Moderation';
-import { CommentsSheet, CreateSheet, SaveSheet, SocialReportSheet } from './src/ui/SocialSheets';
+import { CommentsSheet, SaveSheet, SocialReportSheet } from './src/ui/SocialSheets';
 import { rootFor, TAB_BAR_SPACE, TabBar } from './src/ui/TabBar';
 
 /** Screens still being ported from the web build. */
@@ -140,6 +140,7 @@ function Shell() {
   const { state, set, back } = useStore();
   const { c, dark } = useTheme();
   const { loading, session, needsMfa, profile } = useAuth();
+  const hideNotice = useCallback(() => set({ notice: null }), [set]);
 
   // A stored session means the phone is already signed in: skip onboarding.
   useEffect(() => {
@@ -254,8 +255,8 @@ function Shell() {
       <ReportSheet />
       <CommentsSheet />
       <SaveSheet />
-      <CreateSheet />
       <SocialReportSheet />
+      <Toast message={state.notice} onHide={hideNotice} />
     </View>
   );
 }

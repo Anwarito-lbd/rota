@@ -216,8 +216,8 @@ export interface AppState {
   commentsFor: string | null;
   /** Thing being saved to a board. */
   saveTarget: { kind: 'post' | 'listing'; id: string } | null;
-  /** The "+" tab's chooser: publish a fit or list a piece. */
-  createSheet: boolean;
+  /** A short confirmation shown over the app for a moment (e.g. a story posted). */
+  notice: string | null;
   /** Photos taken on the camera screen, waiting for the post composer. */
   captured: MediaItem[] | null;
   /** Follower / following list being shown. */

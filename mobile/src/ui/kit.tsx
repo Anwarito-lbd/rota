@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import {
+  AccessibilityInfo,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -680,6 +681,35 @@ export function CertifiedMark({ size = 18 }: { size?: number }) {
       }}
     >
       <CheckIcon size={size * 0.7} color={c.onAccent} />
+    </View>
+  );
+}
+
+/**
+ * A short confirmation at the top of the screen ("Story publiée"). Read out by
+ * screen readers, gone by itself after a moment; never blocks a touch.
+ */
+export function Toast({ message, onHide }: { message: string | null; onHide: () => void }) {
+  const { c } = useTheme();
+  const insets = useSafeAreaInsets();
+  useEffect(() => {
+    if (!message) return;
+    AccessibilityInfo.announceForAccessibility?.(message);
+    const timer = setTimeout(onHide, 2600);
+    return () => clearTimeout(timer);
+  }, [message, onHide]);
+  if (!message) return null;
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', top: insets.top + 10, left: 16, right: 16, alignItems: 'center' }}>
+      <View
+        accessibilityLiveRegion="polite"
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 999, backgroundColor: c.ink }}
+      >
+        <CheckIcon size={16} color={c.bg} />
+        <Txt size={14} weight="semi" color={c.bg}>
+          {message}
+        </Txt>
+      </View>
     </View>
   );
 }

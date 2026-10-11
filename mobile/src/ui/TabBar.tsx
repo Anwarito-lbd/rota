@@ -2,7 +2,7 @@
  * Floating Liquid Glass tab bar (Figma redesign): four tabs in a pill,
  * the selected one marked by a filled capsule and a bolder label — shape,
  * not colour alone. With Reduce Transparency on, the glass becomes solid.
- * The round "+" in the middle opens the camera (post a fit or list a piece).
+ * The round "+" in the middle opens the camera (post a fit or a story).
  */
 import { BlurView } from 'expo-blur';
 import { useEffect, useState, type ReactElement } from 'react';

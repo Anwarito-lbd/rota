@@ -108,7 +108,7 @@ const initialState: AppState = {
   challenge: null,
   commentsFor: null,
   saveTarget: null,
-  createSheet: false,
+  notice: null,
   captured: null,
   followList: null,
   storyAuthorId: null,
@@ -168,7 +168,6 @@ const CLOSED: Partial<AppState> = {
   deleteStep: 0,
   commentsFor: null,
   saveTarget: null,
-  createSheet: false,
   socialReport: null,
 };
 
