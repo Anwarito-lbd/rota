@@ -19,7 +19,7 @@ import { useStore } from '../state/store';
 import { OVER_INK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { ChevronLeft, DotsIcon, GridIcon, ImagesIcon, MenuIcon, PinIcon, PlusIcon, ShareIcon, ShieldCheckIcon, TagIcon } from './icons';
-import { CertifiedMark, Display, Field, PrimaryButton, Sheet, Txt } from './kit';
+import { CertifiedMark, Display, Field, GhostButton, PrimaryButton, Sheet, Txt } from './kit';
 import { AppealSheet } from './Moderation';
 import { ProCrown, ShopBadge, useMemberBadges } from './Badges';
 import { Avatar, FadeIn, IdBadge, PressScale, Skeleton, compact, tap, timeAgo } from './motion';
@@ -105,6 +105,8 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
       memberId ? () => set({ screen: 'follows', followList: { memberId, kind: 'following' } }) : null,
     ],
   ];
+
+  const listPiece = () => set({ screen: 'list' });
 
   const button = (label: string, onPress: () => void, primary = false) => (
     <PressScale
@@ -244,9 +246,13 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
 
           {/* Actions — never an e-mail button */}
           {me ? (
-            <View style={{ flexDirection: 'row', gap: 6, marginTop: 14 }}>
-              {button(t('closet.editProfile'), () => go('set.profile'))}
-              {button(t('profile.share'), shareProfile)}
+            <View style={{ marginTop: 14, gap: 8 }}>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                {button(t('closet.editProfile'), () => go('set.profile'))}
+                {button(t('profile.share'), shareProfile)}
+              </View>
+              {/* Renting comes first: listing a piece starts here, not from the "+". */}
+              <PrimaryButton label={t('create.list')} onPress={listPiece} style={{ minHeight: 48 }} />
             </View>
           ) : unavailable ? null : iBlocked ? (
             <View style={{ marginTop: 14, gap: 8 }}>
@@ -358,6 +364,10 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
 
           {tab === 'pieces' && me && myLoading ? <ActivityIndicator color={c.accent} style={{ marginTop: 20 }} /> : null}
 
+          {tab === 'pieces' && me && pieces.length > 0 ? (
+            <GhostButton label={`+ ${t('create.list')}`} accessibilityLabel={t('create.list')} tone="accent" onPress={listPiece} style={{ marginHorizontal: 16, marginTop: 12 }} />
+          ) : null}
+
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP, marginTop: GAP }}>
             {tab === 'fits'
               ? posts.map((p) => (
@@ -415,7 +425,7 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
               {me ? (
                 <PrimaryButton
                   label={tab === 'fits' ? t('create.post') : t('create.list')}
-                  onPress={() => set({ screen: 'camera' })}
+                  onPress={tab === 'fits' ? () => set({ screen: 'camera' }) : listPiece}
                   style={{ alignSelf: 'center', paddingHorizontal: 24 }}
                 />
               ) : null}
