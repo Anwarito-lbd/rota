@@ -21,6 +21,41 @@ function describe(uri: string, kind: MediaItem['kind']) {
     : { extension: 'jpg', contentType: 'image/jpeg' };
 }
 
+/** Longest edge of an uploaded photo, in pixels. */
+const MAX_EDGE = 2560;
+
+/**
+ * Re-encodes a photo to JPEG: the new file carries no EXIF, so no GPS, camera
+ * serial or capture time leaves the phone. Photos larger than MAX_EDGE are scaled
+ * down. Fails closed: an unreadable photo is never sent with its metadata.
+ */
+async function reencode(item: MediaItem): Promise<string> {
+  try {
+    let width = item.width ?? 0;
+    let height = item.height ?? 0;
+    if (!width || !height) {
+      const probe = await ImageManipulator.manipulate(item.uri).renderAsync();
+      width = probe.width;
+      height = probe.height;
+    }
+    const context = ImageManipulator.manipulate(item.uri);
+    if (Math.max(width, height) > MAX_EDGE) {
+      context.resize(width >= height ? { width: MAX_EDGE } : { height: MAX_EDGE });
+    }
+    let image = await context.renderAsync();
+    // The picker's size can ignore the EXIF rotation: check what was rendered.
+    if (Math.max(image.width, image.height) > MAX_EDGE) {
+      image = await ImageManipulator.manipulate(item.uri)
+        .resize(image.width >= image.height ? { width: MAX_EDGE } : { height: MAX_EDGE })
+        .renderAsync();
+    }
+    const saved = await image.saveAsync({ format: SaveFormat.JPEG, compress: 0.9 });
+    return saved.uri;
+  } catch {
+    throw new Error('photo_unreadable');
+  }
+}
+
 /**
  * Sends a picked file to Supabase Storage and returns its path. Files always
  * live under the owner's user id, which is what the storage policies allow.
@@ -36,14 +71,12 @@ export async function uploadMedia(
 
   let { extension, contentType } = describe(item.uri, item.kind);
   let uri = item.uri;
-  // Photos are re-encoded first: the new JPEG carries no EXIF, so no GPS,
-  // camera serial or capture time leaves the phone. Authenticity proofs keep
-  // their original bytes for staff. Videos can't be cleaned in Expo Go; see
-  // docs/legal (residual risk until the dev build).
-  if (item.kind === 'image' && bucket !== 'private-docs') {
-    const rendered = await ImageManipulator.manipulate(item.uri).renderAsync();
-    const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.9 });
-    uri = saved.uri;
+  // Photos are re-encoded first (condition photos included: GPS would reveal a home).
+  // Authenticity proofs keep their original bytes for staff; moderation frames are
+  // already JPEGs this app rendered from a video. Videos can't be cleaned in Expo Go;
+  // see docs/legal (residual risk until the dev build).
+  if (item.kind === 'image' && bucket !== 'private-docs' && bucket !== 'moderation-frames') {
+    uri = await reencode(item);
     extension = 'jpg';
     contentType = 'image/jpeg';
   }

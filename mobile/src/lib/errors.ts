@@ -36,6 +36,7 @@ const KNOWN: [RegExp, TranslationKey][] = [
   // Plain words: only the bare code, so a longer message can't match by accident.
   [/^blocked$/, 'msg.blocked'],
   [/^partial$/, 'error.partial'],
+  [/^photo_unreadable$/, 'error.photoUnreadable'],
 ];
 
 export function friendlyError(e: unknown, t: (k: TranslationKey) => string): string {

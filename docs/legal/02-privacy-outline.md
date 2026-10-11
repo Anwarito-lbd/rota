@@ -20,6 +20,7 @@
 
 ### 2.1 Compte & profil
 - Identifiants : email et mot de passe (hash), ou connexion Apple / Google (identifiant, e-mail, éventuellement relais Apple).
+- **Connexion Google** : l’authentification (Supabase Auth) enregistre le **nom et la photo du compte Google** envoyés par Google, avec l’identité de connexion. Ils ne sont pas copiés sur le profil Rota ; ils sont effacés à la fermeture du compte (métadonnées vidées, identité Google supprimée). Avec Apple, l’app ne demande que l’e-mail (pas le nom).
 - Profil **public** : nom d’utilisateur (pseudonyme), photo de profil (optionnelle), bio courte, badges ; ville affichée seulement si le membre l’active.
 - Rota ne demande **ni nom complet ni numéro de téléphone** pour créer un compte.
 - Déclaration « J’ai 18 ans ou plus » à l’inscription, horodatée.
@@ -43,12 +44,12 @@
 - Coordonnées payout (IBAN / compte Connect) — souvent chez Stripe.
 - Rota **ne stocke pas** le PAN complet ni le CVC.
 - **Identité payout** doit matcher le compte (traitement anti-fraude).
-- Achats in-app (Rota Pro, crédits d’essayage) : payés à Apple / Google, relayés à Rota par **RevenueCat** (produit, type d’événement, date, échéance de l’abonnement). L’identifiant RevenueCat est l’identifiant de compte Rota.
+- Achats in-app (Rota Pro, crédits d’essayage), **une fois activés** (le SDK RevenueCat n’est pas encore dans l’app) : payés à Apple / Google, relayés à Rota par **RevenueCat** (produit, type d’événement, date, échéance de l’abonnement). L’identifiant RevenueCat est l’identifiant de compte Rota.
 
 ### 2.4 Listings & photos
 - Photos d’annonces, descriptions, prix, valeur retail déclarée, état, historique de locations.
 - Photos **pick-up** et **retour** (preuves claims).
-- **Métadonnées photo :** toute photo (annonce, post, story, avatar, photos de remise / retour) est réencodée en JPEG sur le téléphone avant l’envoi ; les métadonnées EXIF (position GPS, date de prise de vue, numéro de série de l’appareil) sont supprimées.
+- **Métadonnées photo :** toute photo (annonce, post, story, avatar, photos de remise / retour) est réencodée en JPEG sur le téléphone avant l’envoi (2 560 px au plus sur le grand côté ; une photo illisible n’est pas envoyée) ; les métadonnées EXIF (position GPS, date de prise de vue, numéro de série de l’appareil) sont supprimées.
   - Pour la modération des annonces, seuls la marque, le modèle et le logiciel de l’appareil sont envoyés, dans des champs séparés (supprimés à la clôture du compte).
   - Exception : les **preuves d’authenticité** (ticket, étiquette) gardent leurs octets d’origine, donc leurs métadonnées ; elles ne sont lisibles que par le membre et l’équipe Rota.
   - **Risque résiduel :** les **vidéos** gardent leurs métadonnées (dont une éventuelle position GPS) jusqu’à la version de développement de l’app (impossible à nettoyer dans Expo Go). À mentionner dans la politique finale — **à valider par l’avocat**.
@@ -73,22 +74,28 @@
 - Tickets support, preuves uploadées (photos dommages), décisions de litige, motifs de suspension.
 
 ### 2.9 Contrôles de confidentialité offerts aux membres
-- **Tous les profils et toutes les stories sont publics** : profil, posts, stories, highlights et annonces sont visibles par tous les membres. Il n’existe pas de compte privé.
+- **Tous les profils et toutes les stories sont publics** (il n’existe pas de compte privé). « Public » veut dire :
+  - profil, posts, stories, highlights et annonces sont visibles par tous les membres, **sauf les membres bloqués** (dans un sens ou dans l’autre) ;
+  - les annonces sont aussi visibles par les **non-membres** ;
+  - les fichiers photo (avatars, annonces, posts, stories) sont dans des espaces de stockage publics : **toute personne qui a le lien** peut les ouvrir.
 - **Qui peut m’écrire** : « Tout le monde » ou « Personnes que je suis ».
   - « Tout le monde » : le premier message d’une personne que le membre ne suit pas arrive dans **« Demandes »**, sans notification ni accusé de lecture.
   - « Personnes que je suis » : les autres ne peuvent pas commencer de conversation.
   - Dans les deux cas, un message lié à une annonce du membre, une offre ou une location arrive quand même (dans Demandes ou directement).
   - Si le membre **refuse** une demande, les messages suivants de cette personne ne lui sont pas remis, sans que l’expéditeur en soit informé.
-- **Sourdine** : masque les posts et / ou les stories d’un compte pour le membre. **Limiter** : les avis du compte limité sur les posts du membre ne sont visibles que par lui, ses messages arrivent dans Demandes. Aucun des deux n’est notifié.
+  - Exception : dès que les deux membres ont une **offre** (en attente ou acceptée) ou une **location** (ni clôturée ni annulée) entre eux, la conversation refusée se rouvre et les messages sont remis. Citer une annonce sans offre ni location ne suffit pas.
+- **Sourdine** : masque les posts et / ou les stories d’un compte pour le membre. **Limiter** : les **nouveaux** avis du compte limité sur les posts du membre ne sont visibles que par lui, et ses **nouvelles** conversations arrivent dans Demandes, y compris pour une offre ou une location (une conversation refusée rouverte par une offre ou une location revient elle aussi dans Demandes). Aucun des deux n’est notifié.
 - **Mots masqués** : les nouveaux avis contenant ces mots (et, en option, des insultes courantes) sont masqués. **Masquer le nombre de j’aime** sur ses posts.
 - **Aperçu des messages** : retire le texte des messages des notifications push.
-- **Corbeille « Récemment supprimé »** : un post ou une story supprimé est restaurable pendant **30 jours**, puis effacé définitivement (lignes et fichiers). Voir §6 pour les exceptions.
+- **Corbeille « Récemment supprimé »** : un post ou une story supprimé est restaurable pendant **30 jours**, puis effacé définitivement (lignes et fichiers). Exceptions (§6) : conservé tant qu’un signalement ou un recours est ouvert, tant qu’un post attend l’examen, et jusqu’à **6 mois** après la décision de modération ou de recours.
 - Bloquer et signaler : sur les profils, posts, commentaires et messages.
 
 ### 2.10 Export des données (art. 15 / 20)
-- Dans l’app : Paramètres de confidentialité › Télécharger une copie de mes données. Fichier JSON produit par le serveur, partagé via la feuille de partage du téléphone, puis **effacé du téléphone**.
+- Dans l’app : Paramètres de confidentialité › Télécharger une copie de mes données. Fichier JSON produit par le serveur et partagé via la feuille de partage du téléphone. Il reste dans le cache de l’app et est **effacé du téléphone au prochain export ou au prochain lancement de l’app** (pas tout de suite : l’app qui le reçoit peut encore le lire).
+- Pour une annonce avec preuve d’authenticité, l’export contient un **lien signé valable 7 jours** vers la preuve, dans sa version d’origine (métadonnées comprises, §2.4). Toute personne qui reçoit le fichier peut l’ouvrir pendant ce délai.
 - Contenu : compte (e-mail, date de création), profil, adresse, préférences (sans le jeton push), annonces, posts, commentaires et avis, j’aime, republications, stories, highlights, tableaux, abonnements / abonnés, blocages, sourdines, comptes limités, mots masqués, conversations et messages envoyés, offres, favoris, droits et achats in-app, informations professionnelles, locations, réclamations, versements, état du compte de paiement (sans identifiant Stripe), consentements de paiement, signalements, recours, décisions de modération, notifications.
-- Les autres membres y figurent par leur nom d’utilisateur, jamais par leur identifiant interne ; un membre bloqué (dans un sens ou dans l’autre) apparaît vide.
+- Les autres membres y figurent par leur nom d’utilisateur, jamais par leur identifiant interne ; un membre bloqué (dans un sens ou dans l’autre) apparaît vide, **sauf dans la liste de blocages** du membre.
+- **Absent de l’export aujourd’hui** (à trancher — **à valider par l’avocat**) : décisions de risque, états des lieux (condition reports), messages **reçus** (seuls les messages envoyés y sont), données de l’identité Google (nom, photo) conservées par l’authentification.
 
 ---
 
@@ -122,7 +129,7 @@
 - **Autres membres** : tout le contenu du profil public (§2.9). L’adresse de livraison (nom, adresse, téléphone) du locataire va au prêteur **uniquement** pour une location payée envoyée par colis.
 - **Supabase** : base de données, authentification, stockage, temps réel (région **[PLACEHOLDER]**, à confirmer).
 - **Stripe** (Payments, Connect, Identity, Radar) : paiements, versements, vérification d’identité (Rota ne reçoit que le statut), fraude.
-- **RevenueCat** (États-Unis) : achats in-app et statut d’abonnement, liés à l’identifiant de compte Rota. Transfert : clauses contractuelles types (CCT).
+- **RevenueCat** (États-Unis), **une fois les achats in-app activés** : achats in-app et statut d’abonnement, liés à l’identifiant de compte Rota. Transfert : clauses contractuelles types (CCT) — **à valider par l’avocat**.
 - **Expo** (États-Unis) : envoi des notifications push. Reçoit le jeton push et le texte de chaque notification (nom d’utilisateur de l’auteur, extrait du message, de l’avis ou de la réponse). Le membre retire le texte des messages avec « Aperçu des messages ». Expo relaie ensuite vers Apple (APNs) / Google (FCM).
 - **Decart** (États-Unis) : essayage virtuel. Image caméra ou photo et photo de la pièce, envoyées seulement après l’écran de consentement ; non conservées par Rota.
 - **Anthropic** (États-Unis, API Claude) : (1) analyse de modération des annonces (photos, images extraites des vidéos, textes) ; (2) planificateur de tenues Rota Pro, qui ne reçoit que des lignes d’annonces publiques (titre, marque, catégorie, occasion, prix), l’occasion et le budget choisis — aucune donnée de compte.
@@ -140,7 +147,7 @@ Sous-traitants : DPA / art. 28 RGPD — **à vérifier avec un avocat**.
 ## 5. Transferts hors UE
 
 - Prestataires aux États-Unis : Stripe, RevenueCat, Expo, Decart, Anthropic, Resend, Apple / Google, Mux si activé (§4).
-- RevenueCat : clauses contractuelles types (CCT / SCC).
+- RevenueCat (une fois les achats in-app activés) : clauses contractuelles types (CCT / SCC) — **à valider par l’avocat**.
 - Autres : clauses types (SCC), mesures complémentaires, éventuel Data Privacy Framework — **à vérifier avec un avocat** pour chacun.
 - Informer clairement dans la politique finale la liste des pays / mécanismes.
 - Préférence : hébergement UE pour données cœur.
@@ -167,7 +174,16 @@ Sous-traitants : DPA / art. 28 RGPD — **à vérifier avec un avocat**.
 
 **Fermeture du compte (dans l’app).** Refusée tant qu’une location, un versement ou une réclamation est en cours.
 - **Supprimé :** profil (nom d’utilisateur remplacé par un pseudonyme `deleted_…`), photo, bio, ville, adresse, préférences et jeton push, posts, commentaires, j’aime, stories, highlights, republications, tableaux, abonnements, blocages, sourdines, comptes limités, mots masqués, favoris, notifications, offres non utilisées, informations professionnelles, droits in-app, métadonnées appareil de modération ; fichiers du membre (avatars, photos et vidéos d’annonces, posts et stories, preuves d’authenticité, images de modération). Les annonces sont retirées et perdent ville, description, photos, vidéo et preuve (titre, marque, catégorie et prix restent). L’e-mail est remplacé, la connexion Apple / Google supprimée, les sessions fermées. Dans les notifications des autres membres, le nom est remplacé et les extraits de messages retirés.
-- **Conservé sous pseudonyme**, pour des raisons légales (comptabilité, preuve en cas de litige) : locations, paiements et versements, réclamations et leurs photos de remise / retour, messages échangés (visibles par l’autre membre sous le pseudonyme), offres utilisées, décisions de modération et journal d’audit, historique des achats in-app (sous un identifiant aléatoire).
+- **Conservé sous pseudonyme**, pour des raisons légales (comptabilité, preuve en cas de litige) — liste **à valider par l’avocat** :
+  - locations, paiements et versements, offres utilisées ;
+  - compte de paiement (`payment_accounts` : références Stripe client / compte Connect / session d’identité) et consentements de paiement (`payment_consents`) ;
+  - réclamations et leurs photos de remise / retour, états des lieux (`condition_reports`), vérifications de remise (`possession_codes`, `possession_events`) ;
+  - messages échangés (visibles par l’autre membre sous le pseudonyme) ;
+  - signalements faits par le membre (`content_reports`, `social_reports`) ;
+  - décisions de risque (`risk_decisions`), restrictions de compte (`member_restrictions`), incidents de sécurité (`safety_incidents`) ;
+  - dossiers de modération (`moderation_cases`), décisions (`moderation_notices`), recours (`moderation_appeals`), journal d’audit ;
+  - médias d’annonces en quarantaine (bucket `moderation-quarantine`) ;
+  - historique des achats in-app (`iap_events`, sous un identifiant aléatoire).
 - Durées de conservation de chaque catégorie : **à valider par l’avocat** / comptable.
 
 ---

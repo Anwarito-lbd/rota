@@ -207,10 +207,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const rawNonce = Crypto.randomUUID();
       const hashed = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
       const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
+        // E-mail only: Rota never uses a full name on the account.
+        requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL],
         nonce: hashed,
       });
       if (!credential.identityToken) return 'Apple n’a pas renvoyé d’identifiant. Réessayez.';

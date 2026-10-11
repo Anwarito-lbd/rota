@@ -20,7 +20,7 @@
 | « Près de moi » | Carte des publications ; position arrondie à ~1 km (grille de 0,01°) côté téléphone **et** côté serveur, jamais d’adresse | Localisation approximative, uniquement si le membre l’active |
 | Essayage virtuel (IA) | Image caméra ou photo envoyée à **Decart** (États-Unis) avec la photo de la pièce ; image/vidéo modifiée renvoyée ; écran de consentement avant tout envoi ; étiquette « Image générée par IA » | Image du visage et du corps ; non conservée par Rota |
 | Vérification d’identité | **Stripe Identity** : pièce d’identité + selfie ; Rota ne reçoit que le statut | Données biométriques traitées par Stripe |
-| Connexion Apple / Google | Compte créé à partir de l’e-mail fourni par Apple/Google ; pseudonyme choisi ensuite | E-mail (éventuellement relais Apple), nom |
+| Connexion Apple / Google | Compte créé à partir de l’e-mail fourni par Apple/Google ; pseudonyme choisi ensuite. Apple : seul l’e-mail est demandé. Google : l’authentification enregistre le nom et la photo du compte Google (pas copiés sur le profil Rota, effacés à la fermeture) | E-mail (éventuellement relais Apple) ; nom et photo Google |
 | Modération | Signalement de publications, commentaires, messages, profils ; 3 signalements retirent le contenu en attente d’examen ; examen humain (objectif < 24 h) ; blocage réciproque ; journal d’audit des décisions | Signalements, notes, décisions |
 | Suppression de compte | Dans l’app, immédiate (refusée tant qu’une location, un versement ou une réclamation est en cours) ; voir §1 bis pour ce qui est supprimé et ce qui est conservé sous pseudonyme | — |
 
@@ -28,18 +28,18 @@
 
 | Contrôle | Ce que fait l’app |
 |---|---|
-| Comptes publics | **Tous les profils et toutes les stories sont publics** (pas de compte privé). Profil, posts, stories, highlights et annonces visibles par tous les membres. E-mail, adresse et téléphone jamais affichés |
+| Comptes publics | **Tous les profils et toutes les stories sont publics** (pas de compte privé). Profil, posts, stories, highlights et annonces visibles par tous les membres sauf les membres bloqués ; annonces visibles aussi par les non-membres ; fichiers photo accessibles à toute personne qui a le lien. E-mail, adresse et téléphone jamais affichés |
 | Qui peut m’écrire | « Tout le monde » ou « Personnes que je suis ». Avec « Tout le monde », le premier message d’une personne non suivie arrive dans **« Demandes »**, sans notification ni accusé de lecture. Avec « Personnes que je suis », les autres ne peuvent pas commencer de conversation. Un message lié à une annonce, une offre ou une location arrive toujours |
-| Refus d’une demande | Les messages suivants du demandeur ne sont pas remis, et il n’en est pas informé |
-| Sourdine / Limiter | Sourdine : masque les posts et / ou stories d’un compte. Limiter : ses avis sur mes posts ne sont visibles que par lui, ses messages vont dans Demandes. Personne n’est notifié |
+| Refus d’une demande | Les messages suivants du demandeur ne sont pas remis, et il n’en est pas informé. Exception : une offre (en attente ou acceptée) ou une location (ni clôturée ni annulée) entre les deux membres rouvre la conversation et les messages sont remis ; citer une annonce sans offre ni location ne suffit pas |
+| Sourdine / Limiter | Sourdine : masque les posts et / ou stories d’un compte. Limiter : ses **nouveaux** avis sur mes posts ne sont visibles que par lui, ses **nouvelles** conversations vont dans Demandes (même pour une offre ou une location). Personne n’est notifié |
 | Mots masqués, j’aime | Les nouveaux avis contenant les mots choisis sont masqués ; option pour masquer le nombre de j’aime sur ses posts |
-| Corbeille | Post ou story supprimé : restaurable 30 jours, puis effacé (lignes et fichiers). Exception : conservé tant qu’un signalement ou un recours est ouvert, et jusqu’à 6 mois après la décision de modération ou de recours |
+| Corbeille | Post ou story supprimé : restaurable 30 jours, puis effacé (lignes et fichiers). Exceptions : conservé tant qu’un signalement ou un recours est ouvert, tant qu’un post attend l’examen, et jusqu’à 6 mois après la décision de modération ou de recours |
 | Localisation | Arrondie à ~1 km sur le téléphone puis sur le serveur. Le nom du quartier vient du géocodeur du système (Apple / Google), qui reçoit la position exacte |
 | Métadonnées photo | Photos réencodées sur le téléphone avant l’envoi : EXIF (GPS, date, numéro de série) supprimés. Marque, modèle et logiciel de l’appareil envoyés à part pour la modération des annonces. Les preuves d’authenticité gardent leurs métadonnées (lisibles par le membre et l’équipe Rota seulement) |
 | **Risque résiduel** | Les **vidéos** gardent leurs métadonnées (dont une éventuelle position GPS) jusqu’à la version de développement de l’app |
 | Aperçu des messages | Réglage qui retire le texte des messages des notifications push |
-| Export | Fichier JSON : compte, profil, adresse, préférences, contenus, interactions, abonnements, blocages, sourdines, conversations et messages envoyés, offres, locations, réclamations, versements, achats in-app, consentements, signalements, recours, décisions, notifications. Autres membres par pseudonyme ; ni identifiant Stripe ni jeton push. Le fichier est effacé du téléphone après le partage |
-| Fermeture | **Supprimé** : profil, photo, bio, ville, adresse, préférences, jeton push, posts, stories, commentaires, j’aime, abonnements, blocages, sourdines, mots masqués, favoris, notifications, fichiers du membre ; annonces retirées et vidées ; e-mail remplacé, connexion Apple / Google supprimée. **Conservé sous pseudonyme** : locations, paiements et versements, réclamations et photos de remise / retour, messages échangés, décisions de modération, historique des achats in-app (identifiant aléatoire) |
+| Export | Fichier JSON : compte, profil, adresse, préférences, contenus, interactions, abonnements, blocages, sourdines, conversations et messages envoyés, offres, locations, réclamations, versements, achats in-app, consentements, signalements, recours, décisions, notifications. Autres membres par pseudonyme (un membre bloqué apparaît vide, sauf dans la liste de blocages) ; ni identifiant Stripe ni jeton push. Lien signé valable 7 jours vers la preuve d’authenticité, dans sa version d’origine (métadonnées comprises). Le fichier est effacé du téléphone au prochain export ou au prochain lancement de l’app. **Absents** : décisions de risque, états des lieux, messages reçus, données de l’identité Google |
+| Fermeture | **Supprimé** : profil, photo, bio, ville, adresse, préférences, jeton push, posts, stories, commentaires, j’aime, abonnements, blocages, sourdines, mots masqués, favoris, notifications, fichiers du membre ; annonces retirées et vidées ; e-mail remplacé, connexion Apple / Google supprimée. **Conservé sous pseudonyme** (liste à valider par l’avocat) : locations, paiements et versements, compte de paiement (références Stripe), consentements de paiement, réclamations et photos de remise / retour, états des lieux, vérifications de remise, messages échangés, signalements faits, décisions de risque, restrictions de compte, incidents de sécurité, dossiers de modération, décisions et recours, médias d’annonces en quarantaine, historique des achats in-app (identifiant aléatoire) |
 
 ## 2. Questions à trancher (par ordre de priorité)
 
@@ -68,7 +68,9 @@
 | B7 | Âge | 18 ans et plus : case « J’ai 18 ans ou plus » à l’inscription (e-mail, Apple, Google), horodatée — mécanisme de vérification d’âge à discuter |
 | B10 | Métadonnées des vidéos | Risque résiduel : les vidéos gardent leurs métadonnées (dont GPS) jusqu’à la version de développement. Information suffisante dans la politique, ou blocage des vidéos d’ici là ? |
 | B11 | Conservation | Contenus supprimés : 30 jours, puis 6 mois après une décision de modération ou de recours ; données conservées sous pseudonyme après fermeture (locations, paiements, réclamations, messages, achats in-app) : durées et base légale à fixer |
-| B12 | Demandes refusées | Les messages d’un demandeur refusé sont conservés mais jamais remis, sans l’en informer : conservation et information à valider |
+| B12 | Demandes refusées | Les messages d’un demandeur refusé sont conservés mais jamais remis, sans l’en informer, sauf si une offre ou une location en cours rouvre la conversation : conservation et information à valider |
+| B13 | Export incomplet | L’export ne contient pas encore les décisions de risque, les états des lieux, les messages reçus ni les données de l’identité Google (nom, photo) : faut-il les ajouter (art. 15 / 20) ? |
+| B14 | Lien vers la preuve d’authenticité | L’export contient un lien signé valable 7 jours vers la preuve d’origine (métadonnées comprises) : durée et information à valider |
 | B8 | Sous-traitants | Voir §3 ; mettre à jour la politique de confidentialité et le registre des traitements |
 | B9 | AIPD (analyse d’impact) | Probablement requise : biométrie (Stripe), IA sur images, données de localisation, à grande échelle à terme |
 
@@ -99,7 +101,7 @@
 | Decart | Essayage virtuel IA | US | Image caméra/photo, photo de la pièce |
 | Anthropic (API Claude) | Analyse de modération des annonces ; planificateur de tenues Rota Pro | US | Modération : photos, images de vidéos et textes d’annonces. Planificateur : lignes d’annonces publiques, occasion et budget, aucune donnée de compte |
 | Mux | Images extraites des vidéos d’annonces pour la modération, **uniquement si activé** | US | Vidéos d’annonces (à confirmer) |
-| RevenueCat | Achats in-app (Rota Pro, essayages) et statut d’abonnement | US (CCT) | Identifiant de compte Rota, produit, événements d’achat |
+| RevenueCat | Achats in-app (Rota Pro, essayages) et statut d’abonnement, une fois les achats in-app activés | US (CCT, à valider par l’avocat) | Identifiant de compte Rota, produit, événements d’achat |
 | Resend | E-mails de compte et rappels | US / UE | E-mail, contenu des e-mails |
 | Apple / Google | Connexion, achats in-app, acheminement des notifications, géocodage | US | Identifiant, e-mail, achats, position exacte au moment du géocodage |
 | Expo | Envoi des notifications push (et construction / mises à jour de l’app) | US | Jeton push, texte des notifications (pseudonyme, extrait de message ou d’avis) ; le membre retire le texte des messages avec « Aperçu des messages » |

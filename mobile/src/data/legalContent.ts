@@ -149,10 +149,11 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
         heading: 'Données collectées (catégories)',
         body: [
           'Compte : e-mail et mot de passe (stocké chiffré), ou connexion Apple / Google ; date à laquelle vous avez déclaré avoir 18 ans ou plus.',
+          'Connexion Google : le nom et la photo de votre compte Google sont enregistrés avec votre compte de connexion. Ils n’apparaissent pas sur votre profil Rota et sont supprimés à la fermeture du compte. Avec Apple, Rota ne demande que l’e-mail.',
           'Profil public : nom d’utilisateur, photo, bio, badges ; votre ville seulement si vous choisissez de l’afficher. Rota ne demande ni votre nom complet ni votre numéro de téléphone pour créer un compte.',
           'Adresse de livraison (facultative) : nom du destinataire, adresse et téléphone. Ils ne sont transmis à l’autre membre que pour une location payée envoyée par colis.',
           'Vérification d’identité : réalisée par Stripe Identity (pièce d’identité et selfie) ; Rota ne reçoit que le résultat.',
-          'Paiements (Stripe) : montants et statuts ; Rota ne stocke ni le numéro complet de votre carte ni le CVC. Achats in-app (Rota Pro, essayages) : produit et date, transmis par Apple / Google via RevenueCat.',
+          'Paiements (Stripe) : montants et statuts ; Rota ne stocke ni le numéro complet de votre carte ni le CVC. Achats in-app (Rota Pro, essayages), une fois activés : produit et date, transmis par Apple / Google via RevenueCat.',
           'Contenus : annonces, posts, stories, avis, messages, photos de remise et de retour, signalements, recours et décisions de modération.',
           'Notifications : jeton push de votre téléphone et vos préférences.',
           'L’app n’intègre aucun outil de mesure d’audience ni de publicité. Le serveur garde des journaux techniques (sécurité, erreurs) ; durée à fixer.',
@@ -161,7 +162,9 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
       {
         heading: 'Ce qui est public',
         body: [
-          'Tous les comptes sont publics : votre profil, vos posts, vos stories, vos highlights et vos annonces sont visibles par tous les membres.',
+          'Tous les comptes sont publics : votre profil, vos posts, vos stories, vos highlights et vos annonces sont visibles par tous les membres, sauf ceux que vous avez bloqués ou qui vous ont bloqué.',
+          'Vos annonces sont aussi visibles par les personnes qui n’ont pas de compte.',
+          'Les fichiers photo de votre profil, de vos posts, de vos stories et de vos annonces sont accessibles à toute personne qui a leur lien.',
           'Votre e-mail, votre adresse et votre téléphone n’apparaissent jamais sur votre profil.',
         ],
       },
@@ -169,8 +172,8 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
         heading: 'Vos réglages de confidentialité',
         body: [
           'Qui peut vous écrire : tout le monde, ou seulement les personnes que vous suivez. Les messages des personnes que vous ne suivez pas arrivent dans « Demandes », sans notification. Ceux qui concernent une de vos annonces, une offre ou une location arrivent quand même.',
-          'Si vous refusez une demande, les messages suivants de cette personne ne vous sont pas remis, et elle n’en est pas informée.',
-          'Sourdine : les posts ou les stories d’un compte ne s’affichent plus pour vous. Limiter : ses avis sur vos posts ne sont visibles que par lui, et ses messages arrivent dans Demandes. Ces personnes ne sont pas prévenues.',
+          'Si vous refusez une demande, les messages suivants de cette personne ne vous sont pas remis, et elle n’en est pas informée. Exception : dès que vous avez avec elle une offre ou une location en cours, la conversation se rouvre et ses messages vous parviennent.',
+          'Sourdine : les posts ou les stories d’un compte ne s’affichent plus pour vous. Limiter : ses nouveaux avis sur vos posts ne sont visibles que par lui, et ses nouvelles conversations arrivent dans Demandes, même pour une offre ou une location. Ces personnes ne sont pas prévenues.',
           'Mots masqués : les nouveaux avis sur vos posts qui contiennent ces mots sont masqués. Vous pouvez aussi masquer le nombre de j’aime de vos posts.',
           '« Aperçu des messages » : choisissez si le texte des messages s’affiche dans les notifications.',
           'Bloquer et signaler restent possibles sur chaque profil, post et message.',
@@ -180,7 +183,7 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
         heading: 'Suppression et corbeille',
         body: [
           'Un post ou une story supprimé va dans « Récemment supprimé » : vous pouvez le restaurer pendant 30 jours, puis il est effacé définitivement, fichiers compris.',
-          'Exception : un contenu visé par une décision de modération, un signalement ou un recours en cours est conservé jusqu’à 6 mois après la décision, pour permettre la contestation.',
+          'Exceptions : le contenu est conservé tant qu’un signalement ou un recours est ouvert, tant qu’un post attend l’examen, et jusqu’à 6 mois après une décision de modération ou de recours, pour permettre la contestation.',
         ],
         callout: { tone: 'draft', text: 'Durée de 6 mois (recours DSA) à valider par l’avocat.' },
       },
@@ -202,7 +205,7 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
           'Supabase : base de données, connexion, fichiers, temps réel.',
           'Stripe : paiements, versements, vérification d’identité, lutte contre la fraude.',
           'Apple / Google : connexion, achats in-app, acheminement des notifications.',
-          'RevenueCat (États-Unis) : achats in-app et statut d’abonnement, liés à votre identifiant Rota. Transfert encadré par des clauses contractuelles types.',
+          'RevenueCat (États-Unis), une fois les achats in-app activés : achats et statut d’abonnement, liés à votre identifiant Rota.',
           'Expo (États-Unis) : envoi des notifications push ; reçoit le jeton de votre téléphone et le texte de la notification. « Aperçu des messages » retire le texte des messages.',
           'Decart (États-Unis) : essayage virtuel. Votre image n’est envoyée qu’après votre accord sur l’écran de consentement ; Rota ne la conserve pas.',
           'Anthropic (États-Unis) : analyse de modération des annonces (photos et textes) et planificateur de tenues Rota Pro, qui ne reçoit que des annonces publiques, l’occasion et le budget.',
@@ -214,7 +217,9 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
         heading: 'Télécharger vos données',
         body: [
           'Paramètres de confidentialité › Télécharger une copie de mes données : un fichier JSON avec votre compte, profil, adresse, préférences, annonces, posts, stories, highlights, commentaires et avis, j’aime, republications, tableaux, abonnements, blocages, sourdines, comptes limités, mots masqués, conversations et messages envoyés, offres, favoris, locations, réclamations, versements, achats in-app, consentements de paiement, signalements, recours, décisions de modération et notifications.',
-          'Les autres membres y figurent par leur nom d’utilisateur, sauf ceux que vous avez bloqués ou qui vous ont bloqué. Le fichier ne contient ni identifiant Stripe ni jeton push, et il est effacé du téléphone après le partage.',
+          'Les autres membres y figurent par leur nom d’utilisateur. Un membre que vous avez bloqué ou qui vous a bloqué apparaît sans nom, sauf dans votre liste de blocages. Le fichier ne contient ni identifiant Stripe ni jeton push.',
+          'Pour une annonce avec preuve d’authenticité, le fichier contient un lien vers la preuve, valable 7 jours : elle y est dans sa version d’origine, métadonnées comprises. Ne partagez le fichier qu’avec des personnes de confiance.',
+          'Le fichier reste dans le cache du téléphone jusqu’au prochain export ou au prochain lancement de l’app, où il est supprimé.',
         ],
       },
       {
@@ -222,9 +227,9 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
         body: [
           'Impossible tant qu’une location, un versement ou une réclamation est en cours.',
           'Supprimé : votre profil (nom d’utilisateur remplacé par un pseudonyme), photo, bio, ville, adresse, préférences et jeton push, posts, stories, highlights, commentaires, j’aime, republications, tableaux, abonnements, blocages, sourdines, mots masqués, favoris, notifications, offres non utilisées, vos photos de profil, d’annonces, de posts et de stories, et vos preuves d’authenticité. Vos annonces sont retirées et perdent photos et description. Votre e-mail est remplacé et la connexion Apple / Google est supprimée.',
-          'Conservé sous pseudonyme, pour des raisons légales : locations, paiements et versements, réclamations et leurs photos, messages échangés, décisions de modération, et historique de vos achats in-app (sous un identifiant aléatoire).',
+          'Conservé sous pseudonyme, pour des raisons légales : locations, paiements et versements, compte de paiement (références Stripe), consentements de paiement, réclamations et leurs photos, états des lieux, vérifications de remise, messages échangés, signalements que vous avez faits, décisions de risque, restrictions de compte, incidents de sécurité, dossiers et décisions de modération, recours, photos d’annonces mises en quarantaine, et historique de vos achats in-app (sous un identifiant aléatoire).',
         ],
-        callout: { tone: 'draft', text: 'Durées de conservation de ces données à valider par l’avocat.' },
+        callout: { tone: 'draft', text: 'Liste et durées de conservation de ces données à valider par l’avocat.' },
       },
       {
         heading: 'Mineurs',

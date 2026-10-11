@@ -324,23 +324,36 @@ export async function disableTotp(factorId: string) {
 
 // ── Privacy ────────────────────────────────────────────────────
 
-/** Writes the member's data to a JSON file, opens the share sheet, then deletes the file. */
+const EXPORT_PREFIX = 'rota-mes-donnees-';
+
+/**
+ * Deletes every export file left in the cache. Not right after sharing: on Android the
+ * receiving app may still be reading it. Runs at app start and before each export.
+ */
+export function clearExportFiles() {
+  try {
+    for (const entry of Paths.cache.list()) {
+      if (entry instanceof File && entry.name.startsWith(EXPORT_PREFIX) && entry.name.endsWith('.json')) entry.delete();
+    }
+  } catch {
+    // No cache directory (web) or a file already gone: nothing to clean.
+  }
+}
+
+/** Writes the member's data to a JSON file and opens the share sheet. */
 export async function exportMyData() {
+  clearExportFiles();
   const { data, error } = await db().functions.invoke('account', { body: { action: 'export' } });
   if (error) {
     const body = await (error as { context?: Response }).context?.json?.().catch(() => null);
     throw new Error(body?.error ?? error.message);
   }
   if (!data) throw new Error('failed');
-  const file = new File(Paths.cache, `rota-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`);
+  const file = new File(Paths.cache, `${EXPORT_PREFIX}${new Date().toISOString().slice(0, 10)}.json`);
   if (file.exists) file.delete();
   file.create();
   file.write(JSON.stringify(data, null, 2));
-  try {
-    await Sharing.shareAsync(file.uri, { mimeType: 'application/json', UTI: 'public.json' });
-  } finally {
-    if (file.exists) file.delete();
-  }
+  await Sharing.shareAsync(file.uri, { mimeType: 'application/json', UTI: 'public.json' });
 }
 
 /** Closes the account for good. The server refuses while a rental is in progress. */

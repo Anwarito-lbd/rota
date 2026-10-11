@@ -23,7 +23,7 @@ Legend: **Y** = expected MVP · **Maybe** = depends on build · **N** = not expe
 
 | Data type | Collected? | Linked to user? | Tracking? | Notes / Notes |
 |-----------|------------|-----------------|-----------|---------------|
-| Name / Nom | Y | Y | N | Only as the recipient name of the optional delivery address (no full name on the account); ID check by Stripe Identity |
+| Name / Nom | Y | Y | N | Recipient name of the optional delivery address (no full name on the account); the Google name stored by auth on Google sign-in (Apple: e-mail only); ID check by Stripe Identity |
 | Email address | Y | Y | N | Login, receipts |
 | Phone number | Maybe | Y | N | Only inside the optional delivery address; shared with the owner only for a paid rental sent by parcel |
 | Physical address | Y (optional) | Y | N | Delivery address; same sharing rule as the phone number |
@@ -41,8 +41,8 @@ Legend: **Y** = expected MVP · **Maybe** = depends on build · **N** = not expe
 | Data type | Collected? | Linked to user? | Tracking? | Notes |
 |-----------|------------|-----------------|-----------|-------|
 | User ID | Y | Y | N | Internal account id |
-| Device ID | Maybe | Y/Maybe | N* | Crash / anti-fraud; *Tracking = N unless ATT + ads |
-| Purchase History | Y | Y | N | Rentals as transactions (not IAP classic, but payment history) |
+| Device ID | Maybe | Y/Maybe | N* | Device data collected by the Stripe React Native SDK (fraud signals) — **à vérifier** against Stripe’s own disclosure; *Tracking = N unless ATT + ads |
+| Purchase History | Y | Y | N | Rentals as transactions (payment history), plus in-app purchases (Rota Pro, try-on credits) once enabled |
 
 ### Financial Info
 
@@ -56,7 +56,7 @@ Legend: **Y** = expected MVP · **Maybe** = depends on build · **N** = not expe
 
 | Data type | Collected? | Linked to user? | Tracking? | Notes |
 |-----------|------------|-----------------|-----------|-------|
-| Photos or videos | Y | Y | N | Listings + pick-up/return claim evidence |
+| Photos or videos | Y | Y | N | Listings, posts, stories, avatars, pick-up/return claim evidence, authenticity proofs; try-on images sent to Decart (after consent, not stored by Rota) |
 | User content (messages) | Y | Y | N | In-app chat |
 
 ### Contacts / carnet d’adresses
@@ -69,7 +69,7 @@ Legend: **Y** = expected MVP · **Maybe** = depends on build · **N** = not expe
 
 | Data type | Collected? | Linked to user? | Tracking? | Notes |
 |-----------|------------|-----------------|-----------|-------|
-| Government ID / ID photo | Y (Tier C/D / high-value) | Y | N | KYC stub — **[PLACEHOLDER KYC provider]**; avocat on retention |
+| Government ID / ID photo | Y (via Stripe) | Y | N | Stripe Identity hosted flow (ID + selfie handled by Stripe); Rota receives only the status — declare per Apple’s guidance for third-party SDK collection, **à vérifier**; avocat on retention |
 | Other sensitive | N | — | — | |
 
 ### Usage / diagnostics
@@ -116,7 +116,7 @@ Legend: **Y** = expected MVP · **Maybe** = depends on build · **N** = not expe
 
 - **Stripe** (payments, Connect, Identity, Radar)  
 - **Supabase** (database, auth, storage)  
-- **RevenueCat** (in-app purchases and subscription status, US, SCCs)  
+- **RevenueCat** (in-app purchases and subscription status, once enabled; US, SCCs — **à valider par l’avocat**)  
 - **Expo** (push: token and notification text; message text can be turned off with « Aperçu des messages »), then APNs / FCM  
 - **Decart** (AI try-on, after the consent screen), **Anthropic** (listing moderation, Rota Pro outfit planner), **Resend** (e-mails), **Mux** (only if enabled)  
 - No analytics or crash-reporting SDK

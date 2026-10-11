@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, type ReactElement } from 'react';
 import { ActivityIndicator, BackHandler, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { clearExportFiles } from './src/data/account';
 import { paymentsConfigured, stripePublishableKey, stripeUrlScheme } from './src/data/payments';
 import { AuthProvider, useAuth } from './src/lib/auth';
 import { PolicyProvider } from './src/lib/policy';
@@ -146,6 +147,11 @@ function Shell() {
       set({ signedIn: true, emailVerified: true, screen: 'feed' });
     }
   }, [session, state.screen, state.obStep, set]);
+
+  // An export file shared last time is deleted now, once nothing is reading it.
+  useEffect(() => {
+    if (Platform.OS !== 'web') clearExportFiles();
+  }, []);
 
   // Tapping a push opens what it is about: the conversation, or the post.
   useEffect(() => {
