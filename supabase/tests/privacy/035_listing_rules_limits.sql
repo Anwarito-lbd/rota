@@ -60,5 +60,26 @@ begin
   out := out || jsonb_build_object('update_eleven_refused', not ok);
   reset role;
 
+  -- 035b: the helper is not callable by visitors; members still pass the check.
+  out := out || jsonb_build_object(
+    'anon_cannot_execute', not has_function_privilege('anon', 'public.listing_rules_ok(text[])', 'execute'),
+    'public_cannot_execute', not exists (
+      select 1 from pg_proc p, aclexplode(p.proacl) a
+       where p.oid = 'public.listing_rules_ok(text[])'::regprocedure and a.grantee = 0 and a.privilege_type = 'EXECUTE'),
+    'authenticated_can_execute', has_function_privilege('authenticated', 'public.listing_rules_ok(text[])', 'execute'));
+  set local role anon;
+  begin
+    perform public.listing_rules_ok(array['x']);
+    ok := true;
+  exception when insufficient_privilege then ok := false;
+  end;
+  reset role;
+  out := out || jsonb_build_object('anon_call_denied', not ok);
+  perform pg_temp.claims(o); set local role authenticated;
+  insert into public.listings (owner_id, title, category, size, price_per_day, rules)
+  values (o, 'Robe après 035b', 'Robes', 'S', 20, array['Pas de parfum']);
+  out := out || jsonb_build_object('member_insert_after_revoke_ok', true);
+  reset role;
+
   raise exception 'RESULT %', out;
 end $$;

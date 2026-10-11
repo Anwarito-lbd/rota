@@ -174,7 +174,8 @@ const CLOSED: Partial<AppState> = {
 
 /**
  * What belongs to the signed-in account and must not outlive it: drafts and
- * picked photos, in-flight offers and threads, and the demo's local flags.
+ * picked photos, in-flight offers and threads, consents given at checkout,
+ * sign-in fields (the welcome screen shows them empty), and the demo's local flags.
  * Language, appearance and onboarding progress belong to the device.
  */
 const USER_SCOPED = [
@@ -193,7 +194,13 @@ const USER_SCOPED = [
   'certifies',
   'ratingTags',
   'business',
+  'username',
+  'email',
   'pw',
+  'otpSent',
+  'otpInput',
+  'payConsent',
+  'rulesAccepted',
   'saveTarget',
   'commentsFor',
   'socialReport',
