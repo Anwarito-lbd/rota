@@ -148,17 +148,91 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
       {
         heading: 'Données collectées (catégories)',
         body: [
-          'Compte & profil : email, mot de passe (hash), téléphone, prénom/nom, photo, bio, ville.',
-          'KYC (stub) : pièce d’identité, selfie, statut — Tier C/D ou premier booking high-value. Conservation : à vérifier avec un avocat.',
-          'Paiements (Stripe) : montants, statuts escrow/hold ; Rota ne stocke pas le PAN complet ni le CVC.',
-          'Listings & photos (y compris pick-up / retour), messages in-app, device / logs / analytics, support & claims.',
+          'Compte : e-mail et mot de passe (stocké chiffré), ou connexion Apple / Google ; date à laquelle vous avez déclaré avoir 18 ans ou plus.',
+          'Connexion Google : le nom et la photo de votre compte Google sont enregistrés avec votre compte de connexion. Ils n’apparaissent pas sur votre profil Rota et sont supprimés à la fermeture du compte. Avec Apple, Rota ne demande que l’e-mail.',
+          'Profil public : nom d’utilisateur, photo, bio, badges ; votre ville seulement si vous choisissez de l’afficher. Rota ne demande ni votre nom complet ni votre numéro de téléphone pour créer un compte.',
+          'Adresse de livraison (facultative) : nom du destinataire, adresse et téléphone. Ils ne sont transmis à l’autre membre que pour une location payée envoyée par colis.',
+          'Vérification d’identité : réalisée par Stripe Identity (pièce d’identité et selfie) ; Rota ne reçoit que le résultat.',
+          'Paiements (Stripe) : montants et statuts ; Rota ne stocke ni le numéro complet de votre carte ni le CVC. Achats in-app (Rota Pro, essayages), une fois activés : produit et date, transmis par Apple / Google via RevenueCat.',
+          'Contenus : annonces, posts, stories, avis, messages, photos de remise et de retour, signalements, recours et décisions de modération.',
+          'Notifications : jeton push de votre téléphone et vos préférences.',
+          'L’app n’intègre aucun outil de mesure d’audience ni de publicité. Le serveur garde des journaux techniques (sécurité, erreurs) ; durée à fixer.',
         ],
       },
       {
-        heading: 'Géolocalisation',
+        heading: 'Ce qui est public',
         body: [
-          'Si utilisée (suggestions Paris, distance meetup) : précision et moment à clarifier ; pas de tracking arrière-plan sans nécessité claire + info.',
+          'Tous les comptes sont publics : votre profil, vos posts, vos stories, vos highlights et vos annonces sont visibles par tous les membres, sauf ceux que vous avez bloqués ou qui vous ont bloqué.',
+          'Les photos de vos annonces, de votre profil, de vos posts et de vos stories sont accessibles à toute personne qui a leur lien.',
+          'Votre e-mail, votre adresse et votre téléphone n’apparaissent jamais sur votre profil.',
         ],
+      },
+      {
+        heading: 'Vos réglages de confidentialité',
+        body: [
+          'Qui peut vous écrire : tout le monde, ou seulement les personnes que vous suivez. Les messages des personnes que vous ne suivez pas arrivent dans « Demandes », sans notification. Ceux qui concernent une de vos annonces, une offre ou une location arrivent quand même.',
+          'Si vous refusez une demande, les messages suivants de cette personne ne vous sont pas remis, et elle n’en est pas informée. Exception : si elle vous fait une nouvelle offre, la conversation revient dans Demandes, sans notification ; si vous avez accepté une offre ou si une location est en cours entre vous, elle revient dans vos messages (pour un compte limité : dans Demandes, et seulement si elle est plus récente que le refus). Pour fermer définitivement la conversation, bloquez la personne.',
+          'Sourdine : les posts ou les stories d’un compte ne s’affichent plus pour vous. Limiter : ses nouveaux avis sur vos posts ne sont visibles que par lui, et ses nouvelles conversations arrivent dans Demandes, même pour une offre ou une location. Ces personnes ne sont pas prévenues.',
+          'Mots masqués : les nouveaux avis sur vos posts qui contiennent ces mots sont masqués. Vous pouvez aussi masquer le nombre de j’aime de vos posts.',
+          '« Aperçu des messages » : choisissez si le texte des messages s’affiche dans les notifications.',
+          'Bloquer et signaler restent possibles sur chaque profil, post et message.',
+        ],
+      },
+      {
+        heading: 'Suppression et corbeille',
+        body: [
+          'Un post ou une story supprimé va dans « Récemment supprimé » : vous pouvez le restaurer pendant 30 jours, puis il est effacé définitivement, fichiers compris.',
+          'Exceptions : le contenu est conservé tant qu’un signalement ou un recours est ouvert, tant qu’un post attend l’examen, et jusqu’à 6 mois après une décision de modération ou de recours, pour permettre la contestation.',
+        ],
+        callout: { tone: 'draft', text: 'Durée de 6 mois (recours DSA) à valider par l’avocat.' },
+      },
+      {
+        heading: 'Localisation et photos',
+        body: [
+          'Si vous l’activez (carte « Près de moi », quartier sur un post), votre position est arrondie à environ 1 km sur le téléphone, puis de nouveau sur le serveur. Rota n’enregistre jamais votre position exacte et ne vous localise pas en arrière-plan.',
+          'Les photos sont réencodées sur le téléphone avant l’envoi : leurs métadonnées (position GPS, date de prise de vue, numéro de série de l’appareil) sont supprimées. Pour la modération des annonces, seuls la marque, le modèle et le logiciel de l’appareil sont transmis, à part.',
+          'Exception : les preuves d’authenticité (ticket, étiquette) sont envoyées telles quelles et ne sont visibles que par vous et l’équipe Rota.',
+        ],
+        callout: {
+          tone: 'warn',
+          text: 'Risque résiduel : les vidéos gardent leurs métadonnées (dont une éventuelle position GPS) jusqu’à la version de développement de l’app.',
+        },
+      },
+      {
+        heading: 'Prestataires',
+        body: [
+          'Supabase : base de données, connexion, fichiers, temps réel.',
+          'Stripe : paiements, versements, vérification d’identité, lutte contre la fraude.',
+          'Apple / Google : connexion, achats in-app, acheminement des notifications.',
+          'RevenueCat (États-Unis), une fois les achats in-app activés : achats et statut d’abonnement, liés à votre identifiant Rota.',
+          'Expo (États-Unis) : envoi des notifications push ; reçoit le jeton de votre téléphone et le texte de la notification. « Aperçu des messages » retire le texte des messages.',
+          'Decart (États-Unis) : essayage virtuel. Votre image n’est envoyée qu’après votre accord sur l’écran de consentement ; Rota ne la conserve pas.',
+          'Anthropic (États-Unis) : analyse de modération des annonces (photos et textes) et planificateur de tenues Rota Pro, qui ne reçoit que des annonces publiques, l’occasion et le budget.',
+          'Resend : e-mails de compte et rappels.',
+        ],
+        callout: { tone: 'draft', text: 'Pays, garanties de transfert et contrats de sous-traitance à valider par l’avocat.' },
+      },
+      {
+        heading: 'Télécharger vos données',
+        body: [
+          'Paramètres de confidentialité › Télécharger une copie de mes données : un fichier JSON avec votre compte, profil, adresse, préférences, annonces, posts, stories, highlights, commentaires et avis, j’aime, republications, tableaux, abonnements, blocages, sourdines, comptes limités, mots masqués, conversations et messages envoyés, offres, favoris, locations, réclamations, versements, achats in-app, consentements de paiement, signalements, recours, décisions de modération et notifications.',
+          'Les autres membres y figurent par leur nom d’utilisateur. Un membre que vous avez bloqué ou qui vous a bloqué apparaît sans nom, sauf dans votre liste de blocages. Le fichier ne contient ni identifiant Stripe ni jeton push.',
+          'Pour une annonce avec preuve d’authenticité, le fichier contient un lien vers la preuve, valable 7 jours : elle y est dans sa version d’origine, métadonnées comprises. Ne partagez le fichier qu’avec des personnes de confiance.',
+          'Le fichier reste dans le cache du téléphone jusqu’au prochain export ou au prochain lancement de l’app, où il est supprimé.',
+        ],
+      },
+      {
+        heading: 'Fermer votre compte',
+        body: [
+          'Impossible tant qu’une location, un versement ou une réclamation est en cours.',
+          'Supprimé : votre profil (nom d’utilisateur remplacé par un pseudonyme), photo, bio, ville, adresse, préférences et jeton push, posts, stories, highlights, commentaires, j’aime, republications, tableaux, abonnements, blocages, sourdines, mots masqués, favoris, notifications, offres non utilisées, vos photos de profil, d’annonces, de posts et de stories, et vos preuves d’authenticité. Vos annonces sont retirées et perdent photos et description. Votre e-mail est remplacé et la connexion Apple / Google est supprimée.',
+          'Conservé sous pseudonyme, pour des raisons légales : locations, paiements et versements, offres utilisées, compte de paiement (références Stripe), consentements de paiement, réclamations et leurs photos, états des lieux, vérifications de remise, messages échangés, signalements que vous avez faits, décisions de risque, restrictions de compte, incidents de sécurité, dossiers et décisions de modération, recours, journal d’audit, photos d’annonces mises en quarantaine, et historique de vos achats in-app (sous un identifiant aléatoire).',
+        ],
+        callout: { tone: 'draft', text: 'Liste et durées de conservation de ces données à valider par l’avocat.' },
+      },
+      {
+        heading: 'Mineurs',
+        body: ['Rota est réservé aux personnes de 18 ans et plus, ce que vous déclarez à l’inscription.'],
       },
       {
         heading: 'Vos droits',

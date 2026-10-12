@@ -24,6 +24,7 @@ import { uploadMedia } from '../lib/upload';
 import type { MediaItem } from '../state/types';
 import { DEMO_COMMENTS, DEMO_FOLLOWING, DEMO_ME, DEMO_MEMBERS, DEMO_POSTS } from './demo';
 import { paymentsConfigured, verifyIdentity } from './payments';
+import { demoBinAdd, demoMutes, onPrivacyChange } from './privacy';
 
 export type PostKind = 'fit' | 'dump';
 export type IdentityStatus = 'none' | 'pending' | 'verified' | 'rejected';
@@ -69,6 +70,8 @@ export interface Post {
   area: Area | null;
   tags: PostTag[];
   likeCount: number;
+  /** The author hides the count (the post's choice, else their profile setting). They still see it. */
+  likesHidden: boolean;
   commentCount: number;
   createdAt: string;
   distribution: 'pending' | 'public' | 'limited' | 'blocked';
@@ -111,6 +114,12 @@ export interface Member extends Author {
   bio: string | null;
   followers: number;
   following: number;
+  /** A block either way: the card only carries the name (029). */
+  blocked: boolean;
+  /** The account was closed. */
+  deleted: boolean;
+  /** Only when the member shows their city. */
+  city: string | null;
 }
 
 export type SocialReportReason =
@@ -140,13 +149,22 @@ export interface PublishInput {
   tags: PostTag[];
   /** Raw position from the phone; rounded here and again by the server. */
   area: Area | null;
+  /** Null follows the profile setting. */
+  hideLikeCount?: boolean | null;
+  /** Who can review this post; null follows the profile setting. */
+  commentPolicy?: CommentPolicy | null;
 }
+
+export type CommentPolicy = 'everyone' | 'followers' | 'nobody';
 
 interface SocialValue {
   /** True when running on demo data (no Supabase project configured). */
   demo: boolean;
   meId: string | null;
+  /** The feed: no blocked or muted authors. */
   posts: Post[];
+  /** One member's posts for their profile: muting hides them from the feed only. */
+  postsOf: (memberId: string) => Post[];
   loading: boolean;
   error: string | null;
   refresh: () => void;
@@ -171,6 +189,9 @@ interface SocialValue {
   block: (memberId: string) => Promise<void>;
   unblock: (memberId: string) => Promise<void>;
 
+  /** Members whose stories I muted (030): the story tray leaves them out. */
+  mutedStoryIds: string[];
+
   report: (target: { kind: 'post' | 'comment' | 'member' | 'message'; id: string }, reason: SocialReportReason, note?: string) => Promise<void>;
 
   publish: (input: PublishInput) => Promise<{ id: string; live: boolean }>;
@@ -187,9 +208,9 @@ const SocialContext = createContext<SocialValue | null>(null);
 
 // ─── helpers ──────────────────────────────────────────────────
 
-/** 0.005° grid, the same rounding migration 009 applies server-side. */
+/** 0.01° grid (about 1 km), the same rounding migration 032 applies server-side. */
 export function coarsen(area: Area): Area {
-  return { lat: Math.round(area.lat * 200) / 200, lng: Math.round(area.lng * 200) / 200, label: area.label };
+  return { lat: Math.round(area.lat * 100) / 100, lng: Math.round(area.lng * 100) / 100, label: area.label };
 }
 
 export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
@@ -222,15 +243,16 @@ interface PostRow {
   area_lng: number | null;
   area_label: string | null;
   like_count: number;
+  hide_like_count: boolean | null;
   comment_count: number;
   created_at: string;
   distribution: Post['distribution'];
-  author: ({ username: string; avatar_url: string | null; certified: boolean; identity_status: string } & BadgeCols) | null;
+  author: ({ username: string; avatar_url: string | null; certified: boolean; identity_verified: boolean | null; hide_like_counts: boolean | null } & BadgeCols) | null;
   tags: { listing_id: string; media_index: number; x: number; y: number }[] | null;
 }
 
 const POST_SELECT =
-  '*, author:profiles!posts_author_id_fkey(username, avatar_url, certified, identity_status, pro_until, account_type, business_verified, business_name), tags:post_tags(listing_id, media_index, x, y)';
+  '*, author:profiles!posts_author_id_fkey(username, avatar_url, certified, identity_verified, hide_like_counts, pro_until, account_type, business_verified, business_name), tags:post_tags(listing_id, media_index, x, y)';
 
 function toPost(row: PostRow): Post {
   return {
@@ -240,7 +262,7 @@ function toPost(row: PostRow): Post {
       username: row.author?.username ?? 'membre',
       avatar: row.author?.avatar_url ?? null,
       certified: row.author?.certified ?? false,
-      identityVerified: row.author?.identity_status === 'verified',
+      identityVerified: row.author?.identity_verified === true,
       ...badgesFrom(row.author),
     },
     kind: row.kind,
@@ -253,6 +275,7 @@ function toPost(row: PostRow): Post {
         : null,
     tags: (row.tags ?? []).map((t) => ({ listingId: t.listing_id, mediaIndex: t.media_index, x: t.x, y: t.y })),
     likeCount: row.like_count,
+    likesHidden: row.hide_like_count ?? row.author?.hide_like_counts ?? false,
     commentCount: row.comment_count,
     createdAt: row.created_at,
     distribution: row.distribution,
@@ -284,6 +307,7 @@ const DEMO_POST_LIST: Post[] = DEMO_POSTS.map((p) => ({
   area: p.area,
   tags: p.tags,
   likeCount: p.likes,
+  likesHidden: false,
   commentCount: DEMO_COMMENTS[p.id]?.length ?? 0,
   createdAt: new Date(Date.now() - p.hoursAgo * 36e5).toISOString(),
   distribution: 'public',
@@ -316,13 +340,23 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       : [],
   );
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
+  // Demo mutes live in data/privacy.ts and outlive this provider: start from them.
+  const [mutedPosts, setMutedPosts] = useState<Set<string>>(
+    () => new Set(demo ? demoMutes().filter((m) => m.posts).map((m) => m.id) : []),
+  );
+  const [mutedStories, setMutedStories] = useState<Set<string>>(
+    () => new Set(demo ? demoMutes().filter((m) => m.stories).map((m) => m.id) : []),
+  );
   const [demoIdentity, setDemoIdentity] = useState<IdentityStatus>('none');
 
   // ── initial load (Supabase) ──
+  // The spinner shows on the first load only; a reload swaps the posts in place.
+  const postsLoaded = useRef(false);
+  const [postsTick, setPostsTick] = useState(0);
   useEffect(() => {
     if (demo || !supabase) return;
     let cancelled = false;
-    setLoading(true);
+    if (!postsLoaded.current) setLoading(true);
     supabase
       .from('posts')
       .select(POST_SELECT)
@@ -335,9 +369,18 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         else {
           setError(null);
           setPosts(((data ?? []) as unknown as PostRow[]).map(toPost));
+          postsLoaded.current = true;
         }
         setLoading(false);
       });
+    return () => {
+      cancelled = true;
+    };
+  }, [demo, tick, postsTick]);
+
+  useEffect(() => {
+    if (demo || !supabase) return;
+    let cancelled = false;
     supabase
       .from('challenges')
       .select('id, title_fr, title_en, title_es')
@@ -357,8 +400,29 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   }, [demo, tick]);
 
   // ── what belongs to the signed-in member (Supabase) ──
+  // Who is signed in right now, so a late answer for a previous account is dropped.
+  const meRef = useRef(meId);
+  meRef.current = meId;
+  const loadMutes = useCallback(() => {
+    const me = meRef.current;
+    if (demo || !supabase || !me) return;
+    supabase.from('member_mutes').select('muted_id, mute_posts, mute_stories').then(({ data, error: e }) => {
+      if (e || meRef.current !== me) return;
+      const rows = (data ?? []) as { muted_id: string; mute_posts: boolean; mute_stories: boolean }[];
+      setMutedPosts(new Set(rows.filter((r) => r.mute_posts).map((r) => r.muted_id)));
+      setMutedStories(new Set(rows.filter((r) => r.mute_stories).map((r) => r.muted_id)));
+    });
+  }, [demo]);
+
   useEffect(() => {
-    if (demo || !supabase || !meId) return;
+    if (demo || !supabase) return;
+    if (!meId) {
+      // Signed out: nobody else's blocks or mutes may filter what shows next.
+      setBlocked(new Set());
+      setMutedPosts(new Set());
+      setMutedStories(new Set());
+      return;
+    }
     const db = supabase;
     db.from('follows').select('followee_id').eq('follower_id', meId).then(({ data }) => {
       setFollowing(new Set((data ?? []).map((r) => r.followee_id as string)));
@@ -369,6 +433,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     db.from('member_blocks').select('blocked_id').then(({ data }) => {
       setBlocked(new Set((data ?? []).map((r) => r.blocked_id as string)));
     });
+    loadMutes();
     db.from('boards')
       .select('id, name, is_private, items:board_items(post_id, listing_id)')
       .eq('owner_id', meId)
@@ -385,10 +450,33 @@ export function SocialProvider({ children }: { children: ReactNode }) {
           })),
         );
       });
-  }, [demo, meId, tick]);
+  }, [demo, meId, tick, loadMutes]);
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
-  const visible = useMemo(() => posts.filter((p) => !blocked.has(p.authorId)), [posts, blocked]);
+
+  // A mute, or a post back from the bin (data/privacy.ts): reload only what depends on it.
+  useEffect(
+    () =>
+      onPrivacyChange((kind) => {
+        if (demo) {
+          const mutes = demoMutes();
+          setMutedPosts(new Set(mutes.filter((m) => m.posts).map((m) => m.id)));
+          setMutedStories(new Set(mutes.filter((m) => m.stories).map((m) => m.id)));
+          return;
+        }
+        if (kind === 'mutes') loadMutes();
+        else if (kind === 'bin') setPostsTick((n) => n + 1);
+      }),
+    [demo, loadMutes],
+  );
+  const visible = useMemo(
+    () => posts.filter((p) => !blocked.has(p.authorId) && !mutedPosts.has(p.authorId)),
+    [posts, blocked, mutedPosts],
+  );
+  const postsOf = useCallback(
+    (memberId: string) => (blocked.has(memberId) ? [] : posts.filter((p) => p.authorId === memberId)),
+    [posts, blocked],
+  );
   const postById = useCallback((id: string | null) => posts.find((p) => p.id === id) ?? null, [posts]);
 
   // ── follows ──
@@ -554,6 +642,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
           area,
           tags: input.tags,
           likeCount: 0,
+          likesHidden: input.hideLikeCount ?? false,
           commentCount: 0,
           createdAt: new Date().toISOString(),
           // Mirrors posts_initial_distribution(): verified members go live.
@@ -577,6 +666,8 @@ export function SocialProvider({ children }: { children: ReactNode }) {
           area_lat: area?.lat ?? null,
           area_lng: area?.lng ?? null,
           area_label: area?.label ?? null,
+          hide_like_count: input.hideLikeCount ?? null,
+          comment_policy: input.commentPolicy ?? null,
         })
         .select('id, distribution')
         .single();
@@ -594,11 +685,25 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
   const deletePost = useCallback(
     async (postId: string) => {
+      const post = posts.find((p) => p.id === postId);
+      const putBack = () => {
+        if (post) setPosts((ps) => (ps.some((p) => p.id === postId) ? ps : [post, ...ps]));
+      };
       setPosts((ps) => ps.filter((p) => p.id !== postId));
-      if (demo || !supabase) return;
-      await supabase.from('posts').delete().eq('id', postId);
+      if (demo || !supabase) {
+        if (post) {
+          demoBinAdd({ kind: 'post', id: postId, media: post.media[0] ?? null, deletedAt: new Date().toISOString() }, putBack);
+        }
+        return;
+      }
+      // Goes to the 30-day bin (032); the purge job deletes it for good.
+      const { data, error: e } = await supabase.rpc('delete_post', { p_post: postId });
+      if (e || data !== true) {
+        putBack();
+        throw new Error(e?.message ?? 'not_deleted');
+      }
     },
-    [demo],
+    [demo, posts],
   );
 
   const nearby = useCallback<SocialValue['nearby']>(
@@ -620,9 +725,9 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       }
       return rows
         .map((r) => ({ post: known.get(r.post_id), km: r.km }))
-        .filter((r): r is { post: Post; km: number } => !!r.post && !blocked.has(r.post.authorId));
+        .filter((r): r is { post: Post; km: number } => !!r.post && !blocked.has(r.post.authorId) && !mutedPosts.has(r.post.authorId));
     },
-    [demo, visible, blocked],
+    [demo, visible, blocked, mutedPosts],
   );
 
   // ── identity (Stripe Identity: document + selfie, hosted by Stripe) ──
@@ -651,6 +756,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       demo,
       meId,
       posts: visible,
+      postsOf,
       loading,
       error,
       refresh,
@@ -670,6 +776,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       blockedIds: [...blocked],
       block,
       unblock,
+      mutedStoryIds: [...mutedStories],
       report,
       publish,
       deletePost,
@@ -678,8 +785,8 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       verifyId,
     }),
     [
-      demo, meId, visible, loading, error, refresh, postById, challenges, following, toggleFollow, liked, toggleLike,
-      boards, isSaved, saveTo, removeFrom, createBoard, blocked, block, unblock, report, publish, deletePost, nearby,
+      demo, meId, visible, postsOf, loading, error, refresh, postById, challenges, following, toggleFollow, liked, toggleLike,
+      boards, isSaved, saveTo, removeFrom, createBoard, blocked, block, unblock, mutedStories, report, publish, deletePost, nearby,
       identity, verifyId,
     ],
   );
@@ -881,8 +988,10 @@ export function useComments(postId: string | null) {
 // ─── members ──────────────────────────────────────────────────
 
 export function useMember(memberId: string | null): Member | null {
-  const { demo, posts, followingIds, meId } = useSocial();
+  const { demo, posts, followingIds, meId, blockedIds } = useSocial();
   const [member, setMember] = useState<Member | null>(null);
+  // A block or unblock changes what the card may show.
+  const blockCount = blockedIds.length;
 
   useEffect(() => {
     if (!memberId) {
@@ -900,33 +1009,50 @@ export function useMember(memberId: string | null): Member | null {
         bio: m?.bio ?? null,
         followers: isMe ? 38 : 1200 + memberId.length * 137 + followedByMe,
         following: isMe ? followingIds.length : 180 + memberId.length * 11,
+        blocked: false,
+        deleted: false,
+        city: null,
       });
       return;
     }
+    // Never leave the previous member on screen while this one loads.
+    setMember(null);
     let cancelled = false;
-    const db = supabase;
-    Promise.all([
-      db.from('profiles').select('id, username, avatar_url, certified, identity_status, bio, pro_until, account_type, business_verified, business_name').eq('id', memberId).maybeSingle(),
-      db.from('follows').select('follower_id', { count: 'exact', head: true }).eq('followee_id', memberId),
-      db.from('follows').select('followee_id', { count: 'exact', head: true }).eq('follower_id', memberId),
-    ]).then(([p, followers, following]) => {
-      if (cancelled || !p.data) return;
+    // One call returns the card the server lets me see: counts, city only when shown,
+    // and just the name across a block or for a closed account (029).
+    supabase.rpc('profile_card', { p_id: memberId }).then(({ data }) => {
+      const card = data as (BadgeCols & {
+        username: string;
+        avatar_url?: string | null;
+        bio?: string | null;
+        certified?: boolean;
+        identity_verified?: boolean | null;
+        followers?: number;
+        following?: number;
+        blocked?: boolean;
+        deleted?: boolean;
+        city?: string | null;
+      }) | null;
+      if (cancelled || !card) return;
       setMember({
         id: memberId,
-        username: p.data.username,
-        avatar: p.data.avatar_url,
-        certified: p.data.certified,
-        identityVerified: p.data.identity_status === 'verified',
-        ...badgesFrom(p.data),
-        bio: p.data.bio,
-        followers: followers.count ?? 0,
-        following: following.count ?? 0,
+        username: card.username,
+        avatar: card.avatar_url ?? null,
+        certified: !!card.certified,
+        identityVerified: card.identity_verified === true,
+        ...badgesFrom(card),
+        bio: card.bio ?? null,
+        followers: Number(card.followers ?? 0),
+        following: Number(card.following ?? 0),
+        blocked: !!card.blocked,
+        deleted: !!card.deleted,
+        city: card.city ?? null,
       });
     });
     return () => {
       cancelled = true;
     };
-  }, [demo, memberId, followingIds, posts.length, meId]);
+  }, [demo, memberId, followingIds, posts.length, meId, blockCount]);
 
   return member;
 }

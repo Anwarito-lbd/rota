@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import {
+  AccessibilityInfo,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -225,17 +226,21 @@ export function GhostButton({
   onPress,
   tone = 'ink',
   style,
+  accessibilityLabel,
 }: {
   label: string;
   onPress: () => void;
   tone?: 'ink' | 'plum' | 'accent';
   style?: StyleProp<ViewStyle>;
+  /** When the label alone is ambiguous (several in a list). */
+  accessibilityLabel?: string;
 }) {
   const { c, fs } = useTheme();
   const color = tone === 'plum' ? c.plum : tone === 'accent' ? c.accent : c.ink;
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       style={({ pressed }) => [
         {
@@ -290,14 +295,16 @@ export function Chip({
   );
 }
 
-export function Toggle({ on, onPress, label }: { on: boolean; onPress: () => void; label: string }) {
+/** A 50×30 switch; the hit slop brings the touch target to 46×38. While `disabled`, taps are ignored and it says so. */
+export function Toggle({ on, onPress, label, disabled }: { on: boolean; onPress: () => void; label: string; disabled?: boolean }) {
   const { c } = useTheme();
   return (
     <Pressable
       accessibilityRole="switch"
-      accessibilityState={{ checked: on }}
+      accessibilityState={{ checked: on, disabled: !!disabled }}
       accessibilityLabel={label}
-      onPress={onPress}
+      hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+      onPress={() => !disabled && onPress()}
       style={{
         width: 50,
         height: 30,
@@ -674,6 +681,35 @@ export function CertifiedMark({ size = 18 }: { size?: number }) {
       }}
     >
       <CheckIcon size={size * 0.7} color={c.onAccent} />
+    </View>
+  );
+}
+
+/**
+ * A short message at the top of the screen: a confirmation ("Story publiée")
+ * or an error. Announced once to screen readers, gone by itself after a
+ * moment; never blocks a touch. It sits under open sheets (they are modals).
+ */
+export function Toast({ notice, onHide }: { notice: { text: string; error?: boolean } | null; onHide: () => void }) {
+  const { c } = useTheme();
+  const insets = useSafeAreaInsets();
+  useEffect(() => {
+    if (!notice) return;
+    AccessibilityInfo.announceForAccessibility?.(notice.text);
+    const timer = setTimeout(onHide, notice.error ? 4500 : 2600);
+    return () => clearTimeout(timer);
+  }, [notice, onHide]);
+  if (!notice) return null;
+  const bg = notice.error ? c.plum : c.ink;
+  const fg = notice.error ? c.onplum : c.bg;
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', top: insets.top + 10, left: 16, right: 16, alignItems: 'center', zIndex: 1000, elevation: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 999, backgroundColor: bg }}>
+        {notice.error ? null : <CheckIcon size={16} color={fg} />}
+        <Txt size={14} weight="semi" color={fg} style={{ flexShrink: 1 }}>
+          {notice.text}
+        </Txt>
+      </View>
     </View>
   );
 }

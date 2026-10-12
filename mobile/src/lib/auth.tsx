@@ -26,6 +26,13 @@ export interface Profile {
   businessVerified: boolean;
   /** False after Apple/Google sign-in until the member picks a username (migration 011). */
   usernameConfirmed: boolean;
+  /** Privacy settings (migrations 029–030). Every account is public. */
+  hideLikeCounts: boolean;
+  commentPolicy: 'everyone' | 'followers' | 'nobody';
+  messagePolicy: 'everyone' | 'following' | 'nobody';
+  hideDefaultWords: boolean;
+  /** Declared 18 or older (at sign-up, or later through `confirm_adult`). */
+  adultConfirmed: boolean;
 }
 
 interface AuthValue {
@@ -124,11 +131,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     // Before migration 004 the function doesn't exist: not staff.
     supabase.rpc('is_staff').then(({ data }) => !cancelled && setIsStaff(data === true));
+    // Members can't read every profile column (029); my own row comes through an RPC.
     supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+      .rpc('my_profile')
       .then(({ data }) => {
         if (cancelled || !data) return;
         setProfile({
@@ -146,6 +151,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           businessName: data.business_name ?? null,
           businessVerified: !!data.business_verified,
           usernameConfirmed: data.username_confirmed ?? true,
+          hideLikeCounts: data.hide_like_counts ?? false,
+          commentPolicy: (data.comment_policy ?? 'everyone') as Profile['commentPolicy'],
+          messagePolicy: (data.message_policy ?? 'everyone') as Profile['messagePolicy'],
+          hideDefaultWords: data.hide_default_words ?? true,
+          adultConfirmed: !!data.adult_confirmed_at,
         });
       });
     return () => {
@@ -166,7 +176,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: { data: { username: handle } },
+      // The Onboarding checkbox makes the member declare 18+ before this call.
+      options: { data: { username: handle, adult: 'true' } },
     });
     return error ? toFrench(error.message) : null;
   }, []);
@@ -196,10 +207,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const rawNonce = Crypto.randomUUID();
       const hashed = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
       const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
+        // E-mail only: Rota never uses a full name on the account.
+        requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL],
         nonce: hashed,
       });
       if (!credential.identityToken) return 'Apple n’a pas renvoyé d’identifiant. Réessayez.';

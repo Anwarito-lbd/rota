@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Image } from 'expo-image';
 import { Platform, Pressable, ScrollView, Share, TextInput, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { occasionLabel } from '../data/catalog';
 import { useListing } from '../data/listings';
 import { makeOffer, sendMessage, startConversation } from '../data/messages';
 import { useSocial } from '../data/social';
@@ -73,7 +74,7 @@ function RoundOverlayButton({
 }
 
 export function Detail() {
-  const { state, set, go, m, toggleFlag } = useStore();
+  const { state, set, go, m, toggleFlag, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const insets = useSafeAreaInsets();
@@ -157,7 +158,7 @@ export function Detail() {
             <MediaSlot id={`detail-${listing.id}`} shape="rect" tone="media" placeholder={listing.title} />
           )}
           <View style={{ position: 'absolute', top: insets.top + 6, left: 14, right: 14, flexDirection: 'row', justifyContent: 'space-between' }}>
-            <RoundOverlayButton onPress={() => go('feed')} label={t('common.back')}>
+            <RoundOverlayButton onPress={() => back('feed')} label={t('common.back')}>
               <ChevronLeft color={OVER_INK} />
             </RoundOverlayButton>
             <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -199,7 +200,7 @@ export function Detail() {
         <View style={{ marginTop: -24, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: c.bg, paddingHorizontal: 18, paddingTop: 22 }}>
           {listing.occasion ? (
             <Txt size={11} weight="bold" upper color={c.accent}>
-              {listing.occasion}
+              {occasionLabel(listing.occasion, t)}
             </Txt>
           ) : null}
           <Display size={30} style={{ marginTop: 6 }}>

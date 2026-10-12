@@ -1,22 +1,24 @@
 /**
  * Mettre une pièce en location — one scrolling page, like Vinted's "Vends un
  * article": photos, the piece, its details, price and rules, then publish.
- * The camera screen can pre-fill the first photo slots.
+ * Opened from the Dressing. Leaving for the identity check keeps the draft;
+ * closing or publishing clears it.
  */
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
-import { OCCASIONS } from '../data/catalog';
+import { OCCASIONS, occasionLabel } from '../data/catalog';
 import { useListings } from '../data/listings';
-import { findLeaf, isLuxury, SIZE_SCALES, suggestDailyPrice } from '../data/taxonomy';
+import { findLeaf, isLuxury, parsePurchasePrice, SIZE_SCALES, suggestDailyPrice } from '../data/taxonomy';
 import { useT } from '../i18n';
 import { useAuth } from '../lib/auth';
 import { friendlyError } from '../lib/errors';
 import { FEES } from '../lib/fees';
 import { submitForReview } from '../lib/moderation';
+import { supabase } from '../lib/supabase';
 import { usePolicy } from '../lib/policy';
 import { uploadMedia } from '../lib/upload';
-import { useStore } from '../state/store';
-import type { MediaItem } from '../state/types';
+import { releaseMedia, useStore } from '../state/store';
+import type { ListDraft, MediaItem } from '../state/types';
 import { useTheme } from '../theme/useTheme';
 import { CheckIcon, CloseIcon, MinusIcon, PlusIcon } from '../ui/icons';
 import { Amount, Check, Chip, Display, Field, GhostButton, Note, PrimaryButton, Screen, Toggle, Txt } from '../ui/kit';
@@ -28,6 +30,16 @@ const SLOT_VIDEO = 'new-listing-video';
 const SLOT_PHOTO_1 = 'new-listing-photo-1';
 const SLOT_PHOTO_2 = 'new-listing-photo-2';
 const SLOT_PROOF = 'new-listing-proof';
+const SLOTS = [SLOT_VIDEO, SLOT_PHOTO_1, SLOT_PHOTO_2, SLOT_PROOF];
+
+/** The database's limits (listings check constraints). */
+const MAX_TITLE = 80;
+const MAX_DESCRIPTION = 2000;
+const MAX_BRAND = 60;
+const MAX_PRICE = 1000;
+const MAX_CLEANING_FEE = 200;
+const MAX_RULE = 120;
+const MAX_RULES = 10;
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -74,31 +86,50 @@ function Stepper({ onMinus, onPlus, minusLabel, plusLabel, size = 44 }: { onMinu
 }
 
 export function ListPiece() {
-  const { state, go, m, setMedia } = useStore();
+  const { state, set, go, m, setMedia, back } = useStore();
   const { c } = useTheme();
   const { t, lang } = useT();
   const { session } = useAuth();
   const { refresh } = useListings();
   const policy = usePolicy();
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [brand, setBrand] = useState('');
-  const [retail, setRetail] = useState('');
-  const [categoryId, setCategoryId] = useState<string | null>(null);
+  // A draft is only ever restored for the account that typed it, and only
+  // saved while that account is still the one signed in.
+  const userId = session?.user.id ?? null;
+  const owner = useRef(userId);
+  const signedInAs = useRef(userId);
+  signedInAs.current = userId;
+  const draft = state.listDraft?.ownerId === owner.current ? state.listDraft : null;
+  const [title, setTitle] = useState(draft?.title ?? '');
+  const [description, setDescription] = useState(draft?.description ?? '');
+  const [brand, setBrand] = useState(draft?.brand ?? '');
+  const [retail, setRetail] = useState(draft?.retail ?? '');
+  const [categoryId, setCategoryId] = useState<string | null>(draft?.categoryId ?? null);
   const [picker, setPicker] = useState<'category' | 'brand' | 'parcel' | null>(null);
-  const [parcel, setParcel] = useState<ParcelSize | null>(null);
-  const [fit, setFit] = useState(0);
-  const [occasion, setOccasion] = useState(OCCASIONS[0]);
-  const [sizes, setSizes] = useState<string[]>([]);
-  const [price, setPrice] = useState(20);
-  const [lenderCleans, setLenderCleans] = useState(false);
-  const [cleaningFee, setCleaningFee] = useState(12);
-  const [rules, setRules] = useState<string[]>([]);
+  const [parcel, setParcel] = useState<ParcelSize | null>(draft?.parcel ?? null);
+  const [fit, setFit] = useState(draft?.fit ?? 0);
+  const [occasion, setOccasion] = useState(draft?.occasion ?? OCCASIONS[0]);
+  const [sizes, setSizes] = useState<string[]>(draft?.sizes ?? []);
+  const [price, setPrice] = useState(draft?.price ?? 20);
+  const [lenderCleans, setLenderCleans] = useState(draft?.lenderCleans ?? false);
+  const [cleaningFee, setCleaningFee] = useState(draft?.cleaningFee ?? 12);
+  const [rules, setRules] = useState<string[]>(draft?.rules ?? []);
   const [ruleDraft, setRuleDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
+
+  // Leaving any other way than close or publish (the identity check, Android's
+  // back) keeps what was typed for when the member comes back.
+  const latest = useRef<ListDraft | null>(null);
+  latest.current = { ownerId: owner.current, title, description, brand, retail, categoryId, parcel, fit, occasion, sizes, price, lenderCleans, cleaningFee, rules };
+  const keepDraft = useRef(true);
+  useEffect(
+    () => () => {
+      if (keepDraft.current && signedInAs.current === owner.current) set({ listDraft: latest.current });
+    },
+    [set],
+  );
 
   const media = state.media;
   const leaf = findLeaf(categoryId);
@@ -107,7 +138,7 @@ export function ListPiece() {
   const pricey = price > policy.authenticityPricePerDay;
   // Proof is asked for luxury brands and pieces rented at a high daily price.
   const proofNeeded = luxury || pricey;
-  const purchase = Number(retail.replace(/\D/g, '')) || 0;
+  const purchase = parsePurchasePrice(retail);
   const advice = suggestDailyPrice(purchase, categoryId);
   const photoSlots = [SLOT_PHOTO_1, SLOT_PHOTO_2].filter((id) => media[id]);
   const hasPhoto = photoSlots.length > 0 || !!media[SLOT_VIDEO];
@@ -130,8 +161,17 @@ export function ListPiece() {
     return null;
   };
 
-  const reset = () => {
-    [SLOT_VIDEO, SLOT_PHOTO_1, SLOT_PHOTO_2, SLOT_PROOF].forEach((id) => setMedia(id, null));
+  /**
+   * Back to an empty form: photos, fields and the saved draft. `release`
+   * frees the browser's copies of the photos; publish does that itself once
+   * the review step no longer reads them.
+   */
+  const reset = (release = true) => {
+    SLOTS.forEach((id) => {
+      if (release) releaseMedia(media[id]);
+      setMedia(id, null);
+    });
+    set({ listDraft: null });
     setTitle('');
     setDescription('');
     setBrand('');
@@ -139,16 +179,37 @@ export function ListPiece() {
     setSizes([]);
     setCategoryId(null);
     setFit(0);
+    setOccasion(OCCASIONS[0]);
     setRules([]);
+    setRuleDraft('');
     setPrice(20);
     setLenderCleans(false);
+    setCleaningFee(12);
     setParcel(null);
+    setError(null);
+  };
+
+  const close = () => {
+    keepDraft.current = false;
+    reset();
+    back('closet');
+  };
+
+  const addRule = () => {
+    const rule = ruleDraft.trim().slice(0, MAX_RULE);
+    if (!rule || rules.length >= MAX_RULES) return;
+    // The same rule twice would show twice and be removed together.
+    setRules((r) => (r.some((x) => x.toLowerCase() === rule.toLowerCase()) ? r : [...r, rule]));
+    setRuleDraft('');
   };
 
   const publish = async () => {
-    if (!session) return setError(t('list.signIn'));
     const missing = problem();
     if (missing) return setError(missing);
+    // Demo mode has no server: nothing can be published, say so plainly.
+    if (!supabase) return setError(t('list.demoPublish'));
+    if (!session) return setError(t('list.signIn'));
+    const client = supabase;
 
     setBusy(true);
     setError(null);
@@ -166,11 +227,11 @@ export function ListPiece() {
       const videoItem = media[SLOT_VIDEO];
       const videoPath = videoItem ? await uploadMedia('listing-media', userId, videoItem) : null;
       if (videoItem && videoPath) uploads.push({ item: videoItem, path: videoPath });
-      const proofItem = media[SLOT_PROOF];
+      // A proof is a private document: only sent when this piece needs one.
+      const proofItem = proofNeeded ? media[SLOT_PROOF] : undefined;
       const proofPath = proofItem ? await uploadMedia('private-docs', userId, proofItem) : null;
 
-      const client = (await import('../lib/supabase')).supabase!;
-      const suggested = retail ? Number(retail.replace(/\D/g, '')) || null : null;
+      const suggested = purchase || null;
       const row: Record<string, unknown> = {
         owner_id: userId,
         title: title.trim(),
@@ -201,24 +262,21 @@ export function ListPiece() {
         authenticity_path: proofPath,
       };
 
-      // Columns added by later migrations: drop any the database doesn't have yet.
-      const insert = (p: Record<string, unknown>) => client.from('listings').insert(p).select('id').single();
-      let payload = row;
-      let result = await insert(payload);
-      for (const column of ['parcel_size', 'description', 'category_id', 'size_fit', 'suggested_value', 'sizes']) {
-        if (!result.error || !result.error.message.includes(column)) continue;
-        const { [column]: _dropped, ...rest } = payload;
-        payload = rest;
-        result = await insert(payload);
-      }
-
+      const result = await client.from('listings').insert(row).select('id').single();
       if (result.error) throw new Error(result.error.message);
+      // The form is done with: clear it now so no exit can bring it back.
+      keepDraft.current = false;
+      reset(false);
       setPublished(true);
       // Stills, provenance and the review request. Not awaited by the UI:
       // the listing exists and its review case is already queued.
       submitForReview({ userId, listingId: (result.data as { id: string }).id, uploads })
         .catch(() => undefined)
-        .finally(refresh);
+        .finally(() => {
+          uploads.forEach(({ item }) => releaseMedia(item));
+          releaseMedia(media[SLOT_PROOF]);
+          refresh();
+        });
     } catch (e) {
       setError(friendlyError(e, t));
     } finally {
@@ -240,18 +298,14 @@ export function ListPiece() {
         </Txt>
         <PrimaryButton
           label={t('list.seeCloset')}
-          onPress={() => {
-            setPublished(false);
-            reset();
-            go('closet');
-          }}
+          onPress={() => go('closet')}
           style={{ marginTop: 24, alignSelf: 'stretch' }}
         />
         <GhostButton
           label={t('list.another')}
           onPress={() => {
+            keepDraft.current = true;
             setPublished(false);
-            reset();
           }}
           style={{ marginTop: 10, alignSelf: 'stretch' }}
         />
@@ -275,7 +329,7 @@ export function ListPiece() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('common.close')}
-            onPress={() => go('closet')}
+            onPress={close}
             hitSlop={8}
             style={{ width: 44, height: 44, borderRadius: 99, backgroundColor: c.surf2, alignItems: 'center', justifyContent: 'center' }}
           >
@@ -307,11 +361,11 @@ export function ListPiece() {
 
         {/* The piece */}
         <Section title={t('list.sectionPresent')}>
-          <Field label={t('list.titleField')} value={title} onChangeText={setTitle} placeholder={t('list.titlePlaceholder')} autoCapitalize="sentences" />
+          <Field label={t('list.titleField')} value={title} onChangeText={(v) => setTitle(v.slice(0, MAX_TITLE))} placeholder={t('list.titlePlaceholder')} autoCapitalize="sentences" />
           <Field
             label={t('list.description')}
             value={description}
-            onChangeText={setDescription}
+            onChangeText={(v) => setDescription(v.slice(0, MAX_DESCRIPTION))}
             placeholder={t('list.descriptionPlaceholder')}
             autoCapitalize="sentences"
             multiline
@@ -349,7 +403,7 @@ export function ListPiece() {
           <Block label={t('list.occasion')}>
             <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {OCCASIONS.map((o) => (
-                <Chip key={o} label={o} on={occasion === o} onPress={() => setOccasion(o)} />
+                <Chip key={o} label={occasionLabel(o, t)} on={occasion === o} onPress={() => setOccasion(o)} />
               ))}
             </View>
           </Block>
@@ -357,7 +411,8 @@ export function ListPiece() {
           <Field
             label={t('list.retail')}
             value={retail}
-            onChangeText={setRetail}
+            // Kept as typed (digits, spaces, "." and ","); parsePurchasePrice reads it.
+            onChangeText={(v) => setRetail(v.replace(/[^\d\s.,]/g, '').slice(0, 9))}
             placeholder={t('list.retailPlaceholder')}
             keyboardType="number-pad"
             hint={t('list.valueHint')}
@@ -383,7 +438,7 @@ export function ListPiece() {
                 minusLabel={t('list.priceDown')}
                 plusLabel={t('list.priceUp')}
                 onMinus={() => setPrice((p) => Math.max(1, p - 1))}
-                onPlus={() => setPrice((p) => p + 1)}
+                onPlus={() => setPrice((p) => Math.min(MAX_PRICE, p + 1))}
               />
             </View>
             <Txt size={13} color={c.ink3} style={{ marginTop: 10 }}>
@@ -402,7 +457,7 @@ export function ListPiece() {
                       {t('list.suggestedRange').replace('{low}', m(advice.low)).replace('{high}', m(advice.high)).replace('{value}', m(purchase))}
                     </Txt>
                   </View>
-                  {price !== advice.best ? <GhostButton label={t('list.useSuggested')} tone="accent" onPress={() => setPrice(advice.best)} /> : null}
+                  {price !== advice.best ? <GhostButton label={t('list.useSuggested')} tone="accent" onPress={() => setPrice(Math.min(MAX_PRICE, advice.best))} /> : null}
                 </View>
               ) : (
                 <Txt size={12} color={c.ink3}>
@@ -426,11 +481,10 @@ export function ListPiece() {
                 <Txt style={{ flex: 1 }}>{t('list.cleaningFee')}</Txt>
                 <Amount size={16}>{m(cleaningFee)}</Amount>
                 <Stepper
-                  size={38}
-                  minusLabel={t('list.priceDown')}
-                  plusLabel={t('list.priceUp')}
+                  minusLabel={t('list.feeDown')}
+                  plusLabel={t('list.feeUp')}
                   onMinus={() => setCleaningFee((f) => Math.max(0, f - 1))}
-                  onPlus={() => setCleaningFee((f) => f + 1)}
+                  onPlus={() => setCleaningFee((f) => Math.min(MAX_CLEANING_FEE, f + 1))}
                 />
               </View>
             ) : null}
@@ -444,27 +498,29 @@ export function ListPiece() {
                   <Txt size={14} style={{ flex: 1 }}>
                     {rule}
                   </Txt>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`${t('common.delete')} ${rule}`} onPress={() => setRules((r) => r.filter((x) => x !== rule))} hitSlop={8}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${t('common.delete')} ${rule}`}
+                    onPress={() => setRules((r) => r.filter((x) => x !== rule))}
+                    style={{ width: 44, height: 44, marginVertical: -10, marginRight: -10, alignItems: 'center', justifyContent: 'center' }}
+                  >
                     <CloseIcon size={16} color={c.ink3} />
                   </Pressable>
                 </View>
               ))}
             </View>
-            <View style={{ marginTop: 10, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-              <View style={{ flex: 1 }}>
-                <Field label="" value={ruleDraft} onChangeText={setRuleDraft} placeholder={t('list.rulePlaceholder')} autoCapitalize="sentences" />
+            {rules.length < MAX_RULES ? (
+              <View style={{ marginTop: 10, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <View style={{ flex: 1 }}>
+                  <Field label="" value={ruleDraft} onChangeText={(v) => setRuleDraft(v.slice(0, MAX_RULE))} placeholder={t('list.rulePlaceholder')} autoCapitalize="sentences" />
+                </View>
+                <GhostButton label={t('common.add')} accessibilityLabel={t('list.addRule')} tone="accent" onPress={addRule} />
               </View>
-              <GhostButton
-                label={t('common.add')}
-                tone="accent"
-                onPress={() => {
-                  const rule = ruleDraft.trim();
-                  if (!rule) return;
-                  setRules((r) => [...r, rule]);
-                  setRuleDraft('');
-                }}
-              />
-            </View>
+            ) : (
+              <Txt size={13} color={c.ink3} style={{ marginTop: 10 }}>
+                {t('list.rulesMax')}
+              </Txt>
+            )}
           </Block>
         </Section>
 
@@ -489,7 +545,7 @@ export function ListPiece() {
         onClose={() => setPicker(null)}
         onPick={setParcel}
       />
-      <BrandPicker visible={picker === 'brand'} value={brand} onClose={() => setPicker(null)} onPick={setBrand} />
+      <BrandPicker visible={picker === 'brand'} value={brand} onClose={() => setPicker(null)} onPick={(b) => setBrand(b.slice(0, MAX_BRAND))} />
     </View>
   );
 }

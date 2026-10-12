@@ -5,11 +5,13 @@
  */
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { AccessibilityInfo, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useListing, useListings } from '../data/listings';
 import {
   MEETING_PLACES,
+  acceptRequest,
+  declineRequest,
   looksOffApp,
   answerOffer,
   offerState,
@@ -29,7 +31,7 @@ import { Amount, Display, Note, Screen, Sheet, Txt } from '../ui/kit';
 import { Avatar, FadeIn, IdBadge, PressScale, Skeleton, tap, timeAgo } from '../ui/motion';
 import { StoriesRow } from './Community';
 
-type InboxFilter = 'all' | 'renting' | 'lending' | 'unread';
+type InboxFilter = 'all' | 'renting' | 'lending' | 'unread' | 'requests';
 
 function Inbox() {
   const { set } = useStore();
@@ -48,17 +50,21 @@ function Inbox() {
       ? null
       : all.filter((th) => {
           const listing = th.listingId ? byId(th.listingId) : null;
+          // Requests live in their own filter only.
+          if ((filter === 'requests') !== th.request) return false;
           if (filter === 'unread' && !th.unread) return false;
           if (filter === 'lending' && !(listing && listing.ownerId === social.meId)) return false;
           if (filter === 'renting' && !(listing && listing.ownerId !== social.meId)) return false;
           if (!q) return true;
           return [th.other.username, th.lastBody ?? '', listing?.title ?? ''].some((v) => v.toLowerCase().includes(q));
         });
+  const requestCount = (all ?? []).filter((th) => th.request).length;
   const filters: [InboxFilter, string][] = [
     ['all', t('inbox.all')],
     ['renting', t('inbox.renting')],
     ['lending', t('inbox.lending')],
     ['unread', t('inbox.unread')],
+    ['requests', requestCount ? `${t('msg.requests')} · ${requestCount}` : t('msg.requests')],
   ];
 
   return (
@@ -349,8 +355,60 @@ function Bubble({ m, mine, onLongPress }: { m: Message; mine: boolean; onLongPre
   );
 }
 
+/** A message request: accept, decline or block. The sender sees no read receipt until it is accepted. */
+function RequestBanner({ name, onAccept, onDecline, onBlock, busy, error }: {
+  name: string;
+  onAccept: () => void;
+  onDecline: () => void;
+  onBlock: () => void;
+  busy: boolean;
+  error: string | null;
+}) {
+  const { c } = useTheme();
+  const { t } = useT();
+  const pill = (label: string, onPress: () => void, primary = false, tone?: string) => (
+    <PressScale
+      haptic={primary ? 'light' : undefined}
+      onPress={() => !busy && onPress()}
+      accessibilityState={{ disabled: busy }}
+      style={{
+        flex: 1,
+        minHeight: 44,
+        borderRadius: 999,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: primary ? c.accent : 'transparent',
+        borderWidth: primary ? 0 : 1,
+        borderColor: c.line2,
+        opacity: busy ? 0.6 : 1,
+      }}
+    >
+      <Txt size={14} weight="bold" color={primary ? c.onAccent : (tone ?? c.ink)}>
+        {label}
+      </Txt>
+    </PressScale>
+  );
+  return (
+    <View style={{ padding: 14, borderRadius: 18, backgroundColor: c.surf, borderWidth: 1, borderColor: c.line, gap: 12 }}>
+      <Txt size={14} color={c.ink2}>
+        {t('msg.requestBanner').replace('{name}', name)}
+      </Txt>
+      {error ? (
+        <Txt size={13} color={c.plum}>
+          {error}
+        </Txt>
+      ) : null}
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        {pill(t('profile.block'), onBlock, false, c.plum)}
+        {pill(t('priv.decline'), onDecline)}
+        {pill(t('priv.accept'), onAccept, true)}
+      </View>
+    </View>
+  );
+}
+
 function Conversation({ id }: { id: string }) {
-  const { set, m } = useStore();
+  const { set, m, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const insets = useSafeAreaInsets();
@@ -358,13 +416,31 @@ function Conversation({ id }: { id: string }) {
   const { threads } = useInbox();
   const th = threads?.find((x) => x.id === id) ?? null;
   const listing = useListing(th?.listingId ?? null);
-  const { messages, send } = useThread(id);
+  // No read receipt while the thread is unknown or still a request.
+  const { messages, send } = useThread(id, !!th && !th.request);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [places, setPlaces] = useState(false);
   const scroller = useRef<ScrollView>(null);
   const blocked = !!th && (th.blocked || social.isBlocked(th.otherId));
   const warn = looksOffApp(draft);
+  const [requestBusy, setRequestBusy] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const answer = async (action: () => Promise<unknown>, leave = false) => {
+    if (requestBusy) return;
+    setRequestBusy(true);
+    setRequestError(null);
+    try {
+      await action();
+      if (leave) back({ screen: 'messages', thread: null });
+    } catch (e) {
+      const message = friendlyError(e, t);
+      setRequestError(message);
+      AccessibilityInfo.announceForAccessibility(message);
+    } finally {
+      setRequestBusy(false);
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => scroller.current?.scrollToEnd({ animated: true }), 60);
@@ -396,7 +472,7 @@ function Conversation({ id }: { id: string }) {
           borderBottomColor: c.line,
         }}
       >
-        <PressScale onPress={() => set({ thread: null })} accessibilityLabel={t('common.back')} style={{ width: 40, height: 40, justifyContent: 'center' }}>
+        <PressScale onPress={() => back({ screen: 'messages', thread: null })} accessibilityLabel={t('common.back')} style={{ width: 40, height: 40, justifyContent: 'center' }}>
           <ChevronLeft color={c.ink} />
         </PressScale>
         <Pressable
@@ -512,6 +588,16 @@ function Conversation({ id }: { id: string }) {
         </View>
       ) : (
         <View style={{ paddingHorizontal: 12, paddingTop: 8, paddingBottom: insets.bottom + 10, gap: 8 }}>
+          {th?.request ? (
+            <RequestBanner
+              name={th.other.username}
+              busy={requestBusy}
+              error={requestError}
+              onAccept={() => answer(() => acceptRequest(th.id))}
+              onDecline={() => answer(() => declineRequest(th.id), true)}
+              onBlock={() => answer(() => social.block(th.otherId))}
+            />
+          ) : null}
           {warn ? <Note tone="accent">{t('msg.offApp')}</Note> : null}
           {error ? (
             <Txt size={13} color={c.plum}>

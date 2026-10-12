@@ -2,7 +2,7 @@
  * Floating Liquid Glass tab bar (Figma redesign): four tabs in a pill,
  * the selected one marked by a filled capsule and a bolder label — shape,
  * not colour alone. With Reduce Transparency on, the glass becomes solid.
- * The round "+" in the middle opens the camera (post a fit or list a piece).
+ * The round "+" in the middle opens the camera (post a fit or a story).
  */
 import { BlurView } from 'expo-blur';
 import { useEffect, useState, type ReactElement } from 'react';
@@ -71,6 +71,11 @@ const TAB_GROUPS: Record<string, Screen[]> = {
   ],
 };
 
+/** The tab a screen belongs to; screens outside every group belong to the feed. */
+export function rootFor(screen: Screen): TabKey {
+  return TABS.find(({ key }) => key === screen || (TAB_GROUPS[key] ?? []).includes(screen))?.key ?? 'feed';
+}
+
 export function TabBar() {
   const { state, set, go, config } = useStore();
   const { c, dark } = useTheme();
@@ -106,6 +111,7 @@ export function TabBar() {
     </View>
   );
 
+  // Tabs are roots: `go` clears the back history, Instagram-style.
   const bar = (
     <View style={{ flexDirection: 'row', alignItems: 'center', padding: 6, gap: 2 }}>
       {TABS.flatMap(({ key, label, Icon }, i) => {

@@ -49,8 +49,9 @@ interface CommunityValue {
   /** Posts reposted by people I follow: post id → who reposted it. */
   repostedBy: Record<string, Person>;
 
+  /** Live stories, blocked members left out. Muted members' stay here so their profile can still open them. */
   stories: Story[];
-  /** Members with a live story, me first. */
+  /** The tray: members with a live story, me first, without blocked or story-muted members. */
   storyAuthors: Person[];
   seenStories: string[];
   markSeen: (storyId: string) => void;
@@ -146,15 +147,15 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     if (!supabase || !meId || social.followingIds.length === 0) return;
     supabase
       .from('reposts')
-      .select('post_id, user_id, profile:profiles!reposts_user_id_fkey(username, avatar_url, identity_status)')
+      .select('post_id, user_id, profile:profiles!reposts_user_id_fkey(username, avatar_url, identity_verified)')
       .in('user_id', social.followingIds)
       .order('created_at', { ascending: false })
       .limit(60)
       .then(({ data }) => {
         const map: Record<string, Person> = {};
-        for (const r of (data ?? []) as unknown as { post_id: string; user_id: string; profile: { username: string; avatar_url: string | null; identity_status: string } | null }[]) {
+        for (const r of (data ?? []) as unknown as { post_id: string; user_id: string; profile: { username: string; avatar_url: string | null; identity_verified: boolean | null } | null }[]) {
           if (!map[r.post_id]) {
-            map[r.post_id] = { id: r.user_id, username: r.profile?.username ?? 'membre', avatar: r.profile?.avatar_url ?? null, verified: r.profile?.identity_status === 'verified' };
+            map[r.post_id] = { id: r.user_id, username: r.profile?.username ?? 'membre', avatar: r.profile?.avatar_url ?? null, verified: r.profile?.identity_verified === true };
           }
         }
         setRepostedBy(map);
@@ -166,23 +167,23 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       .then(({ data }) => setReposted(((data ?? []) as { post_id: string }[]).map((r) => r.post_id)));
   }, [demo, meId, social.followingIds]);
 
-  // Live stories from the people I follow (RLS filters them).
+  // Live stories: public to every member (034); RLS drops blocked and deleted ones.
   useEffect(() => {
     if (demo || !supabase || !meId) return;
     supabase
       .from('stories')
-      .select('id, author_id, media_path, caption, created_at, author:profiles!stories_author_id_fkey(username, avatar_url, identity_status)')
+      .select('id, author_id, media_path, caption, created_at, author:profiles!stories_author_id_fkey(username, avatar_url, identity_verified)')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
       .limit(100)
       .then(({ data }) => {
         const db = supabase!;
         setStories(
-          ((data ?? []) as unknown as { id: string; author_id: string; media_path: string; caption: string | null; created_at: string; author: { username: string; avatar_url: string | null; identity_status: string } | null }[])
+          ((data ?? []) as unknown as { id: string; author_id: string; media_path: string; caption: string | null; created_at: string; author: { username: string; avatar_url: string | null; identity_verified: boolean | null } | null }[])
             .filter((s) => !/^[a-z]+:/i.test(s.media_path))
             .map((s) => ({
             id: s.id,
-            author: { id: s.author_id, username: s.author?.username ?? 'membre', avatar: s.author?.avatar_url ?? null, verified: s.author?.identity_status === 'verified' },
+            author: { id: s.author_id, username: s.author?.username ?? 'membre', avatar: s.author?.avatar_url ?? null, verified: s.author?.identity_verified === true },
             media: db.storage.from('post-media').getPublicUrl(s.media_path).data.publicUrl,
             caption: s.caption,
             createdAt: s.created_at,
@@ -251,6 +252,13 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     return false;
   }, [demo, pro, tryOnCredits]);
 
+  // Blocked members, and members whose stories I muted, stay out of the tray.
+  const { isBlocked, mutedStoryIds } = social;
+  const hidden = useCallback(
+    (id: string) => isBlocked(id) || mutedStoryIds.includes(id),
+    [isBlocked, mutedStoryIds],
+  );
+
   const storyAuthors = useMemo(() => {
     const seen = new Set<string>();
     const list: Person[] = [];
@@ -260,18 +268,18 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       list.push(mine[0].author);
     }
     for (const s of stories) {
-      if (seen.has(s.author.id) || social.isBlocked(s.author.id)) continue;
+      if (seen.has(s.author.id) || hidden(s.author.id)) continue;
       seen.add(s.author.id);
       list.push(s.author);
     }
     return list;
-  }, [stories, meId, social]);
+  }, [stories, meId, hidden]);
 
   const value: CommunityValue = {
     isReposted: (id) => reposted.includes(id),
     toggleRepost,
     repostedBy,
-    stories: stories.filter((s) => !social.isBlocked(s.author.id)),
+    stories: stories.filter((s) => !isBlocked(s.author.id)),
     storyAuthors,
     seenStories,
     markSeen: (id) => setSeen((s) => (s.includes(id) ? s : [...s, id])),
@@ -310,24 +318,25 @@ export function useFollowList(memberId: string | null, kind: 'followers' | 'foll
           : kind === 'following'
             ? others.slice(2, 8).map((m) => m.id)
             : [...(social.followingIds.includes(memberId) ? [DEMO_ME.id] : []), ...others.slice(0, 7).map((m) => m.id)];
-      setPeople(ids.filter((id) => !social.isBlocked(id)).map(person));
+      // The demo lists can name the same member twice (DEMO_ME is also a member).
+      setPeople([...new Set(ids)].filter((id) => !social.isBlocked(id)).map(person));
       return;
     }
     let cancelled = false;
     const [col, other] = kind === 'followers' ? ['followee_id', 'follower_id'] : ['follower_id', 'followee_id'];
     supabase
       .from('follows')
-      .select(`${other}, profile:profiles!follows_${other}_fkey(id, username, avatar_url, identity_status)`)
+      .select(`${other}, profile:profiles!follows_${other}_fkey(id, username, avatar_url, identity_verified)`)
       .eq(col, memberId)
       .order('created_at', { ascending: false })
       .limit(300)
       .then(({ data }) => {
         if (cancelled) return;
         setPeople(
-          ((data ?? []) as unknown as { profile: { id: string; username: string; avatar_url: string | null; identity_status: string } | null }[])
+          ((data ?? []) as unknown as { profile: { id: string; username: string; avatar_url: string | null; identity_verified: boolean | null } | null }[])
             .map((r) => r.profile)
             .filter((p): p is NonNullable<typeof p> => !!p && !social.isBlocked(p.id))
-            .map((p) => ({ id: p.id, username: p.username, avatar: p.avatar_url, verified: p.identity_status === 'verified' })),
+            .map((p) => ({ id: p.id, username: p.username, avatar: p.avatar_url, verified: p.identity_verified === true })),
         );
       });
     return () => {
@@ -423,12 +432,62 @@ function demoHighlightsFor(memberId: string): Highlight[] {
   return demoHighlights.get(memberId) as Highlight[];
 }
 
-/** Storage path of a post-media public URL; null for anything else. */
-function postMediaPath(url: string): string | null {
-  const marker = '/storage/v1/object/public/post-media/';
-  const i = url.indexOf(marker);
-  if (i >= 0) return decodeURIComponent(url.slice(i + marker.length).split('?')[0]);
-  return /^[a-z]+:/i.test(url) ? null : url;
+/** One of my stories, live or past, that a highlight can hold. */
+export interface MyStory {
+  id: string;
+  media: string;
+  createdAt: string;
+}
+
+/** Demo: a few past stories of mine, so a highlight can be made without posting. */
+const demoPastStories: MyStory[] = DEMO_POSTS.slice(0, 4).map((p, i) => ({
+  id: `story-past-${i}`,
+  media: p.photos[0],
+  createdAt: ago(60 * 24 * (3 + i * 4)),
+}));
+
+/**
+ * My stories that can go in a highlight: live and past, newest first (public,
+ * not deleted; RLS keeps my own past ones readable). Loads while `enabled`;
+ * `stories` is null while loading, `failed` is true when the load failed.
+ */
+export function useMyStories(enabled: boolean) {
+  const social = useSocial();
+  const community = useCommunity();
+  const demo = social.demo || !supabase;
+  const [live, setLive] = useState<MyStory[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const meId = social.meId;
+
+  useEffect(() => {
+    if (!enabled || demo || !meId) return;
+    let cancelled = false;
+    const db = supabase!;
+    setLive(null);
+    setFailed(false);
+    db.from('stories')
+      .select('id, media_path, created_at')
+      .eq('author_id', meId)
+      .eq('distribution', 'public')
+      .order('created_at', { ascending: false })
+      .limit(60)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) return setFailed(true);
+        setLive(
+          ((data ?? []) as { id: string; media_path: string; created_at: string }[])
+            .filter((s) => !/^[a-z]+:/i.test(s.media_path))
+            .map((s) => ({ id: s.id, media: db.storage.from('post-media').getPublicUrl(s.media_path).data.publicUrl, createdAt: s.created_at })),
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, demo, meId]);
+
+  if (!demo) return { stories: live, failed };
+  const mine = community.stories.filter((s) => s.author.id === meId).map((s) => ({ id: s.id, media: s.media, createdAt: s.createdAt }));
+  return { stories: [...mine, ...demoPastStories], failed: false };
 }
 
 /** A member's highlights (migration 022), and for me, create and delete. */
@@ -472,18 +531,18 @@ export function useHighlights(memberId: string | null) {
     };
   }, [demo, memberId, tick]);
 
+  /** Up to 20 of my stories, in the order picked. The server derives the media (032). */
   const create = useCallback(
-    async (title: string, media: string[]) => {
+    async (title: string, stories: MyStory[]) => {
       const name = title.trim().slice(0, 24);
-      if (!memberId || memberId !== social.meId || !name || !media.length) return;
+      const picked = stories.slice(0, 20);
+      if (!memberId || memberId !== social.meId || !name || !picked.length) return;
       if (demo) {
-        demoHighlightsFor(memberId).push({ id: `hl-${Date.now().toString(36)}`, ownerId: memberId, title: name, media: media.slice(0, 20), createdAt: new Date().toISOString() });
+        demoHighlightsFor(memberId).push({ id: `hl-${Date.now().toString(36)}`, ownerId: memberId, title: name, media: picked.map((s) => s.media), createdAt: new Date().toISOString() });
         highlightListeners.forEach((l) => l());
         return;
       }
-      const paths = media.map(postMediaPath).filter((p): p is string => !!p).slice(0, 20);
-      if (!paths.length) throw new Error('no_media');
-      const { error } = await supabase!.from('story_highlights').insert({ title: name, media_paths: paths });
+      const { error } = await supabase!.from('story_highlights').insert({ title: name, story_ids: picked.map((s) => s.id) });
       if (error) throw new Error(error.message);
       setTick((n) => n + 1);
     },

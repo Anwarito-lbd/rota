@@ -383,13 +383,17 @@ function SignupSteps() {
   const { state, set } = useStore();
   const { c } = useTheme();
   const { signUp } = useAuth();
+  const { t } = useT();
   const [busy, setBusy] = useState(false);
+  // 18+ declaration (029): ticked once on the first step; sign-up sends it.
+  const [adult, setAdult] = useState(false);
   const step = state.signupStep;
   const copy = SIGNUP_STEPS[step];
 
   const next = async () => {
     if (busy) return;
     if (step === 0) {
+      if (!adult) return set({ authErr: t('ob.adultNeeded') });
       const nameErr = usernameError(state.username);
       if (nameErr) return set({ authErr: nameErr });
       return set({ signupStep: 1, authErr: null });
@@ -417,7 +421,7 @@ function SignupSteps() {
       : set({ signupStep: (step - 1) as 0 | 1, authErr: null });
 
   const ready =
-    step === 0 ? state.username.length >= 3 : step === 1 ? state.email.includes('@') : passwordValid(state.pw);
+    step === 0 ? state.username.length >= 3 && adult : step === 1 ? state.email.includes('@') : passwordValid(state.pw);
 
   return (
     <View style={{ flex: 1 }}>
@@ -488,7 +492,33 @@ function SignupSteps() {
           )}
         </View>
 
-        {state.authErr ? <ErrorBanner>{state.authErr}</ErrorBanner> : null}
+        {step === 0 ? (
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityLabel={t('ob.adult')}
+            accessibilityState={{ checked: adult }}
+            onPress={() => {
+              setAdult(!adult);
+              if (state.authErr) set({ authErr: null });
+            }}
+            style={{ marginTop: 16, flexDirection: 'row', gap: 12, alignItems: 'center', minHeight: 44 }}
+          >
+            <Check on={adult} />
+            <Txt size={15} style={{ flex: 1 }}>
+              {t('ob.adult')}
+            </Txt>
+          </Pressable>
+        ) : null}
+        {/* The error slot; on the first step it also says why Continuer is off until the box is ticked. */}
+        {state.authErr ? (
+          <ErrorBanner>{state.authErr}</ErrorBanner>
+        ) : step === 0 && !adult ? (
+          <View accessibilityLiveRegion="polite" style={{ marginTop: 4 }}>
+            <Txt size={13} color={c.ink3}>
+              {t('ob.adultNeeded')}
+            </Txt>
+          </View>
+        ) : null}
 
         {step === 0 ? (
           <Pressable

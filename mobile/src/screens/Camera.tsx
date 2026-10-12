@@ -1,15 +1,18 @@
 /**
  * The "+" opens this: a full-screen camera, TikTok-style. Pick a mode at the
- * bottom (Fit to post a look, Louer to list a piece), shoot or pick from the
- * gallery, and land in the matching composer with the photo already in place.
+ * bottom (Fit to post a look, Story for 24 hours), then shoot or pick from the
+ * gallery. A fit lands in the composer with the photos in place; a story is
+ * published straight away and the camera closes back to where it was opened.
+ * Listing a piece starts from the Dressing, not from here.
  */
 import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { useRef, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCommunity } from '../data/community';
 import { useT } from '../i18n';
+import { friendlyError } from '../lib/errors';
 import { useStore } from '../state/store';
 import type { MediaItem } from '../state/types';
 import { OVER_INK } from '../theme/tokens';
@@ -18,12 +21,12 @@ import { CameraIcon, CloseIcon, FlipIcon, ImagesIcon } from '../ui/icons';
 import { PrimaryButton, Txt } from '../ui/kit';
 import { PressScale, tap } from '../ui/motion';
 
-type Mode = 'fit' | 'story' | 'list';
+type Mode = 'fit' | 'story';
 
 const GLASS = 'rgba(12,10,13,0.45)';
 
 export function Camera() {
-  const { set, go, setMedia } = useStore();
+  const { set, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const insets = useSafeAreaInsets();
@@ -31,21 +34,37 @@ export function Camera() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [mode, setMode] = useState<Mode>('fit');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const cam = useRef<CameraView>(null);
   const community = useCommunity();
+  // The upload can outlast the screen (✕ or Android's back while it runs):
+  // then only the toast speaks, and nothing navigates a second time.
+  const open = useRef(true);
+  useEffect(
+    () => () => {
+      open.current = false;
+    },
+    [],
+  );
 
-  const hand = (items: MediaItem[]) => {
+  const hand = async (items: MediaItem[]) => {
     if (!items.length) return;
     if (mode === 'fit') {
       set({ screen: 'compose', captured: items });
-    } else if (mode === 'story') {
-      community.postStory(items[0].uri).catch(() => undefined);
-      go('messages');
-    } else {
-      // The listing form reads its photo slots from the store.
-      setMedia('new-listing-photo-1', items[0]);
-      if (items[1]) setMedia('new-listing-photo-2', items[1]);
-      go('list');
+      return;
+    }
+    // A story goes out now; on success the camera closes to where the "+" was pressed.
+    setBusy(true);
+    setError(null);
+    try {
+      await community.postStory(items[0].uri);
+      if (open.current) back('feed');
+      set({ notice: { text: t('camera.storyPosted') } });
+    } catch (e) {
+      if (open.current) setError(friendlyError(e, t));
+      else set({ notice: { text: friendlyError(e, t), error: true } });
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -55,21 +74,26 @@ export function Camera() {
     tap('medium');
     try {
       const photo = await cam.current.takePictureAsync({ quality: 0.85 });
-      if (photo) hand([{ uri: photo.uri, kind: 'image', name: 'photo.jpg', source: 'camera', width: photo.width, height: photo.height }]);
+      if (photo) await hand([{ uri: photo.uri, kind: 'image', name: 'photo.jpg', source: 'camera', width: photo.width, height: photo.height }]);
     } finally {
       setBusy(false);
     }
   };
 
   const gallery = async () => {
+    if (busy) return;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.85,
-      allowsMultipleSelection: true,
-      selectionLimit: mode === 'fit' ? 10 : mode === 'story' ? 1 : 2,
-    }).catch(() => null);
+      allowsMultipleSelection: mode === 'fit',
+      selectionLimit: mode === 'fit' ? 10 : 1,
+    }).catch(() => {
+      // The browser picker rejects files that are not photos.
+      setError(t('error.fileType'));
+      return null;
+    });
     if (!result || result.canceled) return;
-    hand(
+    await hand(
       result.assets.map((a) => ({
         uri: a.uri,
         kind: 'image' as const,
@@ -82,7 +106,7 @@ export function Camera() {
     );
   };
 
-  const close = () => go('feed');
+  const close = () => back('feed');
   const granted = permission?.granted && Platform.OS !== 'web';
 
   return (
@@ -129,6 +153,13 @@ export function Camera() {
 
       {/* Bottom: gallery, shutter, modes */}
       <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: insets.bottom + 16, alignItems: 'center' }}>
+        {error ? (
+          <View accessibilityLiveRegion="polite" style={{ marginHorizontal: 24, marginBottom: 14, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, backgroundColor: GLASS }}>
+            <Txt size={14} color={OVER_INK} center>
+              {error}
+            </Txt>
+          </View>
+        ) : null}
         <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 36 }}>
           <PressScale
             onPress={gallery}
@@ -143,16 +174,29 @@ export function Camera() {
             scaleTo={0.9}
             style={{ width: 84, height: 84, borderRadius: 99, borderWidth: 5, borderColor: 'rgba(247,242,248,0.9)', alignItems: 'center', justifyContent: 'center' }}
           >
-            <View style={{ width: 66, height: 66, borderRadius: 99, backgroundColor: mode === 'fit' ? c.accent : OVER_INK, opacity: busy ? 0.5 : 1 }} />
+            <View style={{ width: 66, height: 66, borderRadius: 99, backgroundColor: mode === 'fit' ? c.accent : OVER_INK, opacity: busy ? 0.5 : 1, alignItems: 'center', justifyContent: 'center' }}>
+              {busy && mode === 'story' ? <ActivityIndicator color={c.accent} accessibilityLabel={t('camera.storyPosting')} /> : null}
+            </View>
           </PressScale>
           <View style={{ width: 48 }} />
         </View>
 
         <View style={{ flexDirection: 'row', gap: 22, marginTop: 18 }}>
-          {(['fit', 'story', 'list'] as Mode[]).map((k) => (
-            <PressScale key={k} haptic="light" onPress={() => setMode(k)} accessibilityRole="tab" accessibilityState={{ selected: mode === k }}>
+          {(['fit', 'story'] as Mode[]).map((k) => (
+            <PressScale
+              key={k}
+              haptic="light"
+              onPress={() => {
+                setMode(k);
+                setError(null);
+              }}
+              accessibilityRole="tab"
+              accessibilityLabel={t(k === 'fit' ? 'camera.fit' : 'camera.story')}
+              accessibilityState={{ selected: mode === k }}
+              style={{ minWidth: 44, minHeight: 44, justifyContent: 'center' }}
+            >
               <Txt size={15} weight={mode === k ? 'bold' : 'semi'} color={mode === k ? OVER_INK : 'rgba(247,242,248,0.55)'}>
-                {t(k === 'fit' ? 'camera.fit' : k === 'story' ? 'camera.story' : 'camera.list')}
+                {t(k === 'fit' ? 'camera.fit' : 'camera.story')}
               </Txt>
               <View style={{ height: 3, borderRadius: 99, marginTop: 5, alignSelf: 'center', width: 18, backgroundColor: mode === k ? OVER_INK : 'transparent' }} />
             </PressScale>

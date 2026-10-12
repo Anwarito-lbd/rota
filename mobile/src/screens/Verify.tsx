@@ -39,7 +39,7 @@ function Spinner() {
 }
 
 export function Verify() {
-  const { state, set, go } = useStore();
+  const { state, back, finish } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const social = useSocial();
@@ -61,7 +61,13 @@ export function Verify() {
     }
   };
 
-  const next = () => go(state.afterVerify ?? 'feed');
+  // Return to the screen that asked: pop it when we came from there;
+  // otherwise open it without keeping this screen in history.
+  const next = () => {
+    const to = state.afterVerify ?? 'feed';
+    if (state.history[state.history.length - 1]?.screen === to) back(to);
+    else finish({ screen: to }, []);
+  };
   const pending = busy || status === 'pending';
 
   return (

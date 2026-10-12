@@ -5,12 +5,13 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
 import { useColorScheme } from 'react-native';
 import { defaultDates } from '../lib/dates';
-import type { AppConfig, AppState, Lang, MediaItem, Screen, Theme, ThemeMode } from './types';
+import { NAV_KEYS, type AppConfig, type AppState, type Lang, type MediaItem, type NavEntry, type Screen, type Theme, type ThemeMode } from './types';
 
 const initialState: AppState = {
   screen: 'onboard',
@@ -107,7 +108,8 @@ const initialState: AppState = {
   challenge: null,
   commentsFor: null,
   saveTarget: null,
-  createSheet: false,
+  notice: null,
+  listDraft: null,
   captured: null,
   followList: null,
   storyAuthorId: null,
@@ -116,6 +118,8 @@ const initialState: AppState = {
   socialReport: null,
   tryOnListingId: null,
   afterVerify: null,
+
+  history: [],
 };
 
 const defaultConfig: AppConfig = {
@@ -128,6 +132,104 @@ const defaultConfig: AppConfig = {
 
 type Patch = Partial<AppState> | ((s: AppState) => Partial<AppState>);
 
+// ── Back history ──
+// Every state change goes through `navigate`, so `go` and `set` both record
+// where you came from. The rules, in order:
+//  1. A patch that sets `history` itself is taken as is (back, resets).
+//  2. Entering or leaving onboarding clears the history (sign-in, sign-out).
+//  3. A new screen, or the same screen showing another member, piece, post
+//     or conversation (profile → profile), pushes the previous screen and
+//     its context.
+//     Anything else (a sheet, a filter, a viewer moving to its next story)
+//     changes nothing.
+// `go` (or `finish`) to one of the four tab roots also clears it, like a
+// tab press.
+
+const HISTORY_CAP = 30;
+
+/** Screens that show one thing; opening another one counts as navigating. */
+const IDENTITY: Partial<Record<Screen, 'profileId' | 'activeId' | 'activePostId' | 'thread'>> = {
+  user: 'profileId',
+  profile: 'profileId',
+  detail: 'activeId',
+  post: 'activePostId',
+  messages: 'thread',
+};
+
+export const TAB_ROOTS: Screen[] = ['feed', 'discover', 'messages', 'closet'];
+
+/** Transient overlays every navigation closes. */
+const CLOSED: Partial<AppState> = {
+  filters: false,
+  confirmed: false,
+  thread: null,
+  offer: false,
+  report: false,
+  reportSent: false,
+  deleteStep: 0,
+  commentsFor: null,
+  saveTarget: null,
+  socialReport: null,
+};
+
+/**
+ * What belongs to the signed-in account and must not outlive it: drafts and
+ * picked photos, in-flight offers and threads, consents given at checkout,
+ * sign-in fields (the welcome screen shows them empty), and the demo's local flags.
+ * Language, appearance and onboarding progress belong to the device.
+ */
+const USER_SCOPED = [
+  'listDraft',
+  'media',
+  'captured',
+  'notice',
+  'agreedOffer',
+  'thread',
+  'activeRentalId',
+  'liked',
+  'wish',
+  'favs',
+  'pinSaves',
+  'blocked',
+  'certifies',
+  'ratingTags',
+  'business',
+  'username',
+  'email',
+  'pw',
+  'otpSent',
+  'otpInput',
+  'payConsent',
+  'rulesAccepted',
+  'saveTarget',
+  'commentsFor',
+  'socialReport',
+  'tryOnListingId',
+  'afterVerify',
+  'history',
+] as const satisfies readonly (keyof AppState)[];
+
+/** Frees a photo or video the web picker holds in memory (a `blob:` URL). */
+export function releaseMedia(item: MediaItem | null | undefined) {
+  if (item?.uri.startsWith('blob:') && typeof URL !== 'undefined' && URL.revokeObjectURL) URL.revokeObjectURL(item.uri);
+}
+
+function snapshot(s: AppState): NavEntry {
+  const entry = {} as Record<string, unknown>;
+  for (const key of NAV_KEYS) entry[key] = s[key];
+  return entry as NavEntry;
+}
+
+function navigate(s: AppState, patch: Partial<AppState>): AppState {
+  const next = { ...s, ...patch };
+  if ('history' in patch) return next;
+  if (next.screen === 'onboard' || s.screen === 'onboard') return next.history.length ? { ...next, history: [] } : next;
+  const id = IDENTITY[next.screen];
+  const moved = next.screen !== s.screen || (id !== undefined && next[id] !== s[id]);
+  if (!moved) return next;
+  return { ...next, history: [...s.history, snapshot(s)].slice(-HISTORY_CAP) };
+}
+
 type FlagBag = 'liked' | 'wish' | 'favs' | 'pinSaves' | 'ratingTags' | 'blocked' | 'certifies';
 
 interface Store {
@@ -137,12 +239,25 @@ interface Store {
   setConfig: (patch: Partial<AppConfig>) => void;
   /** Navigate to a screen, closing any transient overlay first. */
   go: (screen: Screen) => void;
+  /**
+   * Return to the previous screen with the context it had (same profile,
+   * piece, post…). With no history, open `fallback` instead.
+   */
+  back: (fallback: Screen | Partial<AppState>) => void;
+  /**
+   * End a flow: drop the trailing history entries on the `drop` screens
+   * (e.g. the booking steps after a payment), then apply `patch` without
+   * recording the current screen, so back never returns into the flow.
+   */
+  finish: (patch: Partial<AppState>, drop: Screen[]) => void;
   theme: Theme;
   dark: boolean;
   /** Format an amount in the configured currency. */
   m: (n: number) => string;
   toggleFlag: (bag: FlagBag, key: string) => void;
   setMedia: (id: string, item: MediaItem | null) => void;
+  /** Drops everything USER_SCOPED: called when the signed-in account changes. */
+  forgetUser: () => void;
 }
 
 const StoreContext = createContext<Store | null>(null);
@@ -180,7 +295,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [prefsLoaded, state.lang, state.themeMode]);
 
   const set = useCallback((patch: Patch) => {
-    setState((s) => ({ ...s, ...(typeof patch === 'function' ? patch(s) : patch) }));
+    setState((s) => navigate(s, typeof patch === 'function' ? patch(s) : patch));
   }, []);
 
   const setConfig = useCallback((patch: Partial<AppConfig>) => {
@@ -188,21 +303,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const go = useCallback((screen: Screen) => {
-    setState((s) => ({
-      ...s,
-      screen,
-      filters: false,
-      confirmed: false,
-      thread: null,
-      offer: false,
-      report: false,
-      reportSent: false,
-      deleteStep: 0,
-      commentsFor: null,
-      saveTarget: null,
-      createSheet: false,
-      socialReport: null,
-    }));
+    setState((s) => navigate(s, { ...CLOSED, screen, ...(TAB_ROOTS.includes(screen) ? { history: [] } : {}) }));
+  }, []);
+
+  // The history as last rendered: a second tap before the next render (a
+  // double tap on a back button) must not pop a second screen.
+  const rendered = useRef(state.history);
+  rendered.current = state.history;
+
+  const back = useCallback((fallback: Screen | Partial<AppState>) => {
+    const seen = rendered.current;
+    setState((s) => {
+      if (s.history !== seen) return s;
+      const prev = s.history[s.history.length - 1];
+      if (!prev) return { ...s, ...CLOSED, ...(typeof fallback === 'string' ? { screen: fallback } : fallback), history: [] };
+      return { ...s, ...CLOSED, ...prev, history: s.history.slice(0, -1) };
+    });
+  }, []);
+
+  const finish = useCallback((patch: Partial<AppState>, drop: Screen[]) => {
+    setState((s) => {
+      const history = [...s.history];
+      while (history.length && drop.includes(history[history.length - 1].screen)) history.pop();
+      const screen = patch.screen ?? s.screen;
+      return { ...s, ...CLOSED, ...patch, history: TAB_ROOTS.includes(screen) ? [] : history };
+    });
   }, []);
 
   const toggleFlag = useCallback<Store['toggleFlag']>((bag, key) => {
@@ -215,6 +340,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (item) media[id] = item;
       else delete media[id];
       return { ...s, media };
+    });
+  }, []);
+
+  const forgetUser = useCallback(() => {
+    setState((s) => {
+      Object.values(s.media).forEach(releaseMedia);
+      const fresh = {} as Record<string, unknown>;
+      for (const key of USER_SCOPED) fresh[key] = initialState[key];
+      return { ...s, ...(fresh as Partial<AppState>) };
     });
   }, []);
 
@@ -238,13 +372,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       set,
       setConfig,
       go,
+      back,
+      finish,
       theme,
       dark: theme === 'dark',
       m,
       toggleFlag,
       setMedia,
+      forgetUser,
     }),
-    [state, config, set, setConfig, go, theme, m, toggleFlag, setMedia],
+    [state, config, set, setConfig, go, back, finish, theme, m, toggleFlag, setMedia, forgetUser],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

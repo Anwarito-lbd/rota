@@ -1,6 +1,6 @@
 /**
  * Sheets shared by the feed, Explorer, the post screen and profiles:
- * comments, save to a board, the "+" chooser, and report / block.
+ * comments, save to a board, and report / block.
  */
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
@@ -11,7 +11,7 @@ import { useT, type TranslationKey } from '../i18n';
 import { useStore } from '../state/store';
 import { FONT, ff } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
-import { BookmarkIcon, CameraIcon, CloseIcon, HeartIcon, PlusIcon, SendIcon, StarIcon, TabAddIcon } from './icons';
+import { BookmarkIcon, CloseIcon, HeartIcon, PlusIcon, SendIcon, StarIcon } from './icons';
 import { Check, Display, Field, GhostButton, PrimaryButton, Row, Sheet, Txt } from './kit';
 import { Avatar, FadeIn, PressScale, compact, tap, timeAgo } from './motion';
 import { BlockRow } from './Moderation';
@@ -375,45 +375,6 @@ export function SaveSheet() {
           </Txt>
         </PressScale>
       )}
-    </Sheet>
-  );
-}
-
-// ─── The "+" chooser ──────────────────────────────────────────
-
-export function CreateSheet() {
-  const { state, set } = useStore();
-  const { c } = useTheme();
-  const { t } = useT();
-  const option = (icon: React.ReactNode, title: string, body: string, onPress: () => void, delay: number) => (
-    <FadeIn delay={delay}>
-      <PressScale
-        onPress={onPress}
-        haptic="light"
-        scaleTo={0.97}
-        style={{ flexDirection: 'row', gap: 14, alignItems: 'center', padding: 16, borderRadius: 20, backgroundColor: c.surf2 }}
-      >
-        <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center' }}>
-          {icon}
-        </View>
-        <View style={{ flex: 1 }}>
-          <Txt size={16} weight="bold">
-            {title}
-          </Txt>
-          <Txt size={13} color={c.ink2}>
-            {body}
-          </Txt>
-        </View>
-      </PressScale>
-    </FadeIn>
-  );
-  return (
-    <Sheet visible={state.createSheet} onClose={() => set({ createSheet: false })}>
-      <Display size={28}>{t('create.title')}</Display>
-      <View style={{ marginTop: 16, gap: 10 }}>
-        {option(<CameraIcon color={c.onAccent} />, t('create.post'), t('create.postBody'), () => set({ createSheet: false, screen: 'compose' }), 0)}
-        {option(<TabAddIcon color={c.onAccent} />, t('create.list'), t('create.listBody'), () => set({ createSheet: false, screen: 'list' }), 70)}
-      </View>
     </Sheet>
   );
 }

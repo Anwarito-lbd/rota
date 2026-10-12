@@ -130,7 +130,7 @@ function useNotices() {
 }
 
 export function ModerationDecisions() {
-  const { go } = useStore();
+  const { back } = useStore();
   const { c } = useTheme();
   const { t, lang } = useT();
   const { notices, appeal } = useNotices();
@@ -156,7 +156,7 @@ export function ModerationDecisions() {
   };
 
   return (
-    <FlatPage title={t('decisions.title')} onBack={() => go('settings')}>
+    <FlatPage title={t('decisions.title')} onBack={() => back('settings')}>
       <FlatHelp>{t('decisions.intro')}</FlatHelp>
 
       {notices && notices.length === 0 ? (

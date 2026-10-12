@@ -6,9 +6,10 @@ import {
 import { StripeProvider } from '@stripe/stripe-react-native';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, type ReactElement } from 'react';
-import { ActivityIndicator, Platform, View } from 'react-native';
+import { useCallback, useEffect, useRef, type ReactElement } from 'react';
+import { ActivityIndicator, BackHandler, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { clearExportFiles } from './src/data/account';
 import { paymentsConfigured, stripePublishableKey, stripeUrlScheme } from './src/data/payments';
 import { AuthProvider, useAuth } from './src/lib/auth';
 import { PolicyProvider } from './src/lib/policy';
@@ -51,16 +52,17 @@ import {
   ThemeSettings,
   BusinessSettings,
 } from './src/screens/SettingsPages';
+import { HiddenWords, MutedAccounts, RecentlyDeleted, RestrictedAccounts } from './src/screens/PrivacyPages';
 import { ModerationDecisions } from './src/screens/Decisions';
-import { StoreProvider, useStore } from './src/state/store';
+import { StoreProvider, TAB_ROOTS, useStore } from './src/state/store';
 import type { Screen as ScreenKey } from './src/state/types';
 import { useTheme } from './src/theme/useTheme';
-import { GhostButton, Display, Screen, Txt } from './src/ui/kit';
+import { GhostButton, Display, Screen, Toast, Txt } from './src/ui/kit';
 import { MfaChallenge } from './src/ui/Mfa';
 import { UsernamePrompt } from './src/ui/UsernamePrompt';
 import { ReportSheet } from './src/ui/Moderation';
-import { CommentsSheet, CreateSheet, SaveSheet, SocialReportSheet } from './src/ui/SocialSheets';
-import { TAB_BAR_SPACE, TabBar } from './src/ui/TabBar';
+import { CommentsSheet, SaveSheet, SocialReportSheet } from './src/ui/SocialSheets';
+import { rootFor, TAB_BAR_SPACE, TabBar } from './src/ui/TabBar';
 
 /** Screens still being ported from the web build. */
 function ComingSoon() {
@@ -105,6 +107,10 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
   'set.privacy': PrivacySettings,
   'set.decisions': ModerationDecisions,
   'set.business': BusinessSettings,
+  'set.mutes': MutedAccounts,
+  'set.restricts': RestrictedAccounts,
+  'set.words': HiddenWords,
+  'set.bin': RecentlyDeleted,
   post: PostScreen,
   user: UserProfile,
   profile: UserProfile,
@@ -126,14 +132,25 @@ const SCREENS: Partial<Record<ScreenKey, () => ReactElement>> = {
 };
 
 /** Full-screen flows that hide the tab bar. */
-const NO_TABS: ScreenKey[] = ['onboard', 'map', 'compose', 'tryon', 'verify', 'camera', 'story', 'highlight', 'detail', 'booking', 'checkout'];
+const NO_TABS: ScreenKey[] = ['onboard', 'map', 'compose', 'list', 'tryon', 'verify', 'camera', 'story', 'highlight', 'detail', 'booking', 'checkout'];
 /** Screens whose photos run under the floating tab bar. */
 const FULL_BLEED: ScreenKey[] = ['feed', 'post'];
 
 function Shell() {
-  const { state, set } = useStore();
+  const { state, set, back, forgetUser } = useStore();
   const { c, dark } = useTheme();
   const { loading, session, needsMfa, profile } = useAuth();
+  const hideNotice = useCallback(() => set({ notice: null }), [set]);
+
+  // Another account, or none: forget the last one's drafts, photos and threads.
+  // The first value read at launch is the phone's own session, nothing to forget.
+  const userId = session?.user.id ?? null;
+  const lastUser = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (loading) return;
+    if (lastUser.current !== undefined && lastUser.current !== userId) forgetUser();
+    lastUser.current = userId;
+  }, [loading, userId, forgetUser]);
 
   // A stored session means the phone is already signed in: skip onboarding.
   useEffect(() => {
@@ -141,6 +158,11 @@ function Shell() {
       set({ signedIn: true, emailVerified: true, screen: 'feed' });
     }
   }, [session, state.screen, state.obStep, set]);
+
+  // An export file shared last time is deleted now, once nothing is reading it.
+  useEffect(() => {
+    if (Platform.OS !== 'web') clearExportFiles();
+  }, []);
 
   // Tapping a push opens what it is about: the conversation, or the post.
   useEffect(() => {
@@ -163,6 +185,30 @@ function Shell() {
       return;
     }
   }, [session, set]);
+
+  // Android back button: go back one screen (an open conversation is a
+  // history entry too). With no history, a deeper screen goes to its tab's
+  // root and another tab's root goes to the feed; only the feed or onboarding
+  // hands the press to the system (leaves the app). Ignored while a sign-in
+  // step covers the app.
+  const screen = state.screen;
+  const canGoBack = state.history.length > 0;
+  const threadOpen = !!state.thread;
+  // Username or 18+ still owed (011, 029): the prompt covers the app.
+  const owesSetup = !!profile && (!profile.usernameConfirmed || !profile.adultConfirmed);
+  const covered = loading || (!!session && needsMfa) || (!!session && owesSetup);
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (covered) return true;
+      if (screen === 'onboard' || (!canGoBack && screen === 'feed')) return false;
+      // An open thread (from a push on a cold start) closes first.
+      const tabRoot = TAB_ROOTS.includes(screen) && !(screen === 'messages' && threadOpen);
+      back(!canGoBack && tabRoot ? 'feed' : rootFor(screen));
+      return true;
+    });
+    return () => sub.remove();
+  }, [screen, canGoBack, threadOpen, covered, back]);
 
   // Signed out (from Settings, a closed account, an expired session): back to
   // the welcome screen. Only on the change from signed in to signed out.
@@ -194,8 +240,9 @@ function Shell() {
     );
   }
 
-  // Signed in with Apple / Google: pick a username first (migration 011).
-  if (session && profile && !profile.usernameConfirmed) {
+  // Signed in with Apple / Google: pick a username first (migration 011); any
+  // account without the 18+ declaration (029) confirms it here too.
+  if (session && owesSetup) {
     return (
       <View style={{ flex: 1, backgroundColor: c.bg }}>
         <StatusBar style={dark ? 'light' : 'dark'} />
@@ -218,8 +265,8 @@ function Shell() {
       <ReportSheet />
       <CommentsSheet />
       <SaveSheet />
-      <CreateSheet />
       <SocialReportSheet />
+      <Toast notice={state.notice} onHide={hideNotice} />
     </View>
   );
 }

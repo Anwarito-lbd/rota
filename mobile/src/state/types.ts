@@ -47,6 +47,10 @@ export type Screen =
   | 'set.privacy'
   | 'set.decisions'
   | 'set.business'
+  | 'set.mutes'
+  | 'set.restricts'
+  | 'set.words'
+  | 'set.bin'
   | 'post'
   | 'user'
   | 'map'
@@ -98,6 +102,25 @@ export interface MediaItem {
   durationMs?: number;
   fileSize?: number;
   exif?: { make?: string; model?: string; software?: string };
+}
+
+/** What the listing form holds besides its photos (see `listDraft`). */
+export interface ListDraft {
+  /** Who typed it: a draft is only restored for the same account. Null in demo mode. */
+  ownerId: string | null;
+  title: string;
+  description: string;
+  brand: string;
+  retail: string;
+  categoryId: string | null;
+  parcel: 's' | 'm' | 'l' | null;
+  fit: number;
+  occasion: string;
+  sizes: string[];
+  price: number;
+  lenderCleans: boolean;
+  cleaningFee: number;
+  rules: string[];
 }
 
 export interface AppState {
@@ -212,8 +235,13 @@ export interface AppState {
   commentsFor: string | null;
   /** Thing being saved to a board. */
   saveTarget: { kind: 'post' | 'listing'; id: string } | null;
-  /** The "+" tab's chooser: publish a fit or list a piece. */
-  createSheet: boolean;
+  /** A short message shown over the app for a moment: a confirmation, or an error. */
+  notice: { text: string; error?: boolean } | null;
+  /**
+   * The listing form as it was left (e.g. to verify an identity), restored on
+   * return. Photos live in `media`. Cleared on close and on publish.
+   */
+  listDraft: ListDraft | null;
   /** Photos taken on the camera screen, waiting for the post composer. */
   captured: MediaItem[] | null;
   /** Follower / following list being shown. */
@@ -230,7 +258,31 @@ export interface AppState {
   tryOnListingId: string | null;
   /** Where to send the member once their identity is verified. */
   afterVerify: Screen | null;
+
+  /** Screens to go back to, oldest first. See `store.tsx` for the rules. */
+  history: NavEntry[];
 }
+
+/** The keys a screen reads on arrival: what "back" restores. */
+export const NAV_KEYS = [
+  'screen',
+  'profileId',
+  'activeId',
+  'activePostId',
+  'activeRentalId',
+  'storyAuthorId',
+  'followList',
+  'highlight',
+  'board',
+  'thread',
+  'tryOnListingId',
+  'proFrom',
+  'afterVerify',
+  'challenge',
+] as const satisfies readonly (keyof AppState)[];
+
+/** A screen and the context it was showing, kept in the back history. */
+export type NavEntry = Pick<AppState, (typeof NAV_KEYS)[number]>;
 
 /** Canvas-level props that were editor-configurable on the design doc. */
 export interface AppConfig {

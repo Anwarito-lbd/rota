@@ -348,7 +348,7 @@ function ShippingCard({ rental, isOwner }: { rental: Rental; isOwner: boolean })
 }
 
 export function RentalDetail() {
-  const { state, set, go, m } = useStore();
+  const { state, set, go, m, back } = useStore();
   const { c } = useTheme();
   const { t, lang } = useT();
   const { session } = useAuth();
@@ -366,7 +366,7 @@ export function RentalDetail() {
   if (!rental) {
     return (
       <Screen>
-        <Header title={t('rentals.title')} onBack={() => go('rentals')} />
+        <Header title={t('rentals.title')} onBack={() => back('rentals')} />
         <Txt color={c.ink2} style={{ marginTop: 20 }}>
           {loading ? t('common.loading') : t('rental.gone')}
         </Txt>
@@ -405,7 +405,7 @@ export function RentalDetail() {
 
   return (
     <Screen bottomInset={120}>
-      <Header title={rental.listingTitle} onBack={() => go('rentals')} size={28} />
+      <Header title={rental.listingTitle} onBack={() => back('rentals')} size={28} />
       <Txt size={13} color={c.ink2} style={{ marginTop: 8 }}>
         {rangeLabel(rental.startDate, rental.endDate, lang)} · {rental.days} {t('common.days')} ·{' '}
         {isOwner ? t('rentals.lending') : t('rentals.renting')}

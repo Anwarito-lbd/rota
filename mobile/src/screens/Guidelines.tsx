@@ -44,14 +44,14 @@ function Bullets({ items }: { items: string[] }) {
 }
 
 export function Guidelines() {
-  const { go } = useStore();
+  const { back } = useStore();
   const { c } = useTheme();
   const { t, lang } = useT();
   const base = LEGAL_DOCS.community;
 
   return (
     <Screen bottomInset={40}>
-      <Header title={t('guide.title')} onBack={() => go('closet')} />
+      <Header title={t('guide.title')} onBack={() => back('closet')} />
       <FadeIn>
         <View style={{ marginTop: 14, flexDirection: 'row', gap: 12, padding: 16, borderRadius: 20, backgroundColor: c.accentSoft }}>
           <ShieldCheckIcon size={24} color={c.accent} />

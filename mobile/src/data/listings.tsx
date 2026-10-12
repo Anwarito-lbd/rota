@@ -72,7 +72,7 @@ interface OwnerRow {
   username: string;
   avatar_url: string | null;
   certified: boolean;
-  identity_status: string;
+  identity_verified: boolean | null;
   vacation?: boolean | null;
   pro_until?: string | null;
   account_type?: string | null;
@@ -119,7 +119,7 @@ interface ListingRow {
 }
 
 const SELECT =
-  '*, owner:profiles!listings_owner_id_fkey(username, avatar_url, certified, identity_status, vacation, pro_until, account_type, business_verified, business_name)';
+  '*, owner:profiles!listings_owner_id_fkey(username, avatar_url, certified, identity_verified, vacation, pro_until, account_type, business_verified, business_name)';
 
 /** Storage paths live in the row; the listing-media bucket is public. */
 function publicUrl(path: string | null | undefined): string | null {
@@ -163,7 +163,7 @@ function toListing(row: ListingRow): Listing {
       username: owner?.username ?? 'membre',
       avatar: owner?.avatar_url ?? null,
       certified: owner?.certified ?? false,
-      identityVerified: owner?.identity_status === 'verified',
+      identityVerified: owner?.identity_verified === true,
       vacation: !!owner?.vacation,
       ...badgesFrom(owner),
     },

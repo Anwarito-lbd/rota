@@ -8,7 +8,7 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCommunity, useHighlights, type Highlight } from '../data/community';
+import { useCommunity, useHighlights, useMyStories, type Highlight, type MyStory } from '../data/community';
 import { DEMO_ME } from '../data/demo';
 import { useListings, useMyListings, type Listing } from '../data/listings';
 import { useMember, useSocial } from '../data/social';
@@ -22,7 +22,9 @@ import { ChevronLeft, DotsIcon, GridIcon, ImagesIcon, MenuIcon, PinIcon, PlusIco
 import { CertifiedMark, Display, Field, PrimaryButton, Sheet, Txt } from './kit';
 import { AppealSheet } from './Moderation';
 import { ProCrown, ShopBadge, useMemberBadges } from './Badges';
-import { Avatar, FadeIn, IdBadge, PressScale, Skeleton, compact, tap } from './motion';
+import { Avatar, FadeIn, IdBadge, PressScale, Skeleton, compact, tap, timeAgo } from './motion';
+import { friendlyError } from '../lib/errors';
+import { MemberMenu } from './MemberMenu';
 import { MessageButton } from './MessageButton';
 
 const GAP = 2;
@@ -45,12 +47,18 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
   const [tab, setTab] = useState<'fits' | 'pieces'>('fits');
   const [appealFor, setAppealFor] = useState<Listing | null>(null);
   const [newHighlight, setNewHighlight] = useState(false);
+  const [menu, setMenu] = useState(false);
 
-  const blocked = !me && !!memberId && social.isBlocked(memberId);
+  // I blocked them: say so and offer to unblock. They blocked me, or the account
+  // is closed: the card only carries the name (029), so show it as unavailable.
+  const iBlocked = !me && !!memberId && social.isBlocked(memberId);
+  const unavailable = !me && !iBlocked && !!member && (member.blocked || member.deleted);
+  const blocked = iBlocked || unavailable;
   const following = !!memberId && social.isFollowing(memberId);
-  const posts = social.posts.filter((p) => p.authorId === memberId);
+  const posts = memberId ? social.postsOf(memberId) : [];
   const pieces = me ? myListings : publicListings.filter((l) => l.ownerId === memberId);
-  const hasStory = !!memberId && community.storyAuthors.some((a) => a.id === memberId);
+  // Muting stories only hides them from the tray: the ring still shows here.
+  const hasStory = !!memberId && community.stories.some((s) => s.author.id === memberId);
   const username = (me ? profile?.username : null) ?? member?.username ?? (me && social.demo ? DEMO_ME.username : '');
   const avatar = (me ? profile?.avatarUrl : null) ?? member?.avatar ?? (me && social.demo ? DEMO_ME.avatar : undefined) ?? undefined;
   const bio = (me ? profile?.bio : null) ?? member?.bio ?? null;
@@ -151,7 +159,8 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
         ) : memberId ? (
           <PressScale
             accessibilityLabel={t('post.more')}
-            onPress={() => set({ socialReport: { kind: 'member', id: memberId, memberId } })}
+            onPress={() => setMenu(true)}
+            hitSlop={4}
             style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
           >
             <DotsIcon color={c.ink} />
@@ -235,11 +244,15 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
 
           {/* Actions — never an e-mail button */}
           {me ? (
-            <View style={{ flexDirection: 'row', gap: 6, marginTop: 14 }}>
-              {button(t('closet.editProfile'), () => go('set.profile'))}
-              {button(t('profile.share'), shareProfile)}
+            <View style={{ marginTop: 14, gap: 8 }}>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                {button(t('closet.editProfile'), () => go('set.profile'))}
+                {button(t('profile.share'), shareProfile)}
+              </View>
+              {/* Renting comes first: listing a piece starts here, not from the "+". */}
+              <PrimaryButton label={t('create.list')} onPress={() => set({ screen: 'list' })} style={{ minHeight: 48 }} />
             </View>
-          ) : blocked ? (
+          ) : unavailable ? null : iBlocked ? (
             <View style={{ marginTop: 14, gap: 8 }}>
               <Txt size={14} color={c.ink2}>
                 {t('profile.blocked')}
@@ -312,6 +325,12 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
         </ScrollView>
       ) : null}
 
+      {unavailable ? (
+        <Txt size={15} color={c.ink2} center style={{ marginTop: 40, paddingHorizontal: 24 }}>
+          {t('profile.unavailable')}
+        </Txt>
+      ) : null}
+
       {/* Grid tabs */}
       {!blocked ? (
         <>
@@ -342,6 +361,7 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
           </View>
 
           {tab === 'pieces' && me && myLoading ? <ActivityIndicator color={c.accent} style={{ marginTop: 20 }} /> : null}
+
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP, marginTop: GAP }}>
             {tab === 'fits'
@@ -397,18 +417,23 @@ export function ProfileView({ memberId, onMenu, onBack }: { memberId: string | n
               <Txt center color={c.ink3}>
                 {me ? (tab === 'fits' ? t('profile.empty') : t('closet.noPieces')) : t('profile.emptyOther')}
               </Txt>
-              {me ? (
-                <PrimaryButton
-                  label={tab === 'fits' ? t('create.post') : t('create.list')}
-                  onPress={() => set({ screen: 'camera' })}
-                  style={{ alignSelf: 'center', paddingHorizontal: 24 }}
-                />
+              {/* Pieces: the « Mettre une pièce en location » button above is the one call to action. */}
+              {me && tab === 'fits' ? (
+                <PrimaryButton label={t('create.post')} onPress={() => set({ screen: 'camera' })} style={{ alignSelf: 'center', paddingHorizontal: 24 }} />
               ) : null}
             </View>
           ) : null}
         </>
       ) : null}
 
+      {!me && memberId ? (
+        <MemberMenu
+          member={{ id: memberId, username, avatar: avatar ?? null }}
+          visible={menu}
+          onClose={() => setMenu(false)}
+          onReport={() => set({ socialReport: { kind: 'member', id: memberId, memberId } })}
+        />
+      ) : null}
       {me ? <AppealSheet listing={appealFor} onClose={() => setAppealFor(null)} /> : null}
       {me ? <NewHighlightSheet visible={newHighlight} onClose={() => setNewHighlight(false)} create={create} /> : null}
     </ScrollView>
@@ -425,7 +450,7 @@ function Badge({ label, color, ink, top }: { label: string; color: string; ink: 
   );
 }
 
-/** Pick photos from your own posts and name the highlight. */
+/** Pick some of your stories, live or past, and name the highlight. */
 function NewHighlightSheet({
   visible,
   onClose,
@@ -433,21 +458,20 @@ function NewHighlightSheet({
 }: {
   visible: boolean;
   onClose: () => void;
-  create: (title: string, media: string[]) => Promise<void>;
+  create: (title: string, stories: MyStory[]) => Promise<void>;
 }) {
   const { c } = useTheme();
-  const { t } = useT();
-  const social = useSocial();
+  const { t, lang } = useT();
   const { width } = useWindowDimensions();
   const [title, setTitle] = useState('');
-  const [picked, setPicked] = useState<string[]>([]);
+  const [picked, setPicked] = useState<MyStory[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const photos = [...new Set(social.posts.filter((p) => p.authorId === social.meId).flatMap((p) => p.media))];
+  const { stories, failed } = useMyStories(visible);
   const size = (Math.min(width, 720) - 40 - 12) / 4;
 
-  const toggle = (uri: string) =>
-    setPicked((cur) => (cur.includes(uri) ? cur.filter((x) => x !== uri) : cur.length >= 20 ? cur : [...cur, uri]));
+  const toggle = (story: MyStory) =>
+    setPicked((cur) => (cur.some((x) => x.id === story.id) ? cur.filter((x) => x.id !== story.id) : cur.length >= 20 ? cur : [...cur, story]));
 
   const save = async () => {
     if (!title.trim() || !picked.length || busy) return;
@@ -458,8 +482,8 @@ function NewHighlightSheet({
       setTitle('');
       setPicked([]);
       onClose();
-    } catch {
-      setError(t('highlights.failed'));
+    } catch (e) {
+      setError(e instanceof Error && /story_not_yours/.test(e.message) ? friendlyError(e, t) : t('highlights.failed'));
     } finally {
       setBusy(false);
     }
@@ -474,13 +498,26 @@ function NewHighlightSheet({
       <View style={{ marginTop: 14 }}>
         <Field label={t('highlights.name')} value={title} onChangeText={(v) => setTitle(v.slice(0, 24))} placeholder={t('highlights.namePlaceholder')} autoCapitalize="sentences" />
       </View>
-      {photos.length ? (
+      {failed ? (
+        // The stories didn't load: say so rather than « publish a story first ».
+        <Txt color={c.plum} style={{ marginTop: 14 }}>
+          {t('error.generic')}
+        </Txt>
+      ) : stories === null ? (
+        <ActivityIndicator color={c.accent} accessibilityLabel={t('common.loading')} style={{ marginTop: 18 }} />
+      ) : stories.length ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 14 }}>
-          {photos.map((uri) => {
-            const n = picked.indexOf(uri);
+          {stories.map((story) => {
+            const n = picked.findIndex((x) => x.id === story.id);
             return (
-              <Pressable key={uri} onPress={() => toggle(uri)} accessibilityRole="checkbox" accessibilityState={{ checked: n >= 0 }}>
-                <Image source={{ uri }} style={{ width: size, height: size * 1.25, borderRadius: 8, opacity: n >= 0 ? 1 : 0.75 }} contentFit="cover" />
+              <Pressable
+                key={story.id}
+                onPress={() => toggle(story)}
+                accessibilityRole="checkbox"
+                accessibilityLabel={timeAgo(story.createdAt, lang)}
+                accessibilityState={{ checked: n >= 0 }}
+              >
+                <Image source={{ uri: story.media }} style={{ width: size, height: size * 1.25, borderRadius: 8, opacity: n >= 0 ? 1 : 0.75 }} contentFit="cover" />
                 <View
                   style={{
                     position: 'absolute',

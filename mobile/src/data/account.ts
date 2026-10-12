@@ -29,7 +29,18 @@ export async function usernameFree(username: string) {
 
 export async function saveProfile(
   userId: string,
-  patch: { username?: string; bio?: string | null; city?: string | null; showCity?: boolean; avatarUrl?: string; vacation?: boolean },
+  patch: {
+    username?: string;
+    bio?: string | null;
+    city?: string | null;
+    showCity?: boolean;
+    avatarUrl?: string;
+    vacation?: boolean;
+    hideLikeCounts?: boolean;
+    commentPolicy?: 'everyone' | 'followers' | 'nobody';
+    messagePolicy?: 'everyone' | 'following' | 'nobody';
+    hideDefaultWords?: boolean;
+  },
 ) {
   const row: Record<string, unknown> = {};
   if (patch.username !== undefined) row.username = patch.username;
@@ -38,6 +49,10 @@ export async function saveProfile(
   if (patch.showCity !== undefined) row.show_city = patch.showCity;
   if (patch.avatarUrl !== undefined) row.avatar_url = patch.avatarUrl;
   if (patch.vacation !== undefined) row.vacation = patch.vacation;
+  if (patch.hideLikeCounts !== undefined) row.hide_like_counts = patch.hideLikeCounts;
+  if (patch.commentPolicy !== undefined) row.comment_policy = patch.commentPolicy;
+  if (patch.messagePolicy !== undefined) row.message_policy = patch.messagePolicy;
+  if (patch.hideDefaultWords !== undefined) row.hide_default_words = patch.hideDefaultWords;
   const { error } = await db().from('profiles').update(row).eq('id', userId);
   if (error) throw new Error(error.code === '23505' ? 'username_taken' : error.message);
 }
@@ -150,6 +165,8 @@ export interface Preferences {
   pushMessages: boolean;
   /** Likes, new followers, reviews, replies and reposts (migration 025). */
   pushSocial: boolean;
+  /** Message text in push notifications (migration 031). */
+  pushPreviews: boolean;
 }
 
 const DEFAULT_PREFS: Preferences = {
@@ -160,6 +177,7 @@ const DEFAULT_PREFS: Preferences = {
   pushClaims: true,
   pushMessages: true,
   pushSocial: true,
+  pushPreviews: true,
 };
 
 const COLUMNS: Record<keyof Preferences, string> = {
@@ -170,6 +188,7 @@ const COLUMNS: Record<keyof Preferences, string> = {
   pushClaims: 'push_claims',
   pushMessages: 'push_messages',
   pushSocial: 'push_social',
+  pushPreviews: 'push_previews',
 };
 
 export function usePreferences(enabled: boolean) {
@@ -191,6 +210,7 @@ export function usePreferences(enabled: boolean) {
             pushClaims: data.push_claims,
             pushMessages: data.push_messages ?? true,
             pushSocial: data.push_social ?? true,
+            pushPreviews: data.push_previews ?? true,
           });
         }
         setLoading(false);
@@ -304,11 +324,32 @@ export async function disableTotp(factorId: string) {
 
 // ── Privacy ────────────────────────────────────────────────────
 
+const EXPORT_PREFIX = 'rota-mes-donnees-';
+
+/**
+ * Deletes every export file left in the cache. Not right after sharing: on Android the
+ * receiving app may still be reading it. Runs at app start and before each export.
+ */
+export function clearExportFiles() {
+  try {
+    for (const entry of Paths.cache.list()) {
+      if (entry instanceof File && entry.name.startsWith(EXPORT_PREFIX) && entry.name.endsWith('.json')) entry.delete();
+    }
+  } catch {
+    // No cache directory (web) or a file already gone: nothing to clean.
+  }
+}
+
 /** Writes the member's data to a JSON file and opens the share sheet. */
 export async function exportMyData() {
-  const { data, error } = await db().rpc('export_my_data');
-  if (error) throw new Error(error.message);
-  const file = new File(Paths.cache, `rota-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`);
+  clearExportFiles();
+  const { data, error } = await db().functions.invoke('account', { body: { action: 'export' } });
+  if (error) {
+    const body = await (error as { context?: Response }).context?.json?.().catch(() => null);
+    throw new Error(body?.error ?? error.message);
+  }
+  if (!data) throw new Error('failed');
+  const file = new File(Paths.cache, `${EXPORT_PREFIX}${new Date().toISOString().slice(0, 10)}.json`);
   if (file.exists) file.delete();
   file.create();
   file.write(JSON.stringify(data, null, 2));

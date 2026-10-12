@@ -251,7 +251,7 @@ function PhotoTryOn({ prompt, garment }: { prompt: string; garment: string }) {
 }
 
 export function TryOn() {
-  const { state, set, m } = useStore();
+  const { state, set, m, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const listing = useListing(state.tryOnListingId);
@@ -279,7 +279,7 @@ export function TryOn() {
 
   return (
     <Screen bottomInset={40}>
-      <Header title={t('tryon.title')} onBack={() => set({ screen: listing ? 'detail' : 'feed', activeId: listing?.id ?? state.activeId })} />
+      <Header title={t('tryon.title')} onBack={() => back({ screen: listing ? 'detail' : 'feed', activeId: listing?.id ?? state.activeId })} />
 
       {listing ? (
         <FadeIn>
@@ -297,7 +297,12 @@ export function TryOn() {
               </Txt>
             </View>
             <PressScale
-              onPress={() => set({ screen: 'detail', activeId: listing.id })}
+              onPress={() => {
+                // Came from this piece: go back to it instead of stacking it again.
+                const top = state.history[state.history.length - 1];
+                if (top?.screen === 'detail' && top.activeId === listing.id) back({ screen: 'detail', activeId: listing.id });
+                else set({ screen: 'detail', activeId: listing.id });
+              }}
               style={{ paddingHorizontal: 14, minHeight: 38, borderRadius: 999, backgroundColor: c.accent, justifyContent: 'center' }}
             >
               <Txt size={13} weight="bold" color={c.onAccent}>

@@ -13,7 +13,8 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { useStore } from '../state/store';
+import { useT } from '../i18n';
+import { releaseMedia, useStore } from '../state/store';
 import { FONT, OVER_INK, ff } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
 import { Txt } from './kit';
@@ -39,6 +40,9 @@ interface Props {
 }
 
 const TINTS = ['#3A2F2B', '#33292F', '#2E3230', '#3B332A'];
+
+/** Videos are 60 s at most (the pickers' videoMaxDuration); half a second of slack for rounding. */
+const MAX_VIDEO_MS = 60_500;
 
 function tintFor(id: string) {
   let h = 0;
@@ -87,8 +91,9 @@ export function MediaSlot({
   video = false,
   style,
 }: Props) {
-  const { state, setMedia } = useStore();
+  const { state, set, setMedia } = useStore();
   const { c } = useTheme();
+  const { t } = useT();
   const uploaded = state.media[id] ?? (fallbackId ? state.media[fallbackId] : undefined);
   const item =
     uploaded ??
@@ -103,122 +108,155 @@ export function MediaSlot({
 
   const mediaTypes: ImagePicker.MediaType[] = video ? ['images', 'videos'] : ['images'];
 
+  const fail = (text: string) => set({ notice: { text, error: true } });
+
   const keep = (result: ImagePicker.ImagePickerResult, source: 'camera' | 'library') => {
     const asset = result.canceled ? undefined : result.assets[0];
     if (!asset) return;
+    const kind = asset.type === 'video' ? 'video' : 'image';
+    // The browser picker gives seconds; the phones give milliseconds.
+    const durationMs = asset.duration == null ? undefined : Platform.OS === 'web' ? asset.duration * 1000 : asset.duration;
+    const refusal =
+      (kind === 'video' && !video) || (asset.mimeType && !/^(image|video)\//.test(asset.mimeType))
+        ? t('error.fileType')
+        : kind === 'video' && durationMs && durationMs > MAX_VIDEO_MS
+          ? t('media.tooLong')
+          : null;
+    if (refusal) {
+      releaseMedia({ uri: asset.uri, kind, name: id });
+      return fail(refusal);
+    }
+    releaseMedia(state.media[id]);
     setMedia(id, {
       uri: asset.uri,
-      kind: asset.type === 'video' ? 'video' : 'image',
+      kind,
       name: asset.fileName ?? id,
       source,
       width: asset.width || undefined,
       height: asset.height || undefined,
-      durationMs: asset.duration ?? undefined,
+      durationMs,
       fileSize: asset.fileSize ?? undefined,
       exif: readExif(asset.exif),
     });
   };
 
-  const refused = (what: string) =>
-    Alert.alert(`Accès ${what} refusé`, `Autorisez l’accès ${what} dans les réglages du téléphone pour continuer.`, [
-      { text: 'Plus tard', style: 'cancel' },
-      { text: 'Ouvrir les réglages', onPress: () => Linking.openSettings() },
+  const refused = (title: string) =>
+    Alert.alert(title, t('media.deniedBody'), [
+      { text: t('media.later'), style: 'cancel' },
+      { text: t('media.openSettings'), onPress: () => Linking.openSettings() },
     ]);
 
   const fromCamera = async () => {
     const camera = await ImagePicker.requestCameraPermissionsAsync();
-    if (!camera.granted) return refused("à l'appareil photo");
+    if (!camera.granted) return refused(t('media.deniedCamera'));
     if (video) {
       const mic = await Camera.requestMicrophonePermissionsAsync();
-      if (!mic.granted) return refused('au micro');
+      if (!mic.granted) return refused(t('media.deniedMic'));
     }
     keep(await ImagePicker.launchCameraAsync({ mediaTypes, quality: 0.85, videoMaxDuration: 60, exif: true }), 'camera');
   };
 
   const fromLibrary = async () => {
     const library = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!library.granted) return refused('aux photos');
+    if (!library.granted) return refused(t('media.deniedPhotos'));
     keep(await ImagePicker.launchImageLibraryAsync({ mediaTypes, quality: 0.85, videoMaxDuration: 60, exif: true }), 'library');
   };
 
+  // The browser picker rejects anything that is not a photo or a video.
+  const library = () => fromLibrary().catch(() => fail(t('error.fileType')));
+  const camera = () => fromCamera().catch(() => fail(t('error.generic')));
+
   const pick = () => {
-    const shoot = video ? 'Filmer ou photographier' : 'Prendre une photo';
+    // The browser has no action sheet (Alert is a no-op there): open the file picker.
+    if (Platform.OS === 'web') {
+      library();
+      return;
+    }
+    const shoot = video ? t('media.shootOrFilm') : t('media.shoot');
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
-        { options: [shoot, 'Choisir dans la galerie', 'Annuler'], cancelButtonIndex: 2 },
+        { options: [shoot, t('media.library'), t('common.cancel')], cancelButtonIndex: 2 },
         (i) => {
-          if (i === 0) fromCamera();
-          if (i === 1) fromLibrary();
+          if (i === 0) camera();
+          if (i === 1) library();
         },
       );
       return;
     }
-    Alert.alert(placeholder ?? 'Ajouter un média', undefined, [
-      { text: shoot, onPress: fromCamera },
-      { text: 'Choisir dans la galerie', onPress: fromLibrary },
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(placeholder ?? t('media.add'), undefined, [
+      { text: shoot, onPress: camera },
+      { text: t('media.library'), onPress: library },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
+  // The remove button sits beside the slot, not inside it: a button inside a
+  // button is invalid on the web and confuses screen readers.
   return (
-    <Pressable
-      accessibilityRole={editable ? 'button' : 'image'}
-      accessibilityLabel={placeholder}
-      onPress={editable ? pick : undefined}
-      style={[
-        {
-          width: '100%',
-          height: '100%',
-          borderRadius,
-          overflow: 'hidden',
-          backgroundColor: empty,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        style,
-      ]}
-    >
-      {item ? (
-        item.kind === 'video' ? (
-          <VideoTile uri={item.uri} radius={borderRadius} />
+    <View style={{ width: '100%', height: '100%' }}>
+      <Pressable
+        accessibilityRole={editable ? 'button' : 'image'}
+        accessibilityLabel={placeholder}
+        onPress={editable ? pick : undefined}
+        style={[
+          {
+            width: '100%',
+            height: '100%',
+            borderRadius,
+            overflow: 'hidden',
+            backgroundColor: empty,
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+          style,
+        ]}
+      >
+        {item ? (
+          item.kind === 'video' ? (
+            <VideoTile uri={item.uri} radius={borderRadius} />
+          ) : (
+            <Image source={{ uri: item.uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+          )
         ) : (
-          <Image source={{ uri: item.uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
-        )
-      ) : (
-        <>
-          <View
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              borderWidth: 1.5,
-              borderStyle: 'dashed',
-              borderColor: chrome,
-              borderRadius,
-            }}
-          />
-          {placeholder ? (
-            <View style={{ paddingHorizontal: 10 }}>
-              <Txt size={11} center color={caption}>
-                {placeholder}
-              </Txt>
-              {editable ? (
-                <Txt size={11} center weight="bold" color={c.accent} style={{ marginTop: 4 }}>
-                  Ajouter
+          <>
+            <View
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderWidth: 1.5,
+                borderStyle: 'dashed',
+                borderColor: chrome,
+                borderRadius,
+              }}
+            />
+            {placeholder ? (
+              <View style={{ paddingHorizontal: 10 }}>
+                <Txt size={11} center color={caption}>
+                  {placeholder}
                 </Txt>
-              ) : null}
-            </View>
-          ) : null}
-        </>
-      )}
+                {editable ? (
+                  <Txt size={11} center weight="bold" color={c.accent} style={{ marginTop: 4 }}>
+                    {t('common.add')}
+                  </Txt>
+                ) : null}
+              </View>
+            ) : null}
+          </>
+        )}
+      </Pressable>
 
       {editable && uploaded ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Retirer le média"
-          onPress={() => setMedia(id, null)}
+          accessibilityLabel={placeholder ? `${t('media.remove')} · ${placeholder}` : t('media.remove')}
+          onPress={() => {
+            releaseMedia(state.media[id]);
+            setMedia(id, null);
+          }}
+          hitSlop={8}
           style={{
             position: 'absolute',
             top: 6,
@@ -234,6 +272,6 @@ export function MediaSlot({
           <Text style={{ color: OVER_INK, fontSize: 15, ...ff('bold') }}>×</Text>
         </Pressable>
       ) : null}
-    </Pressable>
+    </View>
   );
 }

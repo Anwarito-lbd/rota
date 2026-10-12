@@ -177,7 +177,7 @@ function HandoverOption({
 const HIGH_VALUE_EUR = 1500;
 
 export function Booking() {
-  const { state, set, go, m } = useStore();
+  const { state, set, go, m, back } = useStore();
   const { c } = useTheme();
   const { t } = useT();
   const policy = usePolicy();
@@ -211,7 +211,7 @@ export function Booking() {
   return (
     <View style={{ flex: 1 }}>
       <Screen bottomInset={140}>
-        <BackButton onPress={() => go('detail')} />
+        <BackButton onPress={() => back('detail')} />
         <Display size={34} style={{ marginTop: 14 }}>
           Choisir les dates
         </Display>

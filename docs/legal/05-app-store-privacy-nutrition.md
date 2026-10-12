@@ -23,26 +23,26 @@ Legend: **Y** = expected MVP · **Maybe** = depends on build · **N** = not expe
 
 | Data type | Collected? | Linked to user? | Tracking? | Notes / Notes |
 |-----------|------------|-----------------|-----------|---------------|
-| Name / Nom | Y | Y | N | Account, KYC name match |
+| Name / Nom | Y | Y | N | Recipient name of the optional delivery address (no full name on the account); the Google name stored by auth on Google sign-in (Apple: e-mail only); ID check by Stripe Identity |
 | Email address | Y | Y | N | Login, receipts |
-| Phone number | Y | Y | N | Account, meetup coordination |
-| Physical address | Maybe | Y | N | Only if shipping address collected |
+| Phone number | Maybe | Y | N | Only inside the optional delivery address; shared with the owner only for a paid rental sent by parcel |
+| Physical address | Y (optional) | Y | N | Delivery address; same sharing rule as the phone number |
 | Other user contact info | Maybe | Y | N | |
 
 ### Location / Localisation
 
 | Data type | Collected? | Linked to user? | Tracking? | Notes |
 |-----------|------------|-----------------|-----------|-------|
-| Precise location | Maybe | Y | N | Only if meetup distance / map; prefer foreground; **consent** |
-| Coarse location | Maybe | Y | N | City = Paris default possible without GPS |
+| Precise location | N (to confirm) | — | — | Read on the phone only, rounded to ~1 km before it leaves the app; the OS geocoder (Apple / Google) sees the exact position — **à valider par l’avocat** |
+| Coarse location | Y (opt-in) | Y | N | ~1 km grid for « Près de moi » and the area on a post; city on the profile only if shown |
 
 ### Identifiers
 
 | Data type | Collected? | Linked to user? | Tracking? | Notes |
 |-----------|------------|-----------------|-----------|-------|
 | User ID | Y | Y | N | Internal account id |
-| Device ID | Maybe | Y/Maybe | N* | Crash / anti-fraud; *Tracking = N unless ATT + ads |
-| Purchase History | Y | Y | N | Rentals as transactions (not IAP classic, but payment history) |
+| Device ID | Maybe | Y/Maybe | N* | Device data collected by the Stripe React Native SDK (fraud signals) — **à vérifier** against Stripe’s own disclosure; *Tracking = N unless ATT + ads |
+| Purchase History | Y | Y | N | Rentals as transactions (payment history), plus in-app purchases (Rota Pro, try-on credits) once enabled |
 
 ### Financial Info
 
@@ -56,7 +56,7 @@ Legend: **Y** = expected MVP · **Maybe** = depends on build · **N** = not expe
 
 | Data type | Collected? | Linked to user? | Tracking? | Notes |
 |-----------|------------|-----------------|-----------|-------|
-| Photos or videos | Y | Y | N | Listings + pick-up/return claim evidence |
+| Photos or videos | Y | Y | N | Listings, posts, stories, avatars, pick-up/return claim evidence, authenticity proofs; try-on images sent to Decart (after consent, not stored by Rota) |
 | User content (messages) | Y | Y | N | In-app chat |
 
 ### Contacts / carnet d’adresses
@@ -69,16 +69,16 @@ Legend: **Y** = expected MVP · **Maybe** = depends on build · **N** = not expe
 
 | Data type | Collected? | Linked to user? | Tracking? | Notes |
 |-----------|------------|-----------------|-----------|-------|
-| Government ID / ID photo | Y (Tier C/D / high-value) | Y | N | KYC stub — **[PLACEHOLDER KYC provider]**; avocat on retention |
+| Government ID / ID photo | Y (via Stripe) | Y | N | Stripe Identity hosted flow (ID + selfie handled by Stripe); Rota receives only the status — declare per Apple’s guidance for third-party SDK collection, **à vérifier**; avocat on retention |
 | Other sensitive | N | — | — | |
 
 ### Usage / diagnostics
 
 | Data type | Collected? | Linked to user? | Tracking? | Notes |
 |-----------|------------|-----------------|-----------|-------|
-| Product Interaction | Y | Maybe | N* | Funnels; *N if not used for cross-app ads |
+| Product Interaction | N | — | — | No analytics SDK in the app (checked October 2026) |
 | Advertising Data | N (MVP) | — | — | No ads assumed |
-| Crash Data | Y | Maybe | N | |
+| Crash Data | N | — | — | No crash-reporting SDK in the app (checked October 2026) |
 | Performance Data | Maybe | Maybe | N | |
 | Other Diagnostic | Maybe | Maybe | N | |
 
@@ -96,7 +96,7 @@ Legend: **Y** = expected MVP · **Maybe** = depends on build · **N** = not expe
 | Purpose | Used? | Examples |
 |---------|-------|----------|
 | App Functionality | Y | Account, listings, chat, Stripe holds/escrow, claims, KYC |
-| Analytics | Maybe | Product metrics — declare if SDK present |
+| Analytics | N | No analytics SDK; declare if one is added |
 | Product Personalization | Maybe | Size/style recommendations |
 | Developer Advertising | N (MVP) | |
 | Third-Party Advertising | N (MVP) | |
@@ -114,10 +114,12 @@ Legend: **Y** = expected MVP · **Maybe** = depends on build · **N** = not expe
 
 ## 5. Third parties to list in privacy questionnaire
 
-- **Stripe** (payments, Connect, possibly Identity)  
-- **[PLACEHOLDER KYC provider]** if not Stripe  
-- **[PLACEHOLDER hébergeur / analytics / crash]** (e.g. Sentry, Mixpanel, etc.)  
-- Push: APNs / FCM (tokens)
+- **Stripe** (payments, Connect, Identity, Radar)  
+- **Supabase** (database, auth, storage)  
+- **RevenueCat** (in-app purchases and subscription status, once enabled; US, SCCs — **à valider par l’avocat**)  
+- **Expo** (push: token and notification text; message text can be turned off with « Aperçu des messages »), then APNs / FCM  
+- **Decart** (AI try-on, after the consent screen), **Anthropic** (listing moderation, Rota Pro outfit planner), **Resend** (e-mails), **Mux** (only if enabled)  
+- No analytics or crash-reporting SDK
 
 Each must match the Nutrition Label + Privacy Policy (`02`).
 

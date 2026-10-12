@@ -125,7 +125,7 @@ export function FlatToggle({
           </Txt>
         ) : null}
       </View>
-      <Toggle on={on} onPress={() => !disabled && onPress()} label={label} />
+      <Toggle on={on} onPress={onPress} label={label} disabled={disabled} />
     </View>
   );
 }
@@ -144,6 +144,8 @@ export function FlatRow({
   onPress,
   tone,
   last,
+  accessibilityLabel,
+  accessibilityHint,
 }: {
   label: string;
   sub?: string;
@@ -154,6 +156,9 @@ export function FlatRow({
   onPress?: () => void;
   tone?: 'plum' | 'accent';
   last?: boolean;
+  /** When the visible text alone doesn't say what the row does. */
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }) {
   const { c } = useTheme();
   const color = tone === 'plum' ? c.plum : tone === 'accent' ? c.accent : c.ink;
@@ -162,6 +167,8 @@ export function FlatRow({
       disabled={!onPress}
       onPress={onPress}
       accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
       style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',

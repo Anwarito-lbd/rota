@@ -2,12 +2,13 @@
 //   1. moves the money the database asked for (payment_jobs)
 //   2. emails reminders and receipts (notifications)
 //   3. sends the same as push notifications to members who turned push on
+//   4. erases posts and stories that have sat 30 days in the bin
 // It never decides an amount: the database does, the worker executes and
 // reports back. Every Stripe call carries the job's idempotency key, so a
 // retry can never charge twice.
 
 import Stripe from 'npm:stripe@22';
-import { isCron, json, rpc, stripe } from '../_shared/clients.ts';
+import { admin, isCron, json, pathOwnedBy, rpc, stripe } from '../_shared/clients.ts';
 import { type Lang, render, renderPush } from './emails.ts';
 import { execute, Final, type Job } from './money.ts';
 
@@ -147,10 +148,92 @@ async function sendPushes() {
   return { sent };
 }
 
+interface DueItem {
+  kind: 'post' | 'story';
+  id: string;
+  author_id: string;
+  paths: string[] | null;
+}
+
+/** Removes files; on failure they go to storage_orphans for a later run. False when they did not go. */
+async function removeOrKeep(bucket: string, paths: string[]) {
+  const { error } = await admin.storage.from(bucket).remove(paths);
+  if (!error) return true;
+  console.error(`purge remove ${bucket}:`, error.message);
+  const failed_at = new Date().toISOString();
+  const { error: keepError } = await admin
+    .from('storage_orphans')
+    .upsert(paths.map((path) => ({ bucket, path, failed_at })), { onConflict: 'bucket,path' });
+  if (keepError) console.error('storage_orphans:', keepError.message);
+  return false;
+}
+
+/** After this many failed retries a file stays in storage_orphans for staff, untouched. */
+const ORPHAN_MAX_ATTEMPTS = 10;
+
+/**
+ * Retries up to 50 files whose removal failed before, oldest first; forgets each one
+ * once it is gone. A failed retry moves the row to the back and counts the attempt.
+ */
+async function retryOrphans() {
+  const { data, error } = await admin
+    .from('storage_orphans')
+    .select('bucket, path, attempts')
+    .lt('attempts', ORPHAN_MAX_ATTEMPTS)
+    .order('failed_at')
+    .limit(50);
+  if (error) throw new Error(`storage_orphans: ${error.message}`);
+  let removed = 0;
+  for (const orphan of (data ?? []) as { bucket: string; path: string; attempts: number }[]) {
+    const { error: removeError } = await admin.storage.from(orphan.bucket).remove([orphan.path]);
+    if (removeError) {
+      await admin
+        .from('storage_orphans')
+        .update({ failed_at: new Date().toISOString(), attempts: orphan.attempts + 1 })
+        .eq('bucket', orphan.bucket)
+        .eq('path', orphan.path);
+      continue;
+    }
+    const { error: forgetError } = await admin
+      .from('storage_orphans')
+      .delete()
+      .eq('bucket', orphan.bucket)
+      .eq('path', orphan.path);
+    if (!forgetError) removed += 1;
+  }
+  return { removed, left: (data?.length ?? 0) - removed };
+}
+
+/** Erases posts and stories 30 days after they were deleted (rows first, then files). */
+async function purgeBin() {
+  const due = await rpc<DueItem[] | null>('purge_due', { p_limit: 50 });
+  let purged = 0;
+  let failed = 0;
+  let kept = 0;
+  for (const item of due ?? []) {
+    try {
+      // purge_done re-checks the item is still due (032c) and deletes the row;
+      // only then do the files go, so protected content never loses its media.
+      const done = (await rpc('purge_done', { p_kind: item.kind, p_id: item.id })) === true;
+      if (!done) continue;
+      purged += 1;
+      // Only the author's own files, whatever the row says (033e).
+      const paths = (item.paths ?? []).filter((p) => pathOwnedBy(p, item.author_id));
+      if (paths.length && !(await removeOrKeep('post-media', paths))) kept += paths.length;
+    } catch (e) {
+      failed += 1;
+      console.error(`purge ${item.kind} ${item.id}:`, e instanceof Error ? e.message : String(e));
+    }
+  }
+  const orphans = await retryOrphans().catch((e) => ({ error: String(e) }));
+  return { purged, failed, kept, orphans };
+}
+
 Deno.serve(async (req) => {
   if (!(await isCron(req))) return json({ error: 'unauthorized' }, 401);
   const payments = await runPaymentJobs().catch((e) => ({ error: String(e) }));
   const emails = await sendEmails().catch((e) => ({ error: String(e) }));
   const pushes = await sendPushes().catch((e) => ({ error: String(e) }));
-  return json({ payments, emails, pushes });
+  const bin = await purgeBin().catch((e) => ({ error: String(e) }));
+  return json({ payments, emails, pushes, bin });
 });
