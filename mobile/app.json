@@ -85,6 +85,11 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "extra": {
+      "eas": {
+        "projectId": "a3c034d1-ba9d-47b2-91e5-c34e9397a761"
+      }
+    },
     "plugins": [
       "expo-image",
       "expo-video",
@@ -118,7 +123,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Rota utilise une position approximative (à ~500 m près, jamais conservée précisément) pour montrer les looks et pièces proches et suggérer des points de remise publics."
+          "locationWhenInUsePermission": "Rota utilise une position approximative (à ~1 km près, jamais conservée précisément) pour montrer les looks et pièces proches et suggérer des points de remise publics."
         }
       ],
       [
