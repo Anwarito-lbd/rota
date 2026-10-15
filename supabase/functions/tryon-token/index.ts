@@ -5,13 +5,12 @@
 // The real DECART_API_KEY stays here (Dashboard → Edge Functions → Secrets).
 // The phone gets a client token that expires in 10 minutes, only works for
 // the two try-on models, and caps a live session at 3 minutes. Signed-in,
-// non-suspended members only, with a small per-member hourly budget.
+// non-suspended members only. The database decides each token (036): Pro or
+// a spent credit, a per-member hourly budget, and a daily ceiling for the
+// whole service, so calling this function in a loop can't run up the bill.
 
 import { createDecartClient } from 'npm:@decartai/sdk@0.2';
 import { admin, json, userFrom } from '../_shared/clients.ts';
-
-const PER_HOUR = 20;
-const recent = new Map<string, number[]>();
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'method' }, 405);
@@ -28,12 +27,11 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (restriction?.posting_suspended) return json({ error: 'suspended' }, 403);
 
-  // Best-effort budget per function instance; Decart's own limits still apply.
-  const now = Date.now();
-  const window = (recent.get(user.id) ?? []).filter((t) => now - t < 3_600_000);
-  if (window.length >= PER_HOUR) return json({ error: 'rate_limited' }, 429);
-  window.push(now);
-  recent.set(user.id, window);
+  const { data: verdict, error } = await admin.rpc('tryon_token_allowed', { p_user: user.id });
+  if (error) return json({ error: 'failed' }, 500);
+  if (verdict === 'no_credit') return json({ error: 'no_credit' }, 402);
+  if (verdict === 'rate_limited') return json({ error: 'rate_limited' }, 429);
+  if (verdict !== 'ok') return json({ error: 'busy' }, 503);
 
   const client = createDecartClient({ apiKey: key });
   const token = await client.tokens.create({

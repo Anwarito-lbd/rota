@@ -12,7 +12,7 @@ import { createElement, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, View, useWindowDimensions } from 'react-native';
 import { useListing } from '../data/listings';
 import { useT } from '../i18n';
-import { TRYON_LIVE_MODEL, TRYON_PHOTO_MODEL, garmentPrompt, getTryOnToken, tryOnConfigured } from '../lib/tryon';
+import { TRYON_LIVE_MODEL, TRYON_PHOTO_MODEL, garmentPrompt, getTryOnToken, tryOnConfigured, tryOnErrorKey } from '../lib/tryon';
 import { useStore } from '../state/store';
 import { OVER_INK } from '../theme/tokens';
 import { useTheme } from '../theme/useTheme';
@@ -44,6 +44,7 @@ function LiveTryOn({ prompt, garment }: { prompt: string; garment: string }) {
   const rt = useRef<RealtimeHandle | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const [state, setState] = useState<'idle' | 'connecting' | 'live' | 'error'>('idle');
+  const [errorKey, setErrorKey] = useState<ReturnType<typeof tryOnErrorKey>>('tryon.failed');
 
   const stop = () => {
     rt.current?.disconnect();
@@ -79,8 +80,9 @@ function LiveTryOn({ prompt, garment }: { prompt: string; garment: string }) {
       rt.current = conn as unknown as RealtimeHandle;
       await rt.current.set({ prompt, image: garmentBlob });
       tap('success');
-    } catch {
+    } catch (e) {
       stop();
+      setErrorKey(tryOnErrorKey(e));
       setState('error');
     }
   };
@@ -106,7 +108,7 @@ function LiveTryOn({ prompt, garment }: { prompt: string; garment: string }) {
               <SparkleIcon size={46} color={c.accent} />
             )}
             <Txt center color={c.ink2}>
-              {state === 'connecting' ? t('tryon.connecting') : state === 'error' ? t('tryon.failed') : t('tryon.subtitle')}
+              {state === 'connecting' ? t('tryon.connecting') : state === 'error' ? t(errorKey) : t('tryon.subtitle')}
             </Txt>
           </View>
         ) : null}
@@ -165,8 +167,8 @@ function PhotoTryOn({ prompt, garment }: { prompt: string; garment: string }) {
       });
       setResult(WEB ? URL.createObjectURL(blob) : await blobToDataUrl(blob));
       tap('success');
-    } catch {
-      setError(t('tryon.failed'));
+    } catch (e) {
+      setError(t(tryOnErrorKey(e)));
     } finally {
       setBusy(false);
     }

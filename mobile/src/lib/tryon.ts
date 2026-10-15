@@ -32,6 +32,14 @@ export async function getTryOnToken(): Promise<string> {
   throw new Error('tryon_not_configured');
 }
 
+/** The message for a token refused by the server's budget (migration 036). */
+export function tryOnErrorKey(e: unknown) {
+  const message = e instanceof Error ? e.message : '';
+  if (message === 'no_credit') return 'tryon.noCredit' as const;
+  if (message === 'rate_limited' || message === 'busy') return 'tryon.limit' as const;
+  return 'tryon.failed' as const;
+}
+
 /** What the model is asked to put on the person. */
 export function garmentPrompt(listing: Listing) {
   const bits = [listing.title, listing.brand ? `by ${listing.brand}` : null, listing.category].filter(Boolean).join(', ');

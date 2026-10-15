@@ -2,6 +2,7 @@ import { Camera } from 'expo-camera';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { useEffect } from 'react';
 import {
   ActionSheetIOS,
   Alert,
@@ -36,10 +37,25 @@ interface Props {
   editable?: boolean;
   /** Allow videos as well as photos. */
   video?: boolean;
+  /** Hold a video still, e.g. a feed card that isn't the one on screen. */
+  paused?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
 const TINTS = ['#3A2F2B', '#33292F', '#2E3230', '#3B332A'];
+
+/**
+ * Shared picker options. On iPhone, videos are re-encoded to 720p H.264
+ * (a full-quality 60 s clip is often over 100 MB; 720p is plenty on a phone
+ * and costs a fraction to store and stream). Android keeps the original:
+ * re-encoding there needs a native module (development build).
+ */
+const PICKER = {
+  quality: 0.85,
+  videoMaxDuration: 60,
+  exif: true,
+  videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
+} satisfies ImagePicker.ImagePickerOptions;
 
 /** Videos are 60 s at most (the pickers' videoMaxDuration); half a second of slack for rounding. */
 const MAX_VIDEO_MS = 60_500;
@@ -63,12 +79,18 @@ function readExif(exif: Record<string, unknown> | null | undefined) {
   return out.make || out.model || out.software ? out : undefined;
 }
 
-function VideoTile({ uri, radius }: { uri: string; radius: number }) {
-  const player = useVideoPlayer(uri, (p) => {
+function VideoTile({ uri, radius, paused }: { uri: string; radius: number; paused: boolean }) {
+  // Remote videos are kept on the phone: a loop or a second look doesn't
+  // download them again (every download is billed storage egress).
+  const player = useVideoPlayer({ uri, useCaching: /^https?:/.test(uri) }, (p) => {
     p.loop = true;
     p.muted = true;
-    p.play();
+    if (!paused) p.play();
   });
+  useEffect(() => {
+    if (paused) player.pause();
+    else player.play();
+  }, [player, paused]);
   return (
     <VideoView
       player={player}
@@ -89,6 +111,7 @@ export function MediaSlot({
   remoteUri,
   editable = false,
   video = false,
+  paused = false,
   style,
 }: Props) {
   const { state, set, setMedia } = useStore();
@@ -153,13 +176,13 @@ export function MediaSlot({
       const mic = await Camera.requestMicrophonePermissionsAsync();
       if (!mic.granted) return refused(t('media.deniedMic'));
     }
-    keep(await ImagePicker.launchCameraAsync({ mediaTypes, quality: 0.85, videoMaxDuration: 60, exif: true }), 'camera');
+    keep(await ImagePicker.launchCameraAsync({ ...PICKER, mediaTypes }), 'camera');
   };
 
   const fromLibrary = async () => {
     const library = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!library.granted) return refused(t('media.deniedPhotos'));
-    keep(await ImagePicker.launchImageLibraryAsync({ mediaTypes, quality: 0.85, videoMaxDuration: 60, exif: true }), 'library');
+    keep(await ImagePicker.launchImageLibraryAsync({ ...PICKER, mediaTypes }), 'library');
   };
 
   // The browser picker rejects anything that is not a photo or a video.
@@ -213,7 +236,7 @@ export function MediaSlot({
       >
         {item ? (
           item.kind === 'video' ? (
-            <VideoTile uri={item.uri} radius={borderRadius} />
+            <VideoTile uri={item.uri} radius={borderRadius} paused={paused} />
           ) : (
             <Image source={{ uri: item.uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
           )

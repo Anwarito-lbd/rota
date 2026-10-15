@@ -238,6 +238,7 @@ export function CommentsSheet() {
         >
           <TextInput
             ref={input}
+            accessibilityLabel={replyTo ? t('comments.replyPlaceholder') : t('comments.placeholder')}
             value={draft}
             onChangeText={setDraft}
             placeholder={replyTo ? t('comments.replyPlaceholder') : t('comments.placeholder')}

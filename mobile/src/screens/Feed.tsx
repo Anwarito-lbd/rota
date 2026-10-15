@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, View, type ViewToken } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { occasionLabel } from '../data/catalog';
 import { useListings, type Listing } from '../data/listings';
@@ -68,7 +68,9 @@ function EmptyState({
 }
 
 /** A piece for rent, in the same full-screen format as posts. */
-function ListingCard({ item, height }: { item: Listing; height: number }) {
+const VIEWABILITY = { itemVisiblePercentThreshold: 60 };
+
+function ListingCard({ item, height, onScreen }: { item: Listing; height: number; onScreen: boolean }) {
   const { state, set, toggleFlag, m } = useStore();
   const { t } = useT();
   const social = useSocial();
@@ -84,6 +86,7 @@ function ListingCard({ item, height }: { item: Listing; height: number }) {
           tone="media"
           remoteUri={item.video ?? item.photos[0] ?? undefined}
           placeholder={item.title}
+          paused={!onScreen}
         />
       </View>
       <LinearGradient
@@ -213,6 +216,11 @@ export function Feed() {
   const { t } = useT();
   const insets = useSafeAreaInsets();
   const [height, setHeight] = useState(0);
+  // Only the card on screen plays its video; its neighbours wait, paused.
+  const [visibleKey, setVisibleKey] = useState<string | null>(null);
+  const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    if (viewableItems[0]?.key) setVisibleKey(viewableItems[0].key);
+  }).current;
   const { listings, loading: listingsLoading, error, refresh: refreshListings } = useListings();
   const social = useSocial();
   const community = useCommunity();
@@ -285,11 +293,17 @@ export function Feed() {
         initialNumToRender={2}
         maxToRenderPerBatch={2}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refresh} tintColor={c.ink3} />}
-        renderItem={({ item }) =>
+        onViewableItemsChanged={onViewable}
+        viewabilityConfig={VIEWABILITY}
+        renderItem={({ item, index }) =>
           item.type === 'post' ? (
             <PostCard post={item.post} height={height || 600} distanceKm={item.km} />
           ) : (
-            <ListingCard item={item.listing} height={height || 600} />
+            <ListingCard
+              item={item.listing}
+              height={height || 600}
+              onScreen={visibleKey ? visibleKey === `l-${item.listing.id}` : index === 0}
+            />
           )
         }
       />

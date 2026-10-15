@@ -135,7 +135,10 @@ export function Compose() {
       tap('success');
       setDone(res);
     } catch (e) {
-      setError(e instanceof Error && e.message === 'posting_suspended' ? t('compose.suspended') : t('compose.error'));
+      const message = e instanceof Error ? e.message : '';
+      setError(
+        message === 'posting_suspended' ? t('compose.suspended') : /Too many today/.test(message) ? t('error.tooManyToday') : t('compose.error'),
+      );
     } finally {
       setBusy(false);
     }
@@ -334,7 +337,7 @@ export function Compose() {
             </PressScale>
           ))}
           {media.length < max ? (
-            <PressScale onPress={() => pick('library')} scaleTo={0.94}>
+            <PressScale onPress={() => pick('library')} scaleTo={0.94} accessibilityLabel={t('compose.addPhotos')}>
               <View style={{ width: 58, height: 72, borderRadius: 12, backgroundColor: c.surf2, alignItems: 'center', justifyContent: 'center' }}>
                 <ImagesIcon size={20} color={c.ink3} />
               </View>
@@ -485,6 +488,7 @@ export function Compose() {
         >
           <SearchIcon color={c.ink3} />
           <TextInput
+            accessibilityLabel={t('explore.search')}
             value={q}
             onChangeText={setQ}
             placeholder={t('explore.search')}

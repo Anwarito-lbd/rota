@@ -110,6 +110,7 @@ function SearchBox({ value, onChange, placeholder, autoFocus }: { value: string;
     <View style={{ marginHorizontal: 16, marginBottom: 8, paddingHorizontal: 14, height: 46, borderRadius: 12, backgroundColor: c.surf2, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
       <SearchIcon size={16} color={c.ink3} />
       <TextInput
+        accessibilityLabel={placeholder}
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}

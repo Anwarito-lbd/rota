@@ -21,15 +21,33 @@ function describe(uri: string, kind: MediaItem['kind']) {
     : { extension: 'jpg', contentType: 'image/jpeg' };
 }
 
-/** Longest edge of an uploaded photo, in pixels. */
-const MAX_EDGE = 2560;
+type Bucket = 'listing-media' | 'post-media' | 'avatars' | 'private-docs' | 'rental-evidence' | 'moderation-frames';
+
+/**
+ * Longest edge and JPEG quality per bucket. Every photo is downloaded each
+ * time someone sees it, and storage egress is billed: a phone screen needs
+ * about 1600 px, an avatar 512. Condition photos keep more detail, as evidence.
+ */
+const SIZING: Partial<Record<Bucket, { edge: number; quality: number }>> = {
+  avatars: { edge: 512, quality: 0.8 },
+  'listing-media': { edge: 1600, quality: 0.8 },
+  'post-media': { edge: 1600, quality: 0.8 },
+  'rental-evidence': { edge: 2048, quality: 0.85 },
+};
+const DEFAULT_SIZING = { edge: 1600, quality: 0.8 };
+
+/**
+ * Paths are never reused (time + random suffix), so a file never changes:
+ * phones and the CDN may keep it for a year instead of asking again.
+ */
+const CACHE_SECONDS = '31536000';
 
 /**
  * Re-encodes a photo to JPEG: the new file carries no EXIF, so no GPS, camera
- * serial or capture time leaves the phone. Photos larger than MAX_EDGE are scaled
- * down. Fails closed: an unreadable photo is never sent with its metadata.
+ * serial or capture time leaves the phone. Photos larger than the bucket's edge
+ * are scaled down. Fails closed: an unreadable photo is never sent with its metadata.
  */
-async function reencode(item: MediaItem): Promise<string> {
+async function reencode(item: MediaItem, { edge: MAX_EDGE, quality }: { edge: number; quality: number }): Promise<string> {
   try {
     let width = item.width ?? 0;
     let height = item.height ?? 0;
@@ -49,7 +67,7 @@ async function reencode(item: MediaItem): Promise<string> {
         .resize(image.width >= image.height ? { width: MAX_EDGE } : { height: MAX_EDGE })
         .renderAsync();
     }
-    const saved = await image.saveAsync({ format: SaveFormat.JPEG, compress: 0.9 });
+    const saved = await image.saveAsync({ format: SaveFormat.JPEG, compress: quality });
     return saved.uri;
   } catch {
     throw new Error('photo_unreadable');
@@ -61,7 +79,7 @@ async function reencode(item: MediaItem): Promise<string> {
  * live under the owner's user id, which is what the storage policies allow.
  */
 export async function uploadMedia(
-  bucket: 'listing-media' | 'post-media' | 'avatars' | 'private-docs' | 'rental-evidence' | 'moderation-frames',
+  bucket: Bucket,
   userId: string,
   item: MediaItem,
   /** Second path segment, e.g. the rental id for condition evidence. */
@@ -76,7 +94,7 @@ export async function uploadMedia(
   // already JPEGs this app rendered from a video. Videos can't be cleaned in Expo Go;
   // see docs/legal (residual risk until the dev build).
   if (item.kind === 'image' && bucket !== 'private-docs' && bucket !== 'moderation-frames') {
-    uri = await reencode(item);
+    uri = await reencode(item, SIZING[bucket] ?? DEFAULT_SIZING);
     extension = 'jpg';
     contentType = 'image/jpeg';
   }
@@ -89,6 +107,7 @@ export async function uploadMedia(
 
   const { error } = await supabase.storage.from(bucket).upload(path, bytes, {
     contentType,
+    cacheControl: CACHE_SECONDS,
     upsert: false,
   });
   if (error) throw new Error(error.message);
