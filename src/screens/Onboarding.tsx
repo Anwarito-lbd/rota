@@ -185,7 +185,7 @@ function Welcome() {
           Vous avez déjà un compte ?<span style={{ marginLeft: 6, color: '#E8865F', fontWeight: 700 }}>Se connecter</span>
         </Tappable>
         <p style={{ margin: '6px 0 0', fontSize: fs(12), lineHeight: 1.5, textAlign: 'center', color: '#BDB4AA' }}>
-          Rota est réservé aux 16 ans et plus. En continuant, vous acceptez nos{' '}
+          Rota est réservé aux 18 ans et plus. En continuant, vous acceptez nos{' '}
           <span style={{ color: '#E8865F', fontWeight: 600 }}>Conditions</span> et notre{' '}
           <span style={{ color: '#E8865F', fontWeight: 600 }}>Politique de confidentialité</span>.
         </p>

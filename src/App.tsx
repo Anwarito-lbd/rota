@@ -142,8 +142,8 @@ function SidePanel() {
         Louer, porter, faire tourner
       </div>
       <p style={{ margin: '22px 0 0', fontSize: 17, lineHeight: 1.55, color: 'var(--ink2)', maxWidth: '40ch' }}>
-        Peer-to-peer outfit rental for France. Scroll real wardrobes in full-screen video, book a piece for your dates,
-        hand it on to the next person. Every rental is insured, cleaned and rated both ways.
+        Peer-to-peer outfit rental, Paris first. Scroll a wardrobe, book the dates, and hand the piece on.
+        Payment stays on the platform until the claim window closes.
       </p>
 
       <div style={{ marginTop: 28, display: 'flex', gap: 8, flexWrap: 'wrap' }}>

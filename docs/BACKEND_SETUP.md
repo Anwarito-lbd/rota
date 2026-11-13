@@ -19,6 +19,10 @@ Run each file once, in this order. Each one says "Success" when it's done.
 | `supabase/migrations/007_account_settings.sql` | settings: profile, address, notification choices, data export, account closing |
 | `supabase/migrations/008_listing_details.sql` | category tree, fit, proof of authenticity for luxury brands and pricey pieces |
 
+`supabase/migrations/` has 53 files. After 008, run the rest in lexicographic filename order (`009`, then `010`, through `029b`, and on to `038_member_daily_limits.sql`). Each file's first comment says what it changes: social graph (009), messaging (010), sign-in with Apple and Google (011), DSA notices (015), offers (026), try-on budget (036), waitlist (037), daily ceilings (038).
+
+`supabase/tests/privacy/` is not a Node test suite. Paste `_prelude.sql`, then one test file, into the SQL editor on a database that already has the migrations. This repository does not run those scripts in CI.
+
 Then make yourself staff (replace the username):
 
 ```sql
@@ -39,6 +43,9 @@ The **Back-office** row then appears in the app under Settings.
 | `RESEND_API_KEY` | resend.com → API keys (a new "sending" key) |
 | `ROTA_CRON_SECRET` | any long random string (40+ characters) |
 | `MUX_TOKEN_ID`, `MUX_TOKEN_SECRET` | optional — mux.com → Settings → Access tokens (Video: read + write) |
+| `DECART_API_KEY` | Decart — stays on the server; `tryon-token` mints a 10-minute client token |
+| `REVENUECAT_WEBHOOK_AUTH` | RevenueCat → Integrations → Webhooks. Same value the `iap-webhook` function expects |
+| `FROM_EMAIL`, `LOGO_URL`, `SITE_URL` | waitlist mail (`send-welcome`, `super-task`). `FROM_EMAIL` falls back to Resend's onboarding address if unset |
 
 In `mobile/.env` add the **publishable** Stripe key (it's meant to be public):
 
@@ -55,7 +62,7 @@ npx.cmd supabase login
 ```
 
 ```bash
-npx.cmd supabase functions deploy moderate-listings payments stripe-webhook worker account --project-ref <ref> --no-verify-jwt
+npx.cmd supabase functions deploy moderate-listings payments stripe-webhook worker account tryon-token outfit-planner report iap-webhook verify-business send-welcome super-task --project-ref <ref> --no-verify-jwt
 ```
 
 `--no-verify-jwt` is intentional: each function checks who is calling itself
