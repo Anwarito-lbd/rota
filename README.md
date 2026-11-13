@@ -1,10 +1,29 @@
-# Rota (`@therotaapp`)
+# Rota ([@therotaapp](https://www.instagram.com/therotaapp/))
 
 <p align="center">
-  <img src="docs/proof/rota-hero-phone.png" alt="Rota — 3D iPhone hero preview featuring the lavender hanger identity" width="520" />
+  <a href="https://www.instagram.com/therotaapp/">
+    <img src="https://img.shields.io/badge/Instagram-%40therotaapp-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Instagram @therotaapp" />
+  </a>
+  <a href="https://therotaapp.com">
+    <img src="https://img.shields.io/badge/Website-therotaapp.com-8E3FB0?style=for-the-badge&logo=safari&logoColor=white" alt="Website therotaapp.com" />
+  </a>
+  <img src="https://img.shields.io/badge/Expo-SDK%2057%20%7C%20Expo%20Go-111111?style=for-the-badge&logo=expo&logoColor=white" alt="Expo SDK 57" />
+  <img src="https://img.shields.io/badge/Supabase-56%20Tables%20%C2%B7%2053%20RLS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase RLS" />
 </p>
 
-Rota is a Paris-first, peer-to-peer **outfit rental** app (`therotaapp.com`, `@therotaapp`). People lend pieces they already own and rent them for a few days. It is **not** a resale marketplace and **not** a social network: posts, stories, boards, and follows exist solely to showcase garments and lead directly to a booking.
+<p align="center">
+  <img src="docs/proof/rota-app-showcase.png" alt="Rota iOS & Expo App Showcase — Onboarding, Paris Feed, Garment Detail, and Stripe KYC Checkout" width="100%" />
+</p>
+
+<p align="center">
+  <img src="mobile/assets/icon.png" alt="Rota App Icon (1024x1024)" width="96" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/proof/rota-hero-phone.png" alt="Rota — 3D iPhone hero preview featuring the lavender hanger identity" width="380" />
+</p>
+
+Rota is a Paris-first, peer-to-peer **outfit rental** app ([therotaapp.com](https://therotaapp.com) · Instagram [@therotaapp](https://www.instagram.com/therotaapp/)). People lend pieces they already own and rent them for a few days. It is **not** a resale marketplace and **not** a social network: posts, stories, boards, and follows exist solely to showcase garments and lead directly to a booking.
+
+- **Official links:** Web waitlist at [therotaapp.com](https://therotaapp.com) · Instagram community & drops at [instagram.com/therotaapp](https://www.instagram.com/therotaapp/) (`@therotaapp`).
 
 - **Languages & locale:** French-first product copy with English and Spanish in-app (`mobile/src/i18n/`).
 - **Public-by-design marketplace:** Accounts and live stories are public (`034_public_accounts.sql`); minimum age is **18+** (`adult_confirmed_at`); safety controls (block, mute, restrict, message requests, hidden words, 30-day bin, export, account deletion) remain enforced in Postgres.

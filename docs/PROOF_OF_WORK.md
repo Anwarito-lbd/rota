@@ -11,10 +11,10 @@
 | Mobile Expo typecheck | `cd mobile && npm run typecheck` (`tsc --noEmit`) | **PASS** (exit 0) |
 | Purchase price parser tests | `cd mobile && npm run check:price` | **PASS** (`parsePurchasePrice: 10 cases pass`, exit 0) |
 | Expo web export | `cd mobile && npx expo export --platform web` | **PASS** (exit 0, 911 modules bundled) |
-| Mobile UI `390×844` captures | Playwright `1.65.0` + headless Chrome | **PASS** (all 9 `docs/proof/phone-*.png` verified `390×844`) |
+| Mobile UI `390×844` captures & showcase | Playwright `1.65.0` + headless Chrome | **PASS** (all 9 `docs/proof/phone-*.png` verified `390×844` + `docs/proof/rota-app-showcase.png` `1600×900`) |
 | Mobile walkthrough recording | Playwright video + FFmpeg `8.1.2` | **PASS** (`rota-mobile-walkthrough.webm`, `.mp4`, `.gif`) |
 | Architecture & metrics visuals | Mermaid 11 + Python `matplotlib 3.11.2` | **PASS** (`architecture.png`, `schema.png`, `engineering-metrics.png`) |
 | ESLint / Biome | — | Not run (no linter config in repo) |
 | Postgres privacy scripts | `supabase/tests/privacy/*.sql` | Not run (no local Postgres / Supabase CLI session in this workspace) |
 
-See [PROOF.md](PROOF.md) for full verbatim logs, exact byte sizes, dimensions of all 18 files in `docs/proof/`, and repository line/SQL counts.
+See [PROOF.md](PROOF.md) for full verbatim logs, exact byte sizes, dimensions of all 19 files in `docs/proof/`, and repository line/SQL counts.

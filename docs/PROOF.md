@@ -74,6 +74,7 @@ All 9 `phone-*.png` files were audited, found at `804×1748` from an earlier des
 
 | File | Type / Dimensions | Size (bytes) | Source & Description |
 |---|---|---|---|
+| [docs/proof/rota-app-showcase.png](proof/rota-app-showcase.png) | PNG `1600×900` | 948,090 | Hero composite showcase featuring app icon (`mobile/assets/icon.png`) and 4 verified `390×844` Expo screens |
 | [docs/proof/rota-hero-phone.png](proof/rota-hero-phone.png) | PNG `357×187` | 56,065 | 3D iPhone hero mockup featuring Rota lavender splash & hanger logo |
 | [docs/proof/phone-onboarding.png](proof/phone-onboarding.png) | PNG **`390×844`** | 250,496 | Expo web: Welcome screen (18+, Google/Email/Demo CTA, Instrument Serif display) |
 | [docs/proof/phone-feed.png](proof/phone-feed.png) | PNG **`390×844`** | 461,315 | Expo web: Feed (*Pour toi*), *Louer le look*, ~550 m Paris chip, Liquid Glass tab bar |
