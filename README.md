@@ -1,34 +1,70 @@
-# Rota
+# Rota (`@therotaapp`)
 
-Rota is a Paris-first, peer-to-peer **outfit rental** app. People lend clothes they already own and rent them for a few days. It is not a resale marketplace, and it is not a social network: posts, stories and follows exist to show a piece and lead to a booking.
+<p align="center">
+  <img src="docs/proof/rota-hero-phone.png" alt="Rota — 3D iPhone hero preview featuring the lavender hanger identity" width="520" />
+</p>
 
-The product copy is French first, with English and Spanish in the app. Accounts are public. Minimum age in the app and in the legal drafts is 18. Block, report, message requests and mute stay in place.
+Rota is a Paris-first, peer-to-peer **outfit rental** app (`therotaapp.com`, `@therotaapp`). People lend pieces they already own and rent them for a few days. It is **not** a resale marketplace and **not** a social network: posts, stories, boards, and follows exist solely to showcase garments and lead directly to a booking.
 
-This repository holds the Expo app, the Supabase schema and Edge Functions, a Vite design prototype, and the launch notes. It is private.
+- **Languages & locale:** French-first product copy with English and Spanish in-app (`mobile/src/i18n/`).
+- **Public-by-design marketplace:** Accounts and live stories are public (`034_public_accounts.sql`); minimum age is **18+** (`adult_confirmed_at`); safety controls (block, mute, restrict, message requests, hidden words, 30-day bin, export, account deletion) remain enforced in Postgres.
+- **Handover model:** Free public meetup in Paris (`Rencontre à Paris — Offert`) is the default; tracked parcel shipping (`Rota Delivery`) stays gated behind `policy_config.flag_rota_delivery = false` until carrier labels and webhook tracking are connected ([docs/DELIVERY.md](docs/DELIVERY.md)).
 
-## Architecture
+---
 
-The phone never decides a price, a verdict or a payout. Postgres (row-level security, constraints, and `security definer` functions) decides. Edge Functions carry the call to Stripe, Claude or Decart, then write the result back.
+## Live Mobile Walkthrough & Verified `390x844` App Screens
+
+Every mobile screen below was captured directly from the **Expo SDK 57 web build** (`mobile/`, `npx expo export --platform web`, demo catalog mode) at exact **`390×844`** mobile viewport dimensions (`deviceScaleFactor: 1`) using headless Chrome via Playwright, alongside a live interactive walkthrough recording.
+
+<p align="center">
+  <img src="docs/proof/rota-mobile-walkthrough.gif" alt="Rota Expo web 390x844 interactive mobile walkthrough" width="260" />
+</p>
+
+- Full walkthrough video: [MP4 (1.53 MB, 390×844 H.264)](docs/proof/rota-mobile-walkthrough.mp4) · [WebM (4.26 MB, 390×844 VP9)](docs/proof/rota-mobile-walkthrough.webm) · [GIF preview (3.07 MB)](docs/proof/rota-mobile-walkthrough.gif)
+- All `phone-*.png` files are verified **`390×844`** (`docs/proof/phone-*.png`). Notice in Checkout (`phone-checkout.png` / `phone-checkout-light.png`) how identity verification (`Vérifier maintenant`) gates payment before Stripe checkout, and how `Rencontre à Paris — Offert` is selected by default on Dates (`phone-dates.png`).
+
+| Welcome (`390×844`) | Feed — *Pour toi* (`390×844`) | Piece Detail (`390×844`) |
+|---|---|---|
+| ![Welcome](docs/proof/phone-onboarding.png) | ![Feed](docs/proof/phone-feed.png) | ![Piece Detail](docs/proof/phone-detail.png) |
+| **Apple / Google / Email + Demo entry.** 18+ notice, lavender hanger icon, Instrument Serif brand display. | **Editorial fit feed + Liquid Glass bar.** *Louer le look* tag, ~550 m Paris area chip, verified badge. | **Listing detail.** Gallery, brand, replacement value, negotiated offers, *Voir les dates* CTA. |
+
+| Dates & Handover (`390×844`) | Checkout — Dark (`390×844`) | Checkout — Light (`390×844`) |
+|---|---|---|
+| ![Dates](docs/proof/phone-dates.png) | ![Checkout Dark](docs/proof/phone-checkout.png) | ![Checkout Light](docs/proof/phone-checkout-light.png) |
+| **Calendar & handover choice.** Month picker with booked-day lockouts, *Rencontre à Paris — Offert*, lender rules gate. | **Itemized pre-payment disclosure.** Rent, 10% protection fee, total charged, Stripe Identity gate. | **High-contrast light theme.** `#F8F4FA` ground with `#8E3FB0` deep lavender CTA for WCAG contrast. |
+
+| List a Piece (`390×844`) | Messages (`390×844`) | Settings (`390×844`) |
+|---|---|---|
+| ![List a Piece](docs/proof/phone-list.png) | ![Messages](docs/proof/phone-messages.png) | ![Settings](docs/proof/phone-settings.png) |
+| **Listing creation.** Vertical video, front, back/defects slots, Paris daylight protection guidance. | **Rental-scoped inbox.** Stories tray, *Je loue / Je prête / Non lus* filters, public Paris meeting points. | **Account & safety controls.** Profile, payments, Rota Pro, vacation mode, privacy, DSA decisions, legal. |
+
+Desktop prototype stage captures (`src/` Vite build at `2880×2208` / `2880×2200` Retina): [docs/proof/desktop-onboarding.png](docs/proof/desktop-onboarding.png) · [docs/proof/desktop-checkout-light.png](docs/proof/desktop-checkout-light.png). Earlier Figma/design exports live in [design/social-screens/](design/social-screens/).
+
+---
+
+## Architecture & Database Design
+
+**Core architectural invariant:** *The phone is an untrusted client. Postgres decides prices, availability, liability ceilings, try-on budgets, and payouts.* Edge Functions only bridge external APIs (Stripe, Claude, Decart, Resend, SIRET registry) and write verified outcomes back to Postgres.
 
 ```mermaid
 flowchart LR
-  phone["Expo app"]
-  proto["Vite prototype"]
-  site["therotaapp.com waitlist"]
-  auth["Supabase Auth"]
-  db["Postgres and RLS"]
-  storage["Storage"]
-  fn["Edge Functions"]
-  stripe["Stripe Connect, Identity, Radar"]
-  claude["Claude API"]
-  decart["Decart try-on"]
-  resend["Resend"]
+  phone["Expo App (iOS, Android, Web)"]
+  proto["Vite Design Prototype (src/)"]
+  site["therotaapp.com Waitlist"]
+  auth["Supabase Auth (Apple, Google, OTP)"]
+  db["Supabase Postgres (56 tables, 108 RLS policies)"]
+  storage["Supabase Storage (listing-media, quarantine)"]
+  fn["12 Deno Edge Functions"]
+  stripe["Stripe Connect, Identity & Radar"]
+  claude["Anthropic Claude API"]
+  decart["Decart Virtual Try-On"]
+  resend["Resend Email"]
 
   phone --> auth
   phone --> db
   phone --> storage
   phone --> fn
-  proto -. "design reference, sample data" .-> phone
+  proto -. "design tokens & sample catalog" .-> phone
   site --> fn
   fn --> db
   fn --> stripe
@@ -38,164 +74,148 @@ flowchart LR
   stripe -->|signed webhooks| fn
 ```
 
-Rendered from that diagram with Mermaid 11 in headless Chrome on 13 November 2026. It is a map of the source, not a live trace.
+![System Architecture Diagram](docs/proof/architecture.png)
 
-![Clients, Supabase, Stripe, Claude, Decart, Resend](docs/proof/architecture.png)
+### Database & Trust Guarantees (`supabase/`)
 
-The table diagram, the 12 Edge Functions, and the 56 tables are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Across `supabase/schema.sql`, **53** SQL migrations (`001`–`038`), and **11** SQL privacy verification scripts:
+- **56** `CREATE TABLE` definitions, **53** `ENABLE ROW LEVEL SECURITY` calls, **108** `CREATE POLICY` rules, and **207** `SECURITY DEFINER` RPCs/triggers.
+- **Zero double-booking at the database level (`004_payments_and_rental_ops.sql`):** Postgres `btree_gist` extension + `rentals_no_double_booking` constraint:
+  ```sql
+  alter table public.rentals
+    add constraint rentals_no_double_booking
+    exclude using gist (listing_id with =, blocked_during with &&)
+    where (status not in ('cancelled', 'returned', 'closed'));
+  ```
+  `rentals_validate_dates()` computes `blocked_during` as `[start_date, end_date + 1 + turnaround_days)` (1 turnaround day for return & cleaning) and holds unpaid bookings for `payment_window_minutes` (30 minutes).
+- **Stripe Connect, Identity & Idempotent Outbox (`payments`, `stripe-webhook`, `worker`):**
+  - `payment_accounts` is strictly separated from public `profiles` (`004`).
+  - Lender onboarding provisions French (`FR`) Stripe Connect accounts with clothing-rental MCC `7296` and `controller: { fees: { payer: 'application' }, losses: { payments: 'application' }, stripe_dashboard: { type: 'express' } }`.
+  - Stripe Identity (government ID + matching selfie) gates renting and listing (`checkout.tsx`, `ListPiece.tsx`, `Verify.tsx`).
+  - `stripe-webhook` verifies signatures against both `STRIPE_WEBHOOK_SECRET` and `STRIPE_CONNECT_WEBHOOK_SECRET`, deduplicates via `record_stripe_event`, and flags disputes/Radar early fraud warnings (`flagged = 'dispute' | 'fraud_warning'`).
+  - Payouts (`transfer_payout`), claims (`charge_claim`), and refunds (`refund_rental`) are queued in `payment_jobs` by Postgres and executed by `worker` using deterministic idempotency keys.
+- **AI Guardrails & Server Budgets:**
+  - `moderate-listings`: runs optional abuse-hash stub → Mux server video stills → Claude vision description; deterministic `policy.ts` assigns `public`, `limited`, or `blocked` and quarantines unsafe assets to `moderation-quarantine`.
+  - `outfit-planner`: Rota Pro only (`is_pro`), capped at 30 plans/day (`bump_ai_usage`), and strips any listing ID not present in the real database catalog sent in the prompt.
+  - `tryon-token`: `tryon_token_allowed` (`036_tryon_server_budget.sql`) uses `pg_advisory_xact_lock` + hourly/daily ceilings before minting a 10-minute Decart client token restricted to `lucy-vton-3.5` and `lucy-image-2` (3-minute max realtime session).
 
-Money path, as written in `supabase/functions/payments`, `stripe-webhook` and `worker`:
-
-1. The renter pays a `PaymentIntent` in euros. The amount is the rental total already stored on the row.
-2. Stripe webhooks confirm the payment. The function checks the signature, then calls `stripe_rental_payment_event`.
-3. A lender payout is a row in `payment_jobs` (`transfer_payout`), created by the database after the return and the claim window. The worker executes that job with the job's idempotency key. It does not choose the amount.
-4. Lender onboarding is a Stripe Connect account, country `FR`, clothing-rental MCC `7296`, with Rota as the fees and losses payer. Identity is a Stripe Identity document session with a matching selfie.
-
-Listing review, as written in `supabase/functions/moderate-listings`: the model describes the images; `policy.ts` turns that description into `public`, `limited` or `blocked`. A caller cannot pick the verdict. Unsafe media can be moved to a quarantine bucket.
-
-Virtual try-on, as written in `tryon-token`: the Decart secret stays in Supabase. A signed-in member receives a token that lasts 10 minutes, allows only `lucy-vton-3.5` and `lucy-image-2`, and caps a live session at 3 minutes. Migration 036 decides whether that token is allowed.
-
-## Key flows
-
-These frames are the Vite prototype after `npm run build`, opened with `vite preview` on 13 November 2026. The data on screen is the local sample catalog. They are not a signed-in session against Supabase, and the checkout chips (PayPal, an in-app wallet) are design-time choices. The app that charges cards uses Stripe only. PayPal outside that flow is treated as an off-platform payment in the app copy and in the message filter.
-
-| | |
-|---|---|
-| ![Welcome](docs/proof/phone-onboarding.png) | ![Feed](docs/proof/phone-feed.png) |
-| Welcome. Apple, Google, or email. The line under the buttons says 18+. | Feed, "Pour vous". A piece, a daily price, and a path to book. |
-| ![Piece](docs/proof/phone-detail.png) | ![Dates](docs/proof/phone-dates.png) |
-| Piece detail. Offer or dates. Sample lender. | Dates, then handover. The prototype still shows a prepaid round trip. Server-side, `flag_rota_delivery` refuses `ship` until labels exist. |
-| ![Checkout](docs/proof/phone-checkout.png) | ![List a piece](docs/proof/phone-list.png) |
-| Checkout in the prototype, dark. | Listing a piece: vertical video, front, back. |
-| ![Checkout, light](docs/proof/phone-checkout-light.png) | ![Messages](docs/proof/phone-messages.png) |
-| Same checkout with the light theme toggle. | Messages in the prototype. The app's inbox is one conversation per pair of members. |
-
-The stage the prototype actually serves, with every screen one click away:
-
-![Prototype stage](docs/proof/desktop-onboarding.png)
-
-Settings, from the same session: [docs/proof/phone-settings.png](docs/proof/phone-settings.png).
-
-Earlier design exports (not re-rendered for this page) live in `design/social-screens/`.
-
-## Tech stack
-
-Versions below are the ones `npm ls --depth=0` printed after `npm ci` on 13 November 2026, from the lockfiles. Node was v22.23.4 and npm 10.9.9.
-
-### App — `mobile/`
-
-| Package | Installed |
-|---|---|
-| expo | 57.0.24 |
-| react / react-dom | 19.2.3 |
-| react-native | 0.86.3 |
-| react-native-web | 0.21.2 |
-| typescript | 6.0.3 |
-| @supabase/supabase-js | 2.116.0 |
-| @stripe/stripe-react-native | 0.64.0 |
-| @decartai/sdk | 0.2.3 |
-| expo-camera, expo-location, expo-notifications, expo-video, expo-image, expo-blur | 57.0.x (see `mobile/package.json`) |
-| react-native-maps | 1.27.2 |
-
-`mobile/eas.json` asks for EAS CLI `>= 12.0.0`. Bundle id `com.rota.app`.
-
-### Design prototype — repository root
-
-| Package | Installed |
-|---|---|
-| react / react-dom | 18.3.1 |
-| vite | 6.4.3 |
-| typescript | 5.6.3 |
-| @vitejs/plugin-react | 4.7.0 |
-
-### Server — `supabase/`
-
-Deno Edge Functions, configured in `supabase/config.toml` with `verify_jwt = false` because each function checks its own caller (member token, Stripe signature, RevenueCat secret, or cron). Imports named in the function source:
-
-| Import | Where |
-|---|---|
-| `npm:stripe@22` | payments, stripe-webhook, worker |
-| `npm:@supabase/supabase-js@2` | shared client |
-| `npm:@anthropic-ai/sdk` (no version pin in the import) | moderate-listings, outfit-planner |
-| `npm:@decartai/sdk@0.2` | tryon-token |
-
-Resend is called over HTTPS from `worker` and `send-welcome`. Mux is optional, for server-side video stills. SIRET checks call `recherche-entreprises.api.gouv.fr`. Store purchases are recorded from RevenueCat in `iap-webhook`.
-
-There is no ESLint or Biome config in this repository.
-
-## Run it locally
-
-Requires Node.js 22 or newer.
-
-**Clickable prototype** (no keys):
-
-```bash
-npm ci
-npm run dev
+```mermaid
+erDiagram
+  profiles ||--o{ listings : owns
+  profiles ||--o{ rentals : rents
+  profiles ||--o{ rentals : lends
+  listings ||--o{ rentals : booked
+  rentals ||--o{ risk_decisions : explains_hold
+  rentals ||--o{ claims : may_open
+  rentals ||--o| payouts : one_payout
+  rentals ||--o{ payment_jobs : outbox
+  profiles ||--o| payment_accounts : stripe_ids
+  listings ||--o{ moderation_cases : reviewed
+  profiles ||--o{ posts : publishes
+  posts ||--o{ post_tags : tags_a_piece
+  post_tags }o--|| listings : listing
+  profiles ||--o{ conversations : member_a_or_b
+  conversations ||--o{ messages : contains
+  conversations }o--o| listings : started_from
 ```
 
-`npm run build` writes `dist/`. `npm run preview` serves that build. `npm run typecheck` is `tsc -b --noEmit`.
+![Rental and Social Core Schema](docs/proof/schema.png)
 
-**App:**
+![Codebase and Postgres Security Surface Metrics](docs/proof/engineering-metrics.png)
 
+Full schema inventory, 12 Edge Functions, and column-level decisions are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+---
+
+## Tools, Skills, Figma, Expo Go & Engineering Stack
+
+### Design & Prototyping Workflow (`Figma → Vite → Expo Go`)
+- **Figma Design System (`"Rota — iOS redesign" → Tokens`):** Defined typography roles (`SF Pro` / `Roboto` system UI text + `Instrument Serif` reserved for brand headlines), brand lavender `#E2A9F1` (`#8E3FB0` on light surfaces for WCAG contrast), pill radii (`999`), `28 pt` modal sheets, floating Liquid Glass 4-tab bar (`expo-blur` with Reduce Transparency fallback), and hanger mark (`design/brand/`). Earlier design exports are archived in `design/social-screens/` (`00-overview.jpg` – `16-detail-tryon.jpg`).
+- **Clickable Web Prototype (`src/`):** Vite `6.4.3` + React `18.3.1` + TypeScript `5.6.3` single-page stage (`36` files, `8,118` lines) used for rapid screen iteration and desktop review.
+- **iOS Mobile Development & Testing (`mobile/` + Expo Go + EAS):** Expo SDK `57.0.24` + React Native `0.86.3` + React `19.2.3` + TypeScript `6.0.3` (`82` files, `27,780` lines across `26` screens). Tested on physical iPhones via **Expo Go** over LAN / `--tunnel` ([docs/TEST_ON_PHONE.md](docs/TEST_ON_PHONE.md)), previewed in browser via `expo start --web` with `mobile/metro.config.js` web shims (`web-shims/stripe-react-native.tsx`), and configured for TestFlight / Play internal builds via `mobile/eas.json` (`development`, `preview`, `production` profiles; bundle ID `com.rota.app`).
+
+### Installed Packages (Verified from Lockfiles)
+
+| Layer | Key Packages & Versions |
+|---|---|
+| **Mobile App (`mobile/`)** | `expo` `~57.0.24`, `react` `19.2.3`, `react-native` `0.86.3`, `react-native-web` `^0.21.2`, `typescript` `~6.0.3`, `@supabase/supabase-js` `^2.116.0`, `@stripe/stripe-react-native` `0.64.0`, `@decartai/sdk` `^0.2.3`, `@expo-google-fonts/instrument-serif`, `@expo-google-fonts/archivo`, `expo-apple-authentication`, `expo-blur`, `expo-camera`, `expo-image`, `expo-image-manipulator`, `expo-location`, `expo-notifications`, `expo-video`, `react-native-maps` `1.27.2`, `react-native-svg` `15.15.4` |
+| **Design Prototype (`src/`)** | `react` / `react-dom` `^18.3.1`, `vite` `^6.0.7` (`6.4.3` installed), `@vitejs/plugin-react` `^4.3.4`, `typescript` `~5.6.3` |
+| **Backend (`supabase/functions/`)** | Deno Edge Runtime (`verify_jwt = false` in `supabase/config.toml`), `npm:stripe@22`, `npm:@supabase/supabase-js@2`, `npm:@anthropic-ai/sdk`, `npm:@decartai/sdk@0.2`, Resend HTTPS API, optional Mux video stills, French gov SIRET lookup (`recherche-entreprises.api.gouv.fr`), RevenueCat (`iap-webhook`) |
+
+### Agent Skills, Compliance & Verification Tooling in Repo
+- **Repo Agent Skills (`.agents/skills/` & `skills-lock.json`):** `ios-design` (`uizze.sh`), `ui-taste` (`uizze.sh`), and `find-skills` (`vercel-labs/skills`), plus `.claude/launch.json` local dev server presets (`rota` on port `5173`, `rota-mobile-web` on port `8093`).
+- **App Store / Play Compliance Audit (`docs/LAUNCH_PLAN.md`):** Audited against `mjmirza/app-store-compliance` (`expo prebuild --platform android`), tracking iOS Privacy Manifests (`NSPrivacyAccessedAPITypes`), `allowBackup: false`, `SYSTEM_ALERT_WINDOW` removal, Universal Links / App Links (`therotaapp.com/p/*`, `/u/*`), and EU AI Act Art. 50 / DSA trader disclosures.
+- **Verification & Visual Proof Toolchain:** `tsc -b --noEmit` (root), `tsc --noEmit` & `node scripts/check-purchase-price.mjs` (`mobile/`), Playwright + headless Chrome (`390×844` captures & video), FFmpeg (MP4/GIF encoding), Mermaid 11, and Python Matplotlib (`docs/proof/engineering-metrics.png`).
+
+---
+
+## Run It Locally
+
+Requires **Node.js 22+**.
+
+**1. Expo Mobile App (`mobile/`):**
 ```bash
 cd mobile
 npm ci
-npm run start
-```
-
-Copy `mobile/.env.example` to `mobile/.env`. The example file holds the public Supabase URL and the publishable key. Leave the Stripe publishable key empty and payments stay off. With no `.env`, the welcome screen offers an in-memory demo. `npm run web` in `mobile/` opens the Expo web build. There is no root `.env.example`: an earlier one was removed on purpose (see the September 2026 history).
-
-```bash
 npm run typecheck    # tsc --noEmit
 npm run check:price  # 10 assertions on parsePurchasePrice
+npm run web          # Expo web preview (demo mode if mobile/.env is unset)
+npm run start        # Expo Go on iOS/Android (see docs/TEST_ON_PHONE.md)
+```
+Copy `mobile/.env.example` to `mobile/.env` for live Supabase auth/data; leave `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` empty to keep payments off, or omit `.env` entirely to use the built-in in-memory Paris demo catalog.
+
+**2. Vite Design Prototype (repo root):**
+```bash
+npm ci
+npm run typecheck    # tsc -b --noEmit
+npm run build        # production bundle -> dist/
+npm run dev          # Vite dev stage
 ```
 
-`check:price` prints a Node warning that `mobile/package.json` has no `"type": "module"`. The 10 assertions still pass. That field was left unset so Metro's package shape stays as it is.
+**3. Supabase Database & Edge Functions:**
+Step-by-step setup (migrations order, Vault secrets, `pg_cron`, Stripe webhooks, secrets safety) is in [docs/BACKEND_SETUP.md](docs/BACKEND_SETUP.md). SQL privacy verification scripts live in `supabase/tests/privacy/` (`_prelude.sql` + 10 privacy specs).
 
-**Database and functions.** Step by step, including secrets that must not be committed: [docs/BACKEND_SETUP.md](docs/BACKEND_SETUP.md). Schema and migrations are SQL, applied in the Supabase SQL editor. The privacy scripts in `supabase/tests/privacy/` are pasted after `_prelude.sql` on a database that already has the migrations. They are not a `npm test` suite, and they were not executed in the check below (no local Postgres, no Supabase CLI session).
+---
 
-## What was checked
+## Verified Checks
 
-On 13 November 2026, from a clean `npm ci` of both lockfiles:
+All TypeScript checks, price parsing assertions, production build, and `390×844` Expo web captures were run cleanly on this branch (see [docs/PROOF.md](docs/PROOF.md) and [docs/PROOF_OF_WORK.md](docs/PROOF_OF_WORK.md) for exact command outputs and limitations):
 
-| Command | Result |
+| Check | Scope | Result |
+|---|---|---|
+| `npm run typecheck` (root) | Vite prototype (`src/`) | **PASS** (exit 0) |
+| `npm run build` (root) | Vite 6.4.3 production build | **PASS** (exit 0, 60 modules, 332.07 kB JS) |
+| `npm run typecheck` (`mobile/`) | Expo SDK 57 app (`mobile/src/`) | **PASS** (exit 0) |
+| `npm run check:price` (`mobile/`) | `parsePurchasePrice` unit assertions | **PASS** (`10 cases pass`, exit 0) |
+| `npx expo export --platform web` (`mobile/`) | Expo web Metro bundle | **PASS** (911 modules bundled, exit 0) |
+| Playwright `390×844` capture & walkthrough | 9 screens + MP4/WebM/GIF | **PASS** (all 9 PNGs verified `390×844`) |
+| ESLint / Biome | Repo-wide | Not configured (`no config`) |
+| `supabase/tests/privacy/*.sql` | Postgres RLS specs | Not executed here (no local Postgres / Supabase CLI session) |
+
+---
+
+## Where to Read Next
+
+| Doc | Contents |
 |---|---|
-| `npm run typecheck` at the root | exit 0 |
-| `npm run build` at the root | exit 0. Vite 6.4.3, 60 modules. JS bundle `dist/assets/index-BerGgBIP.js`, 332.07 kB (gzip 88.90 kB). CSS 1.96 kB |
-| `npm run typecheck` in `mobile/` | exit 0 |
-| `npm run check:price` in `mobile/` | `parsePurchasePrice: 10 cases pass`, plus the module-type warning above |
-| ESLint / Biome | no config, not run |
-| `supabase/tests/privacy/*.sql` | not run. No `psql`, no Deno, no Supabase database in this environment |
+| [docs/CASE_STUDY.md](docs/CASE_STUDY.md) | Deep-dive engineering case study (Figma → Expo Go, RLS/GIST, Stripe Connect, AI guardrails) |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 56 tables, 12 Edge Functions, system & ER diagrams |
+| [docs/PROOF.md](docs/PROOF.md) & [docs/PROOF_OF_WORK.md](docs/PROOF_OF_WORK.md) | Exact verified command logs, screenshot dimensions, media inventory, codebase counts |
+| [docs/BACKEND_SETUP.md](docs/BACKEND_SETUP.md) | Supabase migrations, Edge Function secrets, Stripe webhooks, `pg_cron` |
+| [docs/TEST_ON_PHONE.md](docs/TEST_ON_PHONE.md) | Testing on physical iPhone via Expo Go |
+| [docs/BUILD.md](docs/BUILD.md) & [docs/LAUNCH_PLAN.md](docs/LAUNCH_PLAN.md) | EAS builds & App Store / Play Store compliance audit |
+| [docs/DELIVERY.md](docs/DELIVERY.md) & [docs/IAP.md](docs/IAP.md) | Hand-to-hand Paris handover, Rota Delivery gate, RevenueCat IAP |
+| [docs/legal/](docs/legal/) | Counsel drafts (not yet reviewed/published) |
 
-`npm ci` also printed `npm audit` totals: 2 high at the root, and 15 in `mobile/` (1 low, 9 moderate, 4 high, 1 critical). Dependencies were not changed to chase that report.
+## Repository Layout
 
-The commands, the screenshot method, and the line counts are in [docs/PROOF.md](docs/PROOF.md). The engineering write-up is [docs/CASE_STUDY.md](docs/CASE_STUDY.md).
-
-## Where to read next
-
-| Doc | What it is |
-|---|---|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Schema diagram, functions, table list |
-| [docs/CASE_STUDY.md](docs/CASE_STUDY.md) | Short engineering case study |
-| [docs/PROOF.md](docs/PROOF.md) | Commands and captures from 13 November 2026 |
-| [docs/BACKEND_SETUP.md](docs/BACKEND_SETUP.md) | Supabase, Stripe, secrets |
-| [docs/LAUNCH_PLAN.md](docs/LAUNCH_PLAN.md) | Store checklist and what is still open |
-| [docs/BUILD.md](docs/BUILD.md) | EAS |
-| [docs/DELIVERY.md](docs/DELIVERY.md) | Why shipping stays switched off |
-| [docs/legal/](docs/legal/) | Drafts for counsel, not published terms |
-
-Launch is not claimed here. Delivery stays off until labels and tracking exist. The legal drafts say insurance is not included. Counsel review is still listed as open in `docs/legal/`.
-
-## Layout
-
-```
-mobile/       Expo SDK 57 app
-supabase/     schema, migrations, Edge Functions, SQL privacy scripts
-src/          Vite prototype, the screen source for the captures above
-design/       brand assets and earlier screen exports
-website/      static waitlist page
-docs/         setup, launch, legal drafts, this portfolio set
+```text
+mobile/       Expo SDK 57 app (82 TS/TSX files, 26 screens, web shims, EAS config)
+supabase/     schema.sql, 53 SQL migrations, 12 Deno Edge Functions, 11 SQL privacy scripts
+src/          Vite + React 18 design prototype (36 TS/TSX files)
+design/       brand marks, earlier screen exports (design/social-screens/)
+website/      static waitlist & DSA report pages (therotaapp.com)
+docs/         architecture, case study, proof of work, launch/legal/setup guides
 ```
 
 ## License
